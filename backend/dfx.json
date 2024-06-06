@@ -1,0 +1,17 @@
+{
+  "canisters": {
+    "fort_major_votings": {
+      "candid": "src/votings/votings.did",
+      "package": "fort_major_votings",
+      "type": "rust"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

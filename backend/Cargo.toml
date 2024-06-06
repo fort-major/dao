@@ -1,0 +1,10 @@
+[workspace]
+members = ["src/shared", "src/votings", "src/humans"]
+resolver = "2"
+
+[workspace.dependencies]
+candid = "0.10"
+ic-cdk = "0.13"
+ic-cdk-timers = "0.7"
+garde = { version = "0.18", features = ["derive", "url", "regex", "unicode"] }
+serde = "1.0"
