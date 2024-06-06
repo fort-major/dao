@@ -11,6 +11,10 @@ module.exports = {
   ],
   darkMode: "class", // or 'media'
   theme: {
+    width: {
+      128: "32rem",
+      256: "64rem",
+    },
     markdownBase: {
       wrapperClass: "md-content",
 

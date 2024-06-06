@@ -1,4 +1,5 @@
 export enum ErrorCode {
+  SECURITY_VIOLATION = 2,
   UNREACHEABLE = 1,
   UNKNOWN = -1,
 }

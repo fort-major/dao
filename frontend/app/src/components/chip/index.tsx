@@ -8,7 +8,7 @@ export interface IChipProps {
 export function Chip(props: IChipProps) {
   return (
     <span
-      class="p-1 rounded-md font-sans font-light text-xs text-white"
+      class="p-1 rounded-md font-sans font-light text-xs text-white text-center"
       style={{
         "background-color": props.bgColor,
       }}

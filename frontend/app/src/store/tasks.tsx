@@ -6,11 +6,13 @@ import {
   fetchMockTags,
   fetchMockTasks,
 } from "../data/entities/task";
-import { IChildren, TTaskId, TTaskTagId } from "../utils/types";
+import { IChildren, TCommentId, TTaskId, TTaskTagId } from "../utils/types";
 import { ErrorCode, err } from "../utils/error";
+import { IComment, fetchMockComments } from "../data/entities/comment";
 
 type TasksStore = Partial<Record<TTaskId, ITask>>;
 type TaskTagsStore = Partial<Record<TTaskTagId, ITaskTag>>;
+type TaskCommentStore = Partial<Record<TCommentId, IComment>>;
 
 export interface ITaskStoreContext {
   tasks: Store<TasksStore>;
@@ -18,6 +20,9 @@ export interface ITaskStoreContext {
 
   taskTags: Store<TaskTagsStore>;
   fetchTaskTags: (ids: TTaskTagId[]) => Promise<void>;
+
+  taskComments: Store<TaskCommentStore>;
+  fetchTaskComments: (ids: TCommentId[]) => Promise<void>;
 }
 
 const TaskContext = createContext<ITaskStoreContext>();
@@ -35,6 +40,7 @@ export function useTasks(): ITaskStoreContext {
 export function TaskStore(props: IChildren) {
   const [tasks, setTasks] = createStore<TasksStore>();
   const [taskTags, setTaskTags] = createStore<TaskTagsStore>();
+  const [taskComments, setTaskComments] = createStore<TaskCommentStore>();
 
   const fetchTasks = async (ids: TTaskId[]) => {
     const tasks = await fetchMockTasks();
@@ -52,9 +58,24 @@ export function TaskStore(props: IChildren) {
     }
   };
 
+  const fetchTaskComments = async (ids: TCommentId[]) => {
+    const comments = await fetchMockComments(ids);
+
+    for (let comment of comments) {
+      setTaskComments(comment.id, comment);
+    }
+  };
+
   return (
     <TaskContext.Provider
-      value={{ tasks, fetchTasks, taskTags, fetchTaskTags }}
+      value={{
+        tasks,
+        fetchTasks,
+        taskTags,
+        fetchTaskTags,
+        taskComments,
+        fetchTaskComments,
+      }}
     >
       {props.children}
     </TaskContext.Provider>

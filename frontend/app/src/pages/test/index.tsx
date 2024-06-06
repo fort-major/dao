@@ -12,8 +12,8 @@ export function TestPage() {
   });
 
   return (
-    <main>
-      <section>
+    <main class="flex flex-row justify-center">
+      <section class="w-256 flex flex-col gap-4">
         <Show when={taskIds().length > 0} fallback={<p>Loading task...</p>}>
           <For each={taskIds()}>
             {(taskId) => <Task task={tasks[taskId]} />}

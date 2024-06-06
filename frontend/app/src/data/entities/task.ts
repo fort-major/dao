@@ -1,19 +1,17 @@
 import { Principal } from "@dfinity/principal";
 import {
   TMarkdown,
-  TMilestoneId,
-  TSprintId,
   TE8s,
   TTaskTagId,
   TTaskId,
-  TTeamId,
   TTimestamp,
+  TCommentId,
 } from "../../utils/types";
-import { ErrorCode, err } from "../../utils/error";
 
 export enum ETaskStatus {
   Created = "Created",
   Approved = "Approved",
+  ToDo = "To Do",
   InProgress = "In Progress",
   InReview = "In Review",
   Completed = "Completed",
@@ -22,13 +20,12 @@ export enum ETaskStatus {
 
 export interface ITaskInternalDetails {
   assignee?: Principal;
-  sprintId?: TSprintId;
   hoursToProcess?: TE8s;
 }
 
 export interface ITaskExternalDetails {
-  assignees: Principal[];
-  schedule: ISchedule;
+  inProgressStart: TTimestamp;
+  inProgressEnd: TTimestamp;
 }
 
 export type TTaskKind =
@@ -37,40 +34,27 @@ export type TTaskKind =
 
 export interface ITask {
   id: TTaskId;
-  milestoneId: TMilestoneId;
-  teamId: TTeamId;
   tagIds: TTaskTagId[];
   title: string;
   description: TMarkdown;
-  utility: TUtility;
+  utilityStorypoints: TE8s;
   status: ETaskStatus;
   kind: TTaskKind;
-}
-
-export type TUtility =
-  | { Fixed: { storypointsReward: TE8s } }
-  | { Dynamic: { storypointsBudget: TE8s } };
-
-export interface ISchedule {
-  approveBy: TTimestamp;
-  processBy: TTimestamp;
-  reviewBy: TTimestamp;
+  comments: TCommentId[];
 }
 
 export function taskKind(task: ITask): "External" | "Internal" {
   return "External" in task.kind ? "External" : "Internal";
 }
 
-export function externalTaskDetails(task: ITask) {
-  return "External" in task.kind
-    ? task.kind.External
-    : err(ErrorCode.UNREACHEABLE, `the task #${task.id} is not external`);
+export function externalTaskDetails(
+  task: ITask
+): ITaskExternalDetails | undefined {
+  return "External" in task.kind ? task.kind.External : undefined;
 }
 
-export function internalTaskDetails(task: ITask) {
-  return "Internal" in task.kind
-    ? task.kind.Internal
-    : err(ErrorCode.UNREACHEABLE, `the task #${task.id} is not internal`);
+export function internalTaskDetails(task: ITask): ITaskInternalDetails {
+  return "Internal" in task.kind ? task.kind.Internal : undefined;
 }
 
 const mockDesk = `# Project Task: Develop User Authentication Module
@@ -152,7 +136,7 @@ export function fetchMockTasks(): Promise<ITask[]> {
         "Example Task With Some Really Really Long Title That Doesn't End Until It Is That Long Oh My God How Long That Title Is",
       description: mockDesk,
       tagIds: [1, 2, 3, 4, 5, 6],
-      utility: { Fixed: { storypointsReward: 100_0000_0000n } },
+      utilityStorypoints: 100_0000_0000n,
       status: ETaskStatus.Created,
       kind: {
         Internal: {
@@ -160,9 +144,9 @@ export function fetchMockTasks(): Promise<ITask[]> {
           assignee: Principal.fromText(
             "4hh3y-c5een-zwqtw-jamjb-h5ces-ilqi7-sgehf-3n2l7-7xczu-lf4fa-sae"
           ),
-          sprintId: 2,
         },
       },
+      comments: [1, 2],
     },
     {
       id: 10033,
@@ -171,23 +155,15 @@ export function fetchMockTasks(): Promise<ITask[]> {
       title: "Short name",
       description: mockDesk,
       tagIds: [1],
-      utility: { Dynamic: { storypointsBudget: 100_0000_0000n } },
+      utilityStorypoints: 100_0000_0000n,
       status: ETaskStatus.Created,
       kind: {
         External: {
-          assignees: [
-            Principal.fromText(
-              "4hh3y-c5een-zwqtw-jamjb-h5ces-ilqi7-sgehf-3n2l7-7xczu-lf4fa-sae"
-            ),
-            Principal.fromText("aaaaa-aa"),
-          ],
-          schedule: {
-            approveBy: 1717595721449000000n,
-            processBy: 1717595721449000000n,
-            reviewBy: 1717595721449000000n,
-          },
+          inProgressStart: 1717595721449000000n,
+          inProgressEnd: 1717595721449000000n,
         },
       },
+      comments: [1, 2],
     },
   ]);
 }
