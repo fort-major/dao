@@ -15,8 +15,6 @@ pub struct TeamMemberInfo {
     pub active: bool,
     #[garde(skip)]
     pub employed_at: TimestampNs,
-    #[garde(skip)]
-    pub total_earned_hours_e8s: Nat,
 }
 
 pub struct WeeklyRateHoursE8sContext {

@@ -1,0 +1,22 @@
+type Candidate = record { id : principal; weekly_rate_hours_e8s : nat };
+type EmployRequest = record { candidates : vec Candidate };
+type GetTeamMemberIdsResponse = record { ids : vec principal };
+type GetTeamMembersRequest = record { ids : vec principal };
+type GetTeamMembersResponse = record { team_members : vec TeamMemberInfo };
+type InitRequest = record { sasha : principal };
+type TeamMemberInfo = record {
+  id : principal;
+  total_earned_hours_e8s : nat;
+  active : bool;
+  weekly_rate_hours_e8s : nat;
+  employed_at : nat64;
+};
+type UnemployRequest = record { team_members : vec principal };
+type UpdateWeeklyHourRateRequest = record { entries : vec Candidate };
+service : (InitRequest) -> {
+  employ : (EmployRequest) -> ();
+  get_team_member_ids : () -> (GetTeamMemberIdsResponse) query;
+  get_team_members : (GetTeamMembersRequest) -> (GetTeamMembersResponse) query;
+  unemploy : (UnemployRequest) -> ();
+  update_weekly_hour_rate : (UpdateWeeklyHourRateRequest) -> ();
+}

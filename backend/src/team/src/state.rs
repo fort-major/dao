@@ -27,7 +27,6 @@ impl State {
             weekly_rate_hours_e8s: Nat::from(40_0000_0000u64),
             active: true,
             employed_at: time(),
-            total_earned_hours_e8s: Nat::from(0u32),
         };
 
         let state = State {
@@ -55,7 +54,6 @@ impl State {
                 weekly_rate_hours_e8s: candidate.weekly_rate_hours_e8s,
                 active: true,
                 employed_at: now,
-                total_earned_hours_e8s: Nat::from(0u32),
             };
 
             self.team_members.insert(team_member.id, team_member);

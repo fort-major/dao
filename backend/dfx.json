@@ -1,8 +1,23 @@
 {
   "canisters": {
-    "fort_major_votings": {
-      "candid": "src/votings/votings.did",
-      "package": "fort_major_votings",
+    "votings": {
+      "candid": "src/votings/can.did",
+      "package": "votings",
+      "type": "rust"
+    },
+    "humans": {
+      "candid": "src/humans/can.did",
+      "package": "humans",
+      "type": "rust"
+    },
+    "team": {
+      "candid": "src/team/can.did",
+      "package": "team",
+      "type": "rust"
+    },
+    "rewards": {
+      "candid": "src/rewards/can.did",
+      "package": "rewards",
       "type": "rust"
     }
   },

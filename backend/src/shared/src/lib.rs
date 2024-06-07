@@ -1,4 +1,5 @@
 pub mod humans;
+pub mod rewards;
 pub mod team;
 pub mod votings;
 
