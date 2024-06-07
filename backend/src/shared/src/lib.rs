@@ -1,4 +1,6 @@
+pub mod bank;
 pub mod humans;
+pub mod icrc1;
 pub mod rewards;
 pub mod team;
 pub mod votings;

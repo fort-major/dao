@@ -5,7 +5,9 @@ use ic_cdk::{
     storage::{stable_restore, stable_save},
     update,
 };
-use shared::rewards::{GetInfoRequest, GetInfoResponse, InitRequest, MintRequest, SpendRequest};
+use shared::rewards::{
+    GetInfoRequest, GetInfoResponse, InitRequest, MintRequest, RefundRequest, SpendRequest,
+};
 use state::State;
 
 mod state;
@@ -58,6 +60,19 @@ fn spend(req: SpendRequest) {
             .unwrap()
             .spend(req, caller())
             .expect("Unable to spend")
+    })
+}
+
+#[update]
+fn refund(req: RefundRequest) {
+    STATE.with(|s| {
+        let mut state_ref = s.borrow_mut();
+
+        state_ref
+            .as_mut()
+            .unwrap()
+            .refund(req, caller())
+            .expect("Unable to refund")
     })
 }
 

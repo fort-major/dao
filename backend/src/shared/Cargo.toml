@@ -11,3 +11,4 @@ ic-cdk = { workspace = true }
 ic-cdk-timers = { workspace = true }
 serde = { workspace = true }
 garde = { workspace = true }
+icrc-ledger-types = { workspace = true }

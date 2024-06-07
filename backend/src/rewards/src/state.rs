@@ -5,7 +5,8 @@ use serde::Deserialize;
 use shared::{
     btreemap,
     rewards::{
-        GetInfoRequest, GetInfoResponse, InitRequest, MintRequest, RewardsInfo, SpendRequest,
+        GetInfoRequest, GetInfoResponse, InitRequest, MintRequest, RefundRequest, RewardsInfo,
+        SpendRequest,
     },
 };
 
@@ -91,6 +92,20 @@ impl State {
         } else {
             return Err(format!("Account {} does not exist", entry.id));
         }
+
+        Ok(())
+    }
+
+    pub fn refund(&mut self, req: RefundRequest, caller: Principal) -> Result<(), String> {
+        self.assert_is_bank_canister(&caller)?;
+
+        let account_info = self
+            .rewards_info
+            .get_mut(&req.id)
+            .ok_or(format!("Account {} not found", req.id))?;
+
+        account_info.hours_balance_e8s += req.hours_e8s;
+        account_info.storypoints_balance_e8s += req.storypoints_e8s;
 
         Ok(())
     }
