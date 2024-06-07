@@ -1,5 +1,5 @@
 [workspace]
-members = ["src/shared", "src/votings", "src/humans", "src/team", "src/rewards"]
+members = ["src/shared", "src/humans", "src/team", "src/rewards"]
 resolver = "2"
 
 [workspace.dependencies]

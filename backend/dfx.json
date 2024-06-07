@@ -1,10 +1,5 @@
 {
   "canisters": {
-    "votings": {
-      "candid": "src/votings/can.did",
-      "package": "votings",
-      "type": "rust"
-    },
     "humans": {
       "candid": "src/humans/can.did",
       "package": "humans",
@@ -18,6 +13,11 @@
     "rewards": {
       "candid": "src/rewards/can.did",
       "package": "rewards",
+      "type": "rust"
+    },
+    "bank": {
+      "candid": "src/bank/can.did",
+      "package": "bank",
       "type": "rust"
     }
   },
