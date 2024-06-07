@@ -1,3 +1,3 @@
 # Fort Major
 
-The next generation digital organization. Fair, open, robust and transparent.
+Fair, open, robust and transparent digital organization with an uplifting tone.

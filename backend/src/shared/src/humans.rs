@@ -1,6 +1,8 @@
 use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 
+use crate::TimestampNs;
+
 #[derive(CandidType, Deserialize, Validate, Clone)]
 pub struct Profile {
     #[garde(skip)]
@@ -9,15 +11,19 @@ pub struct Profile {
     pub name: Option<String>,
     #[garde(length(bytes, max = 5120))]
     pub avatar_src: Option<String>,
+    #[garde(skip)]
+    pub registered_at: TimestampNs,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Validate)]
 pub struct GetProfilesRequest {
+    #[garde(length(min = 1))]
     pub ids: Vec<Principal>,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Validate)]
 pub struct GetProfilesResponse {
+    #[garde(length(min = 1), dive)]
     pub profiles: Vec<Profile>,
 }
 

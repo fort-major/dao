@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use ic_cdk::{
-    caller, post_upgrade, pre_upgrade, query,
+    caller, export_candid, post_upgrade, pre_upgrade, query,
     storage::{stable_restore, stable_save},
     update,
 };
@@ -9,6 +9,8 @@ use shared::humans::{GetProfilesRequest, GetProfilesResponse, RegisterOrUpdateRe
 use state::State;
 
 mod state;
+
+// TODO: make register and update-profile require PoW
 
 thread_local! {
     static STATE: RefCell<State> = RefCell::default();
@@ -30,11 +32,9 @@ fn post_upgrade_hook() {
 
 #[query]
 fn get_profiles(req: GetProfilesRequest) -> GetProfilesResponse {
-    let profiles = STATE
-        .with(|s| s.borrow().get_profiles(&req.ids))
-        .expect("Unable to get profiles");
-
-    GetProfilesResponse { profiles }
+    STATE
+        .with(|s| s.borrow().get_profiles(req))
+        .expect("Unable to get profiles")
 }
 
 #[update]
@@ -50,3 +50,5 @@ fn update_profile(req: RegisterOrUpdateRequest) {
         .with(|s| s.borrow_mut().update_profile(req, caller()))
         .expect("Unable to update the profile")
 }
+
+export_candid!();

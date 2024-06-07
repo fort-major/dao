@@ -208,6 +208,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "fort_major_team"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "garde",
+ "ic-cdk",
+ "ic-cdk-timers",
+ "serde",
+ "shared",
+]
+
+[[package]]
 name = "fort_major_votings"
 version = "0.1.0"
 dependencies = [

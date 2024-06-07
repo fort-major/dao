@@ -2,8 +2,9 @@ use std::collections::{btree_map::Entry, BTreeMap};
 
 use candid::{CandidType, Principal};
 use garde::Validate;
+use ic_cdk::api::time;
 use serde::Deserialize;
-use shared::humans::{Profile, RegisterOrUpdateRequest};
+use shared::humans::{GetProfilesRequest, GetProfilesResponse, Profile, RegisterOrUpdateRequest};
 
 #[derive(CandidType, Deserialize, Default)]
 pub struct State {
@@ -19,12 +20,13 @@ impl State {
         request.validate(&()).map_err(|e| e.to_string())?;
 
         match self.profiles.entry(caller) {
-            Entry::Occupied(mut e) => Err(format!("Profile {} already registered", caller)),
+            Entry::Occupied(mut _e) => Err(format!("Profile {} already registered", caller)),
             Entry::Vacant(e) => {
                 let profile = Profile {
                     id: caller,
                     name: request.name,
                     avatar_src: request.avatar_src,
+                    registered_at: time(),
                 };
 
                 e.insert(profile);
@@ -43,13 +45,9 @@ impl State {
 
         match self.profiles.entry(caller) {
             Entry::Occupied(mut e) => {
-                let profile = Profile {
-                    id: caller,
-                    name: request.name,
-                    avatar_src: request.avatar_src,
-                };
-
-                *e.get_mut() = profile;
+                let profile = e.get_mut();
+                profile.name = request.name;
+                profile.avatar_src = request.avatar_src;
 
                 Ok(())
             }
@@ -57,10 +55,12 @@ impl State {
         }
     }
 
-    pub fn get_profiles(&self, ids: &[Principal]) -> Result<Vec<Profile>, String> {
+    pub fn get_profiles(&self, req: GetProfilesRequest) -> Result<GetProfilesResponse, String> {
+        req.validate(&()).map_err(|e| e.to_string())?;
+
         let mut profiles = Vec::new();
 
-        for id in ids {
+        for id in &req.ids {
             if let Some(profile) = self.profiles.get(id) {
                 profiles.push(profile.clone());
             } else {
@@ -68,6 +68,6 @@ impl State {
             }
         }
 
-        Ok(profiles)
+        Ok(GetProfilesResponse { profiles })
     }
 }
