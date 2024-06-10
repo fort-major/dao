@@ -60,13 +60,13 @@ async fn swap(req: SwapRequest) -> SwapResponse {
         .expect("Unable to spend rewards");
 
     // prepare the request to issue icp or fmj
-    let (into, canister_id, qty) = STATE.with(|s| {
+    let (canister_id, qty) = STATE.with(|s| {
         let state_ref = s.borrow();
         state_ref.as_ref().unwrap().prepare_issue(req)
     });
 
     // issue icp or fmj
-    let swap_result = complete_swap(into, canister_id, qty, caller()).await;
+    let swap_result = complete_swap(canister_id, qty, caller()).await;
 
     match swap_result {
         // if not successfull - try refunding the spent rewards

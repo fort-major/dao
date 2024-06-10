@@ -24,6 +24,11 @@
       "candid": "src/fmj/can.did",
       "wasm": "src/fmj/fmj.wasm",
       "type": "custom"
+    },
+    "tasks": {
+      "candid": "src/tasks/can.did",
+      "package": "tasks",
+      "type": "rust"
     }
   },
   "defaults": {

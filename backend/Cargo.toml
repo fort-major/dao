@@ -1,11 +1,19 @@
 [workspace]
-members = ["src/shared", "src/humans", "src/team", "src/rewards", "src/bank"]
+members = [
+    "src/shared",
+    "src/humans",
+    "src/team",
+    "src/rewards",
+    "src/bank",
+    "src/tasks",
+]
 resolver = "2"
 
 [workspace.dependencies]
 candid = "0.10"
+serde = "1.0"
 ic-cdk = "0.13"
 ic-cdk-timers = "0.7"
 icrc-ledger-types = "0.1.5"
-garde = { version = "0.18", features = ["derive", "url", "regex", "unicode"] }
-serde = "1.0"
+garde = { version = "0.18", features = ["derive", "url", "unicode"] }
+html-escape = "0.2"

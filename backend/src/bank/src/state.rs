@@ -66,7 +66,7 @@ impl State {
         Ok(spend_request)
     }
 
-    pub fn prepare_issue(&self, req: SwapRequest) -> (SwapInto, Principal, Nat) {
+    pub fn prepare_issue(&self, req: SwapRequest) -> (Principal, Nat) {
         match req.into {
             SwapInto::ICP => {
                 let exchange_rate_storypoints = self
@@ -83,7 +83,7 @@ impl State {
                 let total_icp = req.hours_e8s * exchange_rate_hours
                     + req.storypoints_e8s * exchange_rate_storypoints;
 
-                (SwapInto::ICP, self.icp_canister_id, total_icp)
+                (self.icp_canister_id, total_icp)
             }
             SwapInto::FMJ => {
                 let exchange_rate_storypoints = self
@@ -101,46 +101,40 @@ impl State {
                 let total_fmj = req.hours_e8s * exchange_rate_hours
                     + req.storypoints_e8s * exchange_rate_storypoints;
 
-                (SwapInto::FMJ, self.fmj_canister_id, total_fmj)
+                (self.fmj_canister_id, total_fmj)
             }
         }
     }
 }
 
 pub async fn complete_swap(
-    into: SwapInto,
     canister_id: Principal,
     qty: Nat,
     caller: Principal,
 ) -> Result<SwapResponse, String> {
-    match into {
-        SwapInto::ICP => {
-            let icrc1_canister = ICRC1CanisterClient::new(canister_id);
-            let arg = TransferArg {
-                to: Account {
-                    owner: caller,
-                    subaccount: None,
-                },
-                amount: qty.clone(),
-                created_at_time: Some(time()),
-                from_subaccount: None,
-                memo: None,
-                fee: None,
-            };
+    let icrc1_canister = ICRC1CanisterClient::new(canister_id);
+    let arg = TransferArg {
+        to: Account {
+            owner: caller,
+            subaccount: None,
+        },
+        amount: qty.clone(),
+        created_at_time: Some(time()),
+        from_subaccount: None,
+        memo: None,
+        fee: None,
+    };
 
-            let (result,) = icrc1_canister
-                .icrc1_transfer(arg)
-                .await
-                .expect("Unable to transfer ICP");
+    let (result,) = icrc1_canister
+        .icrc1_transfer(arg)
+        .await
+        .map_err(|(code, err)| format!("Unable to transfer ICP: code: {:?}, msg: {}", code, err))?;
 
-            let block_idx = result.expect("Unable to transfer ICP");
+    let block_idx = result.map_err(|e| format!("Unable to transfer ICP: {}", e))?;
 
-            Ok(SwapResponse {
-                asset: canister_id,
-                block_idx,
-                qty_e8s: qty,
-            })
-        }
-        SwapInto::FMJ => Err(format!("Not implemented")),
-    }
+    Ok(SwapResponse {
+        asset: canister_id,
+        block_idx,
+        qty_e8s: qty,
+    })
 }

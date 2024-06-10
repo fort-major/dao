@@ -22,12 +22,14 @@ impl State {
         match self.profiles.entry(caller) {
             Entry::Occupied(mut _e) => Err(format!("Profile {} already registered", caller)),
             Entry::Vacant(e) => {
-                let profile = Profile {
+                let mut profile = Profile {
                     id: caller,
                     name: request.name,
                     avatar_src: request.avatar_src,
                     registered_at: time(),
                 };
+
+                profile.escape();
 
                 e.insert(profile);
 
@@ -49,9 +51,11 @@ impl State {
                 profile.name = request.name;
                 profile.avatar_src = request.avatar_src;
 
+                profile.escape();
+
                 Ok(())
             }
-            Entry::Vacant(e) => Err(format!("The profile {} does not exist", caller)),
+            Entry::Vacant(_e) => Err(format!("The profile {} does not exist", caller)),
         }
     }
 

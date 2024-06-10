@@ -15,6 +15,14 @@ pub struct Profile {
     pub registered_at: TimestampNs,
 }
 
+impl Profile {
+    pub fn escape(&mut self) {
+        if let Some(name) = &self.name {
+            self.name = Some(html_escape::encode_script(name).to_string());
+        }
+    }
+}
+
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetProfilesRequest {
     #[garde(length(min = 1))]
