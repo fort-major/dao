@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use ic_cdk::{
-    caller, init, post_upgrade, pre_upgrade, query,
+    caller, export_candid, init, post_upgrade, pre_upgrade, query,
     storage::{stable_restore, stable_save},
     update,
 };
@@ -99,3 +99,5 @@ fn get_exchange_rates() -> GetExchangeRatesResponse {
         state_ref.as_ref().unwrap().get_exchange_rates()
     })
 }
+
+export_candid!();

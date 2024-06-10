@@ -19,6 +19,11 @@
       "candid": "src/bank/can.did",
       "package": "bank",
       "type": "rust"
+    },
+    "fmj": {
+      "candid": "src/fmj/can.did",
+      "wasm": "src/fmj/fmj.wasm",
+      "type": "custom"
     }
   },
   "defaults": {
