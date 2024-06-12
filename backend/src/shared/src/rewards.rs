@@ -1,13 +1,15 @@
-use candid::{CandidType, Deserialize, Nat, Principal};
+use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 use ic_cdk::{api::call::CallResult, call};
 
+use crate::e8s::E8s;
+
 #[derive(CandidType, Deserialize, Clone)]
 pub struct RewardsInfo {
-    pub hours_balance_e8s: Nat,
-    pub total_earned_hours_e8s: Nat,
-    pub storypoints_balance_e8s: Nat,
-    pub total_earned_storypoints_e8s: Nat,
+    pub hours_balance: E8s,
+    pub total_earned_hours: E8s,
+    pub storypoints_balance: E8s,
+    pub total_earned_storypoints: E8s,
 }
 
 #[derive(CandidType, Deserialize, Clone)]
@@ -20,8 +22,8 @@ pub struct InitRequest {
 #[derive(CandidType, Deserialize, Clone)]
 pub struct BalanceEntry {
     pub id: Principal,
-    pub hours_e8s: Nat,
-    pub storypoints_e8s: Nat,
+    pub hours: E8s,
+    pub storypoints: E8s,
 }
 
 #[derive(CandidType, Deserialize, Clone, Validate)]
@@ -35,8 +37,8 @@ pub type SpendRequest = BalanceEntry;
 #[derive(CandidType, Deserialize, Clone)]
 pub struct RefundRequest {
     pub id: Principal,
-    pub hours_e8s: Nat,
-    pub storypoints_e8s: Nat,
+    pub hours: E8s,
+    pub storypoints: E8s,
 }
 
 #[derive(CandidType, Deserialize, Clone)]
@@ -47,8 +49,8 @@ pub struct GetInfoRequest {
 #[derive(CandidType, Deserialize, Clone)]
 pub struct GetInfoResponse {
     pub id: Principal,
-    pub hours_total_supply_e8s: Nat,
-    pub storypoints_total_supply_e8s: Nat,
+    pub hours_total_supply: E8s,
+    pub storypoints_total_supply: E8s,
     pub info: RewardsInfo,
 }
 

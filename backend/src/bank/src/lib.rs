@@ -73,8 +73,8 @@ async fn swap(req: SwapRequest) -> SwapResponse {
         Err(reason) => {
             let refund_req = RefundRequest {
                 id: spend_req.id,
-                storypoints_e8s: spend_req.storypoints_e8s,
-                hours_e8s: spend_req.hours_e8s,
+                storypoints: spend_req.storypoints,
+                hours: spend_req.hours,
             };
 
             rewards_canister.refund(refund_req).await.expect(

@@ -1,4 +1,5 @@
 pub mod bank;
+pub mod e8s;
 pub mod humans;
 pub mod icrc1;
 pub mod rewards;

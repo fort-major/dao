@@ -12,6 +12,8 @@ use shared::{
     TimestampNs,
 };
 
+use crate::utils::AllowedBasicTeamTaskStatusTransitions;
+
 #[derive(CandidType, Deserialize)]
 pub struct State {
     pub rewards_canister_id: Principal,
@@ -40,13 +42,11 @@ impl State {
         req.escape();
 
         let task_kind = match req.kind {
-            CreateTaskRequestKind::BasicTeam(k) => TaskKind::BasicTeam(BasicTeamTaskKind::new(
-                k.assignee,
-                k.storypoints_e8s,
-                k.hours_e8s,
-            )),
+            CreateTaskRequestKind::BasicTeam(k) => {
+                TaskKind::BasicTeam(BasicTeamTaskKind::new(k.assignee, k.storypoints, k.hours))
+            }
             CreateTaskRequestKind::BasicCrowdsource(k) => {
-                TaskKind::BasicCrowdsource(BasicCrowdsourceTaskKind::new(k.storypoints_budget_e8s))
+                TaskKind::BasicCrowdsource(BasicCrowdsourceTaskKind::new(k.storypoints_budget))
             }
         };
 
@@ -93,12 +93,12 @@ impl State {
                             k.assignee = new_assignee;
                         }
 
-                        if let Some(new_storypoints_e8s) = new_k.storypoints_e8s {
-                            k.storypoints_e8s = new_storypoints_e8s;
+                        if let Some(new_storypoints) = new_k.storypoints {
+                            k.storypoints = new_storypoints;
                         }
 
-                        if let Some(new_hours_e8s) = new_k.hours_e8s {
-                            k.hours_e8s = new_hours_e8s;
+                        if let Some(new_hours) = new_k.hours {
+                            k.hours = new_hours;
                         }
                     }
                     TaskKind::BasicCrowdsource(_) => {
@@ -110,8 +110,8 @@ impl State {
                         return Err(format!("Task {} has incompatible kind", task.id));
                     }
                     TaskKind::BasicCrowdsource(k) => {
-                        if let Some(new_storypoints_budget_e8s) = new_k.storypoints_budget_e8s {
-                            k.storypoints_budget_e8s = new_storypoints_budget_e8s;
+                        if let Some(new_storypoints_budget) = new_k.storypoints_budget {
+                            k.storypoints_budget = new_storypoints_budget;
                         }
                     }
                 },
@@ -146,24 +146,18 @@ impl State {
 
         match &mut task.kind {
             TaskKind::BasicTeam(k) => {
-                if (matches!(k.status, BasicTeamTaskStatus::Backlog)
-                    && matches!(req.new_status, BasicTeamTaskStatus::ToDo))
-                {
-                    if task.creator == caller {
-                        return Ok(());
-                    }
+                AllowedBasicTeamTaskStatusTransitions::default().assert_allowed(
+                    &k.status,
+                    &task.creator,
+                    &k.assignee,
+                    &req.new_status,
+                    &self.votings_canister_id,
+                    &caller,
+                )?;
 
-                    if let Some(assignee) = k.assignee {
-                        if assignee == caller {
-                            return Ok(());
-                        }
-                    }
+                k.status = req.new_status;
 
-                    return Err(format!("Access denied"));                    
-                }
-
-                if (matches!(k.status, BasicTeamTaskStatus::ToDo) && matches!(req.new_status, Basi))
-
+                Ok(())
             }
             TaskKind::BasicCrowdsource(k) => Err(format!(
                 "Task {} is of kind BasicCrowdsource, but is treated like BasicTeam",

@@ -649,6 +649,7 @@ dependencies = [
  "ic-cdk-timers",
  "icrc-ledger-types",
  "serde",
+ "url",
 ]
 
 [[package]]

@@ -8,31 +8,32 @@ use shared::{
         GetInfoRequest, GetInfoResponse, InitRequest, MintRequest, RefundRequest, RewardsInfo,
         SpendRequest,
     },
+    E8s,
 };
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct State {
     pub tasks_canister: Principal,
     pub bank_canister: Principal,
-    pub hours_total_supply_e8s: Nat,
-    pub storypoints_total_supply_e8s: Nat,
+    pub hours_total_supply: E8s,
+    pub storypoints_total_supply: E8s,
     pub rewards_info: BTreeMap<Principal, RewardsInfo>,
 }
 
 impl State {
     pub fn new(req: InitRequest) -> Self {
         let sasha = RewardsInfo {
-            hours_balance_e8s: Nat::from(1_0000_0000u64),
-            storypoints_balance_e8s: Nat::from(1_0000_0000u64),
-            total_earned_hours_e8s: Nat::from(1_0000_0000u64),
-            total_earned_storypoints_e8s: Nat::from(1_0000_0000u64),
+            hours_balance: Nat::from(1_0000_0000u64),
+            storypoints_balance: Nat::from(1_0000_0000u64),
+            total_earned_hours: Nat::from(1_0000_0000u64),
+            total_earned_storypoints: Nat::from(1_0000_0000u64),
         };
 
         State {
             tasks_canister: req.tasks_canister,
             bank_canister: req.bank_canister,
-            hours_total_supply_e8s: sasha.total_earned_hours_e8s.clone(),
-            storypoints_total_supply_e8s: sasha.total_earned_storypoints_e8s.clone(),
+            hours_total_supply: sasha.total_earned_hours.clone(),
+            storypoints_total_supply: sasha.total_earned_storypoints.clone(),
             rewards_info: btreemap! { req.sasha => sasha },
         }
     }
@@ -42,26 +43,26 @@ impl State {
         self.assert_is_tasks_canister(&caller)?;
 
         for entry in req.entries {
-            self.hours_total_supply_e8s += entry.hours_e8s.clone();
-            self.storypoints_total_supply_e8s += entry.storypoints_e8s.clone();
+            self.hours_total_supply += entry.hours.clone();
+            self.storypoints_total_supply += entry.storypoints.clone();
 
             match self.rewards_info.entry(entry.id) {
                 Entry::Occupied(mut e) => {
                     let info = e.get_mut();
 
-                    info.hours_balance_e8s += entry.hours_e8s.clone();
-                    info.total_earned_hours_e8s += entry.hours_e8s.clone();
+                    info.hours_balance += entry.hours.clone();
+                    info.total_earned_hours += entry.hours.clone();
 
-                    info.storypoints_balance_e8s += entry.storypoints_e8s.clone();
-                    info.total_earned_storypoints_e8s += entry.storypoints_e8s.clone();
+                    info.storypoints_balance += entry.storypoints.clone();
+                    info.total_earned_storypoints += entry.storypoints.clone();
                 }
                 Entry::Vacant(e) => {
                     let info = RewardsInfo {
-                        hours_balance_e8s: entry.hours_e8s.clone(),
-                        total_earned_hours_e8s: entry.hours_e8s,
+                        hours_balance: entry.hours.clone(),
+                        total_earned_hours: entry.hours,
 
-                        storypoints_balance_e8s: entry.storypoints_e8s.clone(),
-                        total_earned_storypoints_e8s: entry.storypoints_e8s,
+                        storypoints_balance: entry.storypoints.clone(),
+                        total_earned_storypoints: entry.storypoints,
                     };
 
                     e.insert(info);
@@ -79,16 +80,16 @@ impl State {
         self.assert_is_bank_canister(&caller)?;
 
         if let Some(info) = self.rewards_info.get_mut(&entry.id) {
-            if info.hours_balance_e8s.lt(&entry.hours_e8s) {
+            if info.hours_balance.lt(&entry.hours) {
                 return Err(format!("Accont {} has insufficient hours", entry.id));
             }
 
-            if info.storypoints_balance_e8s.lt(&entry.storypoints_e8s) {
+            if info.storypoints_balance.lt(&entry.storypoints) {
                 return Err(format!("Accont {} has insufficient storypoints", entry.id));
             }
 
-            info.hours_balance_e8s -= entry.hours_e8s;
-            info.storypoints_balance_e8s -= entry.storypoints_e8s;
+            info.hours_balance -= entry.hours;
+            info.storypoints_balance -= entry.storypoints;
         } else {
             return Err(format!("Account {} does not exist", entry.id));
         }
@@ -104,8 +105,8 @@ impl State {
             .get_mut(&req.id)
             .ok_or(format!("Account {} not found", req.id))?;
 
-        account_info.hours_balance_e8s += req.hours_e8s;
-        account_info.storypoints_balance_e8s += req.storypoints_e8s;
+        account_info.hours_balance += req.hours;
+        account_info.storypoints_balance += req.storypoints;
 
         Ok(())
     }
@@ -115,17 +116,17 @@ impl State {
             info.clone()
         } else {
             RewardsInfo {
-                hours_balance_e8s: Nat::from(0u32),
-                total_earned_hours_e8s: Nat::from(0u32),
-                storypoints_balance_e8s: Nat::from(0u32),
-                total_earned_storypoints_e8s: Nat::from(0u32),
+                hours_balance: Nat::from(0u32),
+                total_earned_hours: Nat::from(0u32),
+                storypoints_balance: Nat::from(0u32),
+                total_earned_storypoints: Nat::from(0u32),
             }
         };
 
         GetInfoResponse {
             id: req.of,
-            hours_total_supply_e8s: self.hours_total_supply_e8s.clone(),
-            storypoints_total_supply_e8s: self.storypoints_total_supply_e8s.clone(),
+            hours_total_supply: self.hours_total_supply.clone(),
+            storypoints_total_supply: self.storypoints_total_supply.clone(),
             info,
         }
     }

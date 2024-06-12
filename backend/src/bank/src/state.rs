@@ -53,14 +53,14 @@ impl State {
         caller: Principal,
     ) -> Result<BalanceEntry, String> {
         let zero = Nat::from(0u32);
-        if req.storypoints_e8s == zero && req.hours_e8s == zero {
+        if req.storypoints == zero && req.hours == zero {
             return Err(format!("Empty swap request"));
         }
 
         let spend_request = BalanceEntry {
             id: caller,
-            hours_e8s: req.hours_e8s.clone(),
-            storypoints_e8s: req.storypoints_e8s.clone(),
+            hours: req.hours.clone(),
+            storypoints: req.storypoints.clone(),
         };
 
         Ok(spend_request)
@@ -80,8 +80,8 @@ impl State {
                     .cloned()
                     .unwrap();
 
-                let total_icp = req.hours_e8s * exchange_rate_hours
-                    + req.storypoints_e8s * exchange_rate_storypoints;
+                let total_icp =
+                    req.hours * exchange_rate_hours + req.storypoints * exchange_rate_storypoints;
 
                 (self.icp_canister_id, total_icp)
             }
@@ -98,8 +98,8 @@ impl State {
                     .cloned()
                     .unwrap();
 
-                let total_fmj = req.hours_e8s * exchange_rate_hours
-                    + req.storypoints_e8s * exchange_rate_storypoints;
+                let total_fmj =
+                    req.hours * exchange_rate_hours + req.storypoints * exchange_rate_storypoints;
 
                 (self.fmj_canister_id, total_fmj)
             }
@@ -135,6 +135,6 @@ pub async fn complete_swap(
     Ok(SwapResponse {
         asset: canister_id,
         block_idx,
-        qty_e8s: qty,
+        qty,
     })
 }

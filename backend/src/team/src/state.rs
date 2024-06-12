@@ -24,7 +24,7 @@ impl State {
 
         let sasha = TeamMemberInfo {
             id: req.sasha,
-            weekly_rate_hours_e8s: Nat::from(40_0000_0000u64),
+            weekly_rate_hours: Nat::from(40_0000_0000u64),
             active: true,
             employed_at: time(),
         };
@@ -51,7 +51,7 @@ impl State {
         for candidate in req.candidates {
             let team_member = TeamMemberInfo {
                 id: candidate.id,
-                weekly_rate_hours_e8s: candidate.weekly_rate_hours_e8s,
+                weekly_rate_hours: candidate.weekly_rate_hours,
                 active: true,
                 employed_at: now,
             };
@@ -92,7 +92,7 @@ impl State {
 
         for entry in req.entries {
             if let Some(member_info) = self.team_members.get_mut(&entry.id) {
-                member_info.weekly_rate_hours_e8s = entry.weekly_rate_hours_e8s;
+                member_info.weekly_rate_hours = entry.weekly_rate_hours;
             }
         }
 

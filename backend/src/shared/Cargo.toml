@@ -13,3 +13,4 @@ serde = { workspace = true }
 garde = { workspace = true }
 icrc-ledger-types = { workspace = true }
 html-escape = { workspace = true }
+url = { workspace = true }

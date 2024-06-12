@@ -1,8 +1,8 @@
-use std::collections::BTreeMap;
-
-use candid::{CandidType, Nat, Principal};
+use candid::{CandidType, Principal};
 use icrc_ledger_types::icrc1::transfer::BlockIndex;
 use serde::Deserialize;
+
+use crate::e8s::E8s;
 
 #[derive(CandidType, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SwapFrom {
@@ -18,8 +18,8 @@ pub enum SwapInto {
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct SwapRequest {
-    pub storypoints_e8s: Nat,
-    pub hours_e8s: Nat,
+    pub storypoints: E8s,
+    pub hours: E8s,
     pub into: SwapInto,
 }
 
@@ -27,7 +27,7 @@ pub struct SwapRequest {
 pub struct SwapResponse {
     pub asset: Principal,
     pub block_idx: BlockIndex,
-    pub qty_e8s: Nat,
+    pub qty: E8s,
 }
 
 #[derive(CandidType, Deserialize, Clone)]
@@ -37,11 +37,11 @@ pub struct InitRequest {
     pub icp_canister_id: Principal,
 
     // rates are expressed as how much <into> one gets for 1.00 <from>
-    pub exchange_rates: Vec<(SwapFrom, SwapInto, Nat)>,
+    pub exchange_rates: Vec<(SwapFrom, SwapInto, E8s)>,
 }
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct GetExchangeRatesResponse {
     // rates are expressed as how much <into> one gets for 1.00 <from>
-    pub exchange_rates: Vec<(SwapFrom, SwapInto, Nat)>,
+    pub exchange_rates: Vec<(SwapFrom, SwapInto, E8s)>,
 }

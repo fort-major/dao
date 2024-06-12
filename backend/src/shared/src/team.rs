@@ -2,7 +2,7 @@ use candid::{CandidType, Nat, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::TimestampNs;
+use crate::{e8s::E8s, TimestampNs};
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
 #[garde(context(WeeklyRateHoursE8sContext))]
@@ -10,7 +10,7 @@ pub struct TeamMemberInfo {
     #[garde(skip)]
     pub id: Principal,
     #[garde(custom(weekly_hours_in_range))]
-    pub weekly_rate_hours_e8s: Nat,
+    pub weekly_rate_hours: E8s,
     #[garde(skip)]
     pub active: bool,
     #[garde(skip)]
@@ -18,20 +18,20 @@ pub struct TeamMemberInfo {
 }
 
 pub struct WeeklyRateHoursE8sContext {
-    min: Nat,
-    max: Nat,
+    min: E8s,
+    max: E8s,
 }
 
 impl Default for WeeklyRateHoursE8sContext {
     fn default() -> Self {
         Self {
-            min: Nat::from(1u32),
-            max: Nat::from(40u32),
+            min: E8s::one(),
+            max: E8s(Nat::from(40u32)),
         }
     }
 }
 
-fn weekly_hours_in_range(value: &Nat, context: &WeeklyRateHoursE8sContext) -> garde::Result {
+fn weekly_hours_in_range(value: &E8s, context: &WeeklyRateHoursE8sContext) -> garde::Result {
     if value.ge(&context.min) && value.le(&context.max) {
         Ok(())
     } else {
@@ -53,7 +53,7 @@ pub struct Candidate {
     #[garde(skip)]
     pub id: Principal,
     #[garde(custom(weekly_hours_in_range))]
-    pub weekly_rate_hours_e8s: Nat,
+    pub weekly_rate_hours: E8s,
 }
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -81,7 +81,7 @@ pub struct WeeklyRateHoursEntry {
     #[garde(skip)]
     pub id: Principal,
     #[garde(custom(weekly_hours_in_range))]
-    pub weekly_rate_hours_e8s: Nat,
+    pub weekly_rate_hours: E8s,
 }
 
 #[derive(CandidType, Deserialize, Validate)]
