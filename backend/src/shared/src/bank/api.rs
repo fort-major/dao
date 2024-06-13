@@ -1,34 +1,42 @@
-use candid::{CandidType, Principal};
+use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 use icrc_ledger_types::icrc1::transfer::BlockIndex;
-use serde::Deserialize;
 
-use crate::e8s::E8s;
+use crate::{e8s::E8s, Guard};
 
-#[derive(CandidType, Deserialize, Validate, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum SwapFrom {
-    Storypoint,
-    Hour,
-}
-
-#[derive(CandidType, Deserialize, Validate, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum SwapInto {
-    ICP,
-    FMJ,
-}
+use super::{
+    state::BankState,
+    types::{SwapFrom, SwapInto},
+};
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
-pub struct SwapRequest {
-    #[garde(skip)]
-    pub storypoints: E8s,
-    #[garde(skip)]
-    pub hours: E8s,
+pub struct SwapRewardsRequest {
+    #[garde(dive)]
+    pub from: SwapFrom,
     #[garde(dive)]
     pub into: SwapInto,
+    #[garde(skip)]
+    pub qty: E8s,
+}
+
+impl Guard<BankState> for SwapRewardsRequest {
+    fn validate_and_escape(
+        &mut self,
+        state: &BankState,
+        ctx: &crate::GuardContext,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())?;
+
+        if self.qty == E8s::zero() {
+            Err(format!("Empty swap request"))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
-pub struct SwapResponse {
+pub struct SwapRewardsResponse {
     #[garde(skip)]
     pub asset: Principal,
     #[garde(skip)]
@@ -38,17 +46,45 @@ pub struct SwapResponse {
 }
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
-pub struct InitRequest {
+pub struct SetExchangeRateRequest {
+    #[garde(dive)]
+    pub from: SwapFrom,
+    #[garde(dive)]
+    pub into: SwapInto,
     #[garde(skip)]
-    pub rewards_canister_id: Principal,
-    #[garde(skip)]
-    pub fmj_canister_id: Principal,
-    #[garde(skip)]
-    pub icp_canister_id: Principal,
+    pub rate: E8s,
+}
 
-    // rates are expressed as how much <into> one gets for 1.00 <from>
-    #[garde(length(min = 1))]
-    pub exchange_rates: Vec<(SwapFrom, SwapInto, E8s)>,
+impl Guard<BankState> for SetExchangeRateRequest {
+    fn validate_and_escape(
+        &mut self,
+        state: &BankState,
+        ctx: &crate::GuardContext,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())?;
+
+        if ctx.caller_is_voting_canister {
+            Ok(())
+        } else {
+            Err(format!("Access denied"))
+        }
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate, Clone)]
+pub struct SetExchangeRateResponse {}
+
+#[derive(CandidType, Deserialize, Validate, Clone)]
+pub struct GetExchangeRatesRequest {}
+
+impl Guard<BankState> for GetExchangeRatesRequest {
+    fn validate_and_escape(
+        &mut self,
+        state: &BankState,
+        ctx: &crate::GuardContext,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
 }
 
 #[derive(CandidType, Deserialize, Validate, Clone)]

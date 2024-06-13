@@ -1,8 +1,9 @@
 use candid::Principal;
-use ic_cdk::api::call::CallResult;
+use ic_cdk::{api::call::CallResult, call};
 
-use super::api::{
-    AreTeamMembersRequest, AreTeamMembersResponse, MintRewardsRequest, MintRewardsResponse,
+use super::{
+    api::{AreTeamMembersRequest, AreTeamMembersResponse, MintRewardsRequest, MintRewardsResponse},
+    types::{GetInfoRequest, GetInfoResponse, MintRequest, RefundRequest, SpendRequest},
 };
 
 pub struct HumansCanisterClient {
@@ -27,5 +28,31 @@ impl HumansCanisterClient {
     pub async fn mint_rewards(&self, req: MintRewardsRequest) -> CallResult<MintRewardsResponse> {
         // TODO
         Ok(MintRewardsResponse {})
+    }
+}
+
+pub struct RewardsCanisterClient {
+    pub canister_id: Principal,
+}
+
+impl RewardsCanisterClient {
+    pub fn new(canister_id: Principal) -> Self {
+        Self { canister_id }
+    }
+
+    pub async fn mint(&self, req: MintRequest) -> CallResult<()> {
+        call(self.canister_id, "mint", (req,)).await
+    }
+
+    pub async fn spend(&self, req: SpendRequest) -> CallResult<()> {
+        call(self.canister_id, "spend", (req,)).await
+    }
+
+    pub async fn refund(&self, req: RefundRequest) -> CallResult<()> {
+        call(self.canister_id, "refund", (req,)).await
+    }
+
+    pub async fn get_info_of(&self, req: GetInfoRequest) -> CallResult<(GetInfoResponse,)> {
+        call(self.canister_id, "get_info_of", (req,)).await
     }
 }

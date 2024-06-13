@@ -4,7 +4,7 @@ use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, escape_script_tag, Guard, GuardContext};
+use crate::{e8s::E8s, escape_script_tag, team_proof::TeamProof, Guard, GuardContext};
 
 use super::{
     state::TasksState,
@@ -25,6 +25,8 @@ pub struct CreateTaskRequest {
     pub hours_estimate: E8s,
     #[garde(skip)]
     pub storypoints_budget: E8s,
+    #[garde(dive)]
+    pub team_proof: TeamProof,
 }
 
 impl Guard<TasksState> for CreateTaskRequest {
@@ -33,11 +35,8 @@ impl Guard<TasksState> for CreateTaskRequest {
         state: &TasksState,
         ctx: &GuardContext,
     ) -> Result<(), String> {
-        if !ctx.caller_is_team_member {
-            return Err(format!("Only team members can create tasks"));
-        }
-
         self.validate(&()).map_err(|e| e.to_string())?;
+        self.team_proof.assert_valid_for(&ctx.caller)?;
 
         self.title = escape_script_tag(&self.title);
         self.description = escape_script_tag(&self.description);
@@ -157,6 +156,8 @@ pub struct SolveTaskRequest {
     pub id: TaskId,
     #[garde(inner(inner(inner(length(graphemes, max = 512)))))]
     pub filled_in_fields_opt: Option<Vec<Option<String>>>,
+    #[garde(dive)]
+    pub team_proof: Option<TeamProof>,
 }
 
 impl Guard<TasksState> for SolveTaskRequest {
@@ -172,15 +173,16 @@ impl Guard<TasksState> for SolveTaskRequest {
             .get(&self.id)
             .ok_or(format!("Task {} not found", self.id))?;
 
-        match (
-            task.can_solve(),
-            ctx.caller_is_team_member,
-            task.is_team_only(),
-        ) {
-            (true, true, true) => {}
-            (true, _, false) => {}
-            _ => return Err(format!("Access denied")),
-        };
+        if !task.can_solve() {
+            return Err(format!("Access denied"));
+        }
+
+        if task.is_team_only() {
+            self.team_proof
+                .as_ref()
+                .expect("No team proof provided")
+                .assert_valid_for(&ctx.caller)?;
+        }
 
         if let Some(filled_in_fields) = &self.filled_in_fields_opt {
             if task.solution_fields.len() != filled_in_fields.len() {

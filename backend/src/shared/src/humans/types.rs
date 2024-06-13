@@ -1,8 +1,102 @@
-use candid::{CandidType, Nat, Principal};
+use candid::{CandidType, Deserialize, Nat, Principal};
 use garde::Validate;
-use serde::Deserialize;
 
 use crate::{e8s::E8s, TimestampNs};
+
+#[derive(CandidType, Deserialize, Validate, Clone)]
+pub struct Profile {
+    #[garde(skip)]
+    pub id: Principal,
+    #[garde(length(graphemes, min = 3, max = 128))]
+    pub name: Option<String>,
+    #[garde(length(bytes, max = 5120))]
+    pub avatar_src: Option<String>,
+    #[garde(skip)]
+    pub registered_at: TimestampNs,
+}
+
+impl Profile {
+    pub fn escape(&mut self) {
+        if let Some(name) = &self.name {
+            self.name = Some(html_escape::encode_script(name).to_string());
+        }
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetProfilesRequest {
+    #[garde(length(min = 1))]
+    pub ids: Vec<Principal>,
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetProfilesResponse {
+    #[garde(length(min = 1), dive)]
+    pub profiles: Vec<Profile>,
+}
+
+#[derive(Validate, CandidType, Deserialize)]
+pub struct RegisterOrUpdateRequest {
+    #[garde(length(graphemes, min = 3, max = 128))]
+    pub name: Option<String>,
+    #[garde(length(bytes, max = 5120))]
+    pub avatar_src: Option<String>,
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct RewardsInfo {
+    pub hours_balance: E8s,
+    pub total_earned_hours: E8s,
+    pub storypoints_balance: E8s,
+    pub total_earned_storypoints: E8s,
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct InitRequest {
+    pub tasks_canister: Principal,
+    pub bank_canister: Principal,
+    pub sasha: Principal,
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct BalanceEntry {
+    pub id: Principal,
+    pub hours: E8s,
+    pub storypoints: E8s,
+}
+
+#[derive(CandidType, Deserialize, Clone, Validate)]
+pub struct MintRequest {
+    #[garde(length(min = 1))]
+    pub entries: Vec<BalanceEntry>,
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct SpendRequest {
+    pub id: Principal,
+    pub hours: E8s,
+    pub storypoints: E8s,
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct RefundRequest {
+    pub id: Principal,
+    pub hours: E8s,
+    pub storypoints: E8s,
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct GetInfoRequest {
+    pub of: Principal,
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct GetInfoResponse {
+    pub id: Principal,
+    pub hours_total_supply: E8s,
+    pub storypoints_total_supply: E8s,
+    pub info: RewardsInfo,
+}
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
 #[garde(context(WeeklyRateHoursE8sContext))]
@@ -39,12 +133,6 @@ fn weekly_hours_in_range(value: &E8s, context: &WeeklyRateHoursE8sContext) -> ga
             "Weekly hours rate not in range (from 1 to 40)",
         ))
     }
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct InitRequest {
-    #[garde(skip)]
-    pub sasha: Principal,
 }
 
 #[derive(CandidType, Deserialize, Validate)]
