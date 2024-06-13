@@ -99,15 +99,13 @@ impl Task {
         filled_in_fields_opt: Option<Vec<Option<String>>>,
         caller: Principal,
         now: TimestampNs,
-    ) -> Result<(), String> {
+    ) {
         if let Some(filled_in_fields) = filled_in_fields_opt {
             self.solutions
                 .insert(caller, Solution::new(filled_in_fields, now));
         } else {
             self.solutions.remove(&caller);
         }
-
-        Ok(())
     }
 
     pub fn finish_solve(&mut self) {

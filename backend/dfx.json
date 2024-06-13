@@ -25,9 +25,9 @@
       "wasm": "src/fmj/fmj.wasm",
       "type": "custom"
     },
-    "tasks": {
-      "candid": "src/tasks/can.did",
-      "package": "tasks",
+    "dao": {
+      "candid": "src/dao/can.did",
+      "package": "dao",
       "type": "rust"
     }
   },

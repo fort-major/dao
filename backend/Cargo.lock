@@ -15,6 +15,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
+name = "async-trait"
+version = "0.1.80"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6fa2087f2753a7da8cc1c0dbfcf89579dd57458e36769de5ac750b4671737ca"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.66",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -172,6 +183,18 @@ checksum = "1bfb12502f3fc46cca1bb51ac28df9d618d813cdc3d2f25b9fe775a34af26bb3"
 dependencies = [
  "generic-array",
  "typenum",
+]
+
+[[package]]
+name = "dao"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "garde",
+ "ic-cdk",
+ "ic-cdk-timers",
+ "serde",
+ "shared",
 ]
 
 [[package]]
@@ -642,6 +665,7 @@ dependencies = [
 name = "shared"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "candid",
  "garde",
  "html-escape",
@@ -715,19 +739,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "tasks"
-version = "0.1.0"
-dependencies = [
- "candid",
- "garde",
- "html-escape",
- "ic-cdk",
- "ic-cdk-timers",
- "serde",
- "shared",
 ]
 
 [[package]]

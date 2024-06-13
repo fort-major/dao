@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use candid::Principal;
 
-use crate::{Guard, TimestampNs};
+use crate::TimestampNs;
 
 use super::{
     api::{
@@ -11,7 +11,7 @@ use super::{
         FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
         GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
     },
-    tasks::{Task, TaskId},
+    tasks::{RewardEntry, Task, TaskId},
 };
 
 pub struct TasksState {
@@ -29,12 +29,10 @@ impl TasksState {
 
     pub fn create_task(
         &mut self,
-        mut req: CreateTaskRequest,
+        req: CreateTaskRequest,
         caller: Principal,
         now: TimestampNs,
-    ) -> Result<CreateTaskResponse, String> {
-        req.escape(&self)?;
-
+    ) -> CreateTaskResponse {
         let id = self.generate_id();
         let task = Task::new(
             id,
@@ -50,12 +48,10 @@ impl TasksState {
 
         self.tasks.insert(id, task);
 
-        Ok(CreateTaskResponse { id })
+        CreateTaskResponse { id }
     }
 
-    pub fn edit_task(&mut self, mut req: EditTaskRequest) -> Result<EditTaskResponse, String> {
-        req.escape(&self)?;
-
+    pub fn edit_task(&mut self, req: EditTaskRequest) -> EditTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
         task.edit(
             req.new_title_opt,
@@ -66,82 +62,62 @@ impl TasksState {
             req.new_storypoints_budget_opt,
         );
 
-        Ok(EditTaskResponse {})
+        EditTaskResponse {}
     }
 
-    pub fn finish_edit_task(
-        &mut self,
-        mut req: FinishEditTaskRequest,
-    ) -> Result<FinishEditTaskResponse, String> {
-        req.escape(&self)?;
-
+    pub fn finish_edit_task(&mut self, req: FinishEditTaskRequest) -> FinishEditTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
         task.finish_edit(req.final_storypoints_budget);
 
-        Ok(FinishEditTaskResponse {})
+        FinishEditTaskResponse {}
     }
 
     pub fn solve_task(
         &mut self,
-        mut req: SolveTaskRequest,
+        req: SolveTaskRequest,
         caller: Principal,
         now: TimestampNs,
-    ) -> Result<SolveTaskResponse, String> {
-        req.escape(&self)?;
-
+    ) -> SolveTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
-        task.solve(req.filled_in_fields_opt, caller, now)?;
+        task.solve(req.filled_in_fields_opt, caller, now);
 
-        Ok(SolveTaskResponse {})
+        SolveTaskResponse {}
     }
 
-    pub fn finish_solve_task(
-        &mut self,
-        mut req: FinishSolveRequest,
-    ) -> Result<FinishSolveResponse, String> {
-        req.escape(&self)?;
-
+    pub fn finish_solve_task(&mut self, req: FinishSolveRequest) -> FinishSolveResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
         task.finish_solve();
 
-        Ok(FinishSolveResponse {})
+        FinishSolveResponse {}
     }
 
-    pub fn evaluate_task(&mut self, mut req: EvaluateRequest) -> Result<EvaluateResponse, String> {
-        req.escape(&self)?;
-
+    pub fn evaluate_task(&mut self, req: EvaluateRequest) -> (EvaluateResponse, Vec<RewardEntry>) {
         let task = self.tasks.get_mut(&req.id).unwrap();
-        task.evaluate(req.evaluation_per_solution);
+        let rewards = task.evaluate(req.evaluation_per_solution);
 
-        Ok(EvaluateResponse {})
+        (EvaluateResponse {}, rewards)
     }
 
-    pub fn get_tasks(&self, mut req: GetTasksRequest) -> Result<GetTasksResponse, String> {
-        req.escape(&self)?;
+    pub fn delete_task(&mut self, req: DeleteRequest) -> DeleteResponse {
+        self.tasks.remove(&req.id);
 
+        DeleteResponse {}
+    }
+
+    pub fn get_task_ids(&self, _: GetTaskIdsRequest) -> GetTaskIdsResponse {
+        let ids = self.tasks.keys().copied().collect();
+
+        GetTaskIdsResponse { ids }
+    }
+
+    pub fn get_tasks(&self, req: GetTasksRequest) -> GetTasksResponse {
         let tasks = req
             .ids
             .iter()
             .map(|id| self.tasks.get(id).cloned())
             .collect();
 
-        Ok(GetTasksResponse { tasks })
-    }
-
-    pub fn get_task_ids(&self, mut req: GetTaskIdsRequest) -> Result<GetTaskIdsResponse, String> {
-        req.escape(&self)?;
-
-        let ids = self.tasks.keys().copied().collect();
-
-        Ok(GetTaskIdsResponse { ids })
-    }
-
-    pub fn delete_task(&mut self, mut req: DeleteRequest) -> Result<DeleteResponse, String> {
-        req.escape(&self)?;
-
-        self.tasks.remove(&req.id);
-
-        Ok(DeleteResponse {})
+        GetTasksResponse { tasks }
     }
 
     fn generate_id(&mut self) -> TaskId {

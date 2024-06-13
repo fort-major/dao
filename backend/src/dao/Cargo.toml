@@ -1,5 +1,5 @@
 [package]
-name = "tasks"
+name = "dao"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,4 +15,3 @@ ic-cdk = { workspace = true }
 ic-cdk-timers = { workspace = true }
 serde = { workspace = true }
 garde = { workspace = true }
-html-escape = { workspace = true }

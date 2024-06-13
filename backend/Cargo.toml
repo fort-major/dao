@@ -5,7 +5,7 @@ members = [
     "src/team",
     "src/rewards",
     "src/bank",
-    "src/tasks",
+    "src/dao",
 ]
 resolver = "2"
 
@@ -18,3 +18,4 @@ icrc-ledger-types = "0.1.5"
 garde = { version = "0.18", features = ["derive", "url", "unicode"] }
 html-escape = "0.2"
 url = "2.5"
+async-trait = "0.1"

@@ -1,3 +1,6 @@
+pub mod api;
+pub mod client;
+
 use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 

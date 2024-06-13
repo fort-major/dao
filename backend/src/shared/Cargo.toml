@@ -14,3 +14,4 @@ garde = { workspace = true }
 icrc-ledger-types = { workspace = true }
 html-escape = { workspace = true }
 url = { workspace = true }
+async-trait = { workspace = true }

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use candid::{CandidType, Principal};
 use garde::Validate;
@@ -28,15 +28,17 @@ pub struct CreateTaskRequest {
 }
 
 impl Guard<TasksState> for CreateTaskRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         if !ctx.caller_is_team_member {
             return Err(format!("Only team members can create tasks"));
         }
 
-        self.validate(&()).map_err(|e| e.to_string())
-    }
+        self.validate(&()).map_err(|e| e.to_string())?;
 
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
         self.title = escape_script_tag(&self.title);
         self.description = escape_script_tag(&self.description);
 
@@ -74,24 +76,28 @@ pub struct EditTaskRequest {
 }
 
 impl Guard<TasksState> for EditTaskRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if let Some(task) = state.tasks.get(&self.id) {
-            if ctx.caller_is_voting_canister {
-                return Ok(());
-            }
+        let task = state
+            .tasks
+            .get(&self.id)
+            .ok_or(format!("Task {} not found", self.id))?;
 
-            match (task.is_creator(&ctx.caller), task.can_edit()) {
-                (true, true) => Ok(()),
-                _ => Err(format!("Access denied")),
-            }
-        } else {
-            Err(format!("Task {} not found", self.id))
-        }
-    }
+        match (
+            ctx.caller_is_voting_canister,
+            task.can_edit(),
+            task.is_creator(&ctx.caller),
+        ) {
+            (true, _, _) => {}
+            (false, true, true) => {}
+            _ => return Err(format!("Access denied")),
+        };
 
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
         if let Some(new_title) = &mut self.new_title_opt {
             *new_title = escape_script_tag(&new_title);
         }
@@ -123,21 +129,22 @@ pub struct FinishEditTaskRequest {
 }
 
 impl Guard<TasksState> for FinishEditTaskRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if let Some(task) = state.tasks.get(&self.id) {
-            match (task.can_edit(), ctx.caller_is_voting_canister) {
-                (true, true) => Ok(()),
-                _ => Err(format!("Access denied")),
-            }
-        } else {
-            Err(format!("Task {} not found", self.id))
-        }
-    }
+        let task = state
+            .tasks
+            .get(&self.id)
+            .ok_or(format!("Task {} not found", self.id))?;
 
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
-        Ok(())
+        match (task.can_edit(), ctx.caller_is_voting_canister) {
+            (true, true) => Ok(()),
+            _ => Err(format!("Access denied")),
+        }
     }
 }
 
@@ -153,39 +160,42 @@ pub struct SolveTaskRequest {
 }
 
 impl Guard<TasksState> for SolveTaskRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if let Some(task) = state.tasks.get(&self.id) {
-            if let Some(filled_in_fields) = &self.filled_in_fields_opt {
-                if task.solution_fields.len() != filled_in_fields.len() {
-                    return Err(format!(
-                        "Invalid number of fields, expected {}, received {}",
-                        task.solution_fields.len(),
-                        filled_in_fields.len()
-                    ));
-                }
+        let task = state
+            .tasks
+            .get(&self.id)
+            .ok_or(format!("Task {} not found", self.id))?;
 
-                for (idx, provided_field) in filled_in_fields.iter().enumerate() {
-                    task.solution_fields[idx].validate_field(provided_field)?;
-                }
+        match (
+            task.can_solve(),
+            ctx.caller_is_team_member,
+            task.is_team_only(),
+        ) {
+            (true, true, true) => {}
+            (true, _, false) => {}
+            _ => return Err(format!("Access denied")),
+        };
+
+        if let Some(filled_in_fields) = &self.filled_in_fields_opt {
+            if task.solution_fields.len() != filled_in_fields.len() {
+                return Err(format!(
+                    "Invalid number of fields, expected {}, received {}",
+                    task.solution_fields.len(),
+                    filled_in_fields.len()
+                ));
             }
 
-            match (
-                task.can_solve(),
-                ctx.caller_is_team_member,
-                task.is_team_only(),
-            ) {
-                (true, true, true) => Ok(()),
-                (true, _, false) => Ok(()),
-                _ => Err(format!("Access denied")),
+            for (idx, provided_field) in filled_in_fields.iter().enumerate() {
+                task.solution_fields[idx].validate_field(provided_field)?;
             }
-        } else {
-            Err(format!("Task {} not found", self.id))
         }
-    }
 
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
         if let Some(filled_in_fields) = &mut self.filled_in_fields_opt {
             for field_opt in filled_in_fields.iter_mut() {
                 if let Some(field) = field_opt {
@@ -208,22 +218,23 @@ pub struct FinishSolveRequest {
 }
 
 impl Guard<TasksState> for FinishSolveRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if let Some(task) = state.tasks.get(&self.id) {
-            if task.can_solve() && ctx.caller_is_voting_canister {
-                Ok(())
-            } else {
-                Err(format!("Access denied"))
-            }
-        } else {
-            Err(format!("Task {} not found", self.id))
-        }
-    }
+        let task = state
+            .tasks
+            .get(&self.id)
+            .ok_or(format!("Task {} not found", self.id))?;
 
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
-        Ok(())
+        if task.can_solve() && ctx.caller_is_voting_canister {
+            Ok(())
+        } else {
+            Err(format!("Access denied"))
+        }
     }
 }
 
@@ -239,42 +250,43 @@ pub struct EvaluateRequest {
 }
 
 impl Guard<TasksState> for EvaluateRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if let Some(task) = state.tasks.get(&self.id) {
-            if !(task.can_evaluate() && ctx.caller_is_voting_canister) {
-                return Err(format!("Access denied"));
-            }
+        let task = state
+            .tasks
+            .get(&self.id)
+            .ok_or(format!("Task {} not found", self.id))?;
 
-            let evaluated_solutions: BTreeMap<Principal, E8s> =
-                self.evaluation_per_solution.iter().cloned().collect();
+        if !(task.can_evaluate() && ctx.caller_is_voting_canister) {
+            return Err(format!("Access denied"));
+        }
 
-            let one = E8s::one();
+        let evaluated_solutions: BTreeMap<Principal, E8s> =
+            self.evaluation_per_solution.iter().cloned().collect();
 
-            for existing_solver in task.solutions.keys() {
-                if let Some(evaluation) = evaluated_solutions.get(existing_solver) {
-                    if evaluation > &one {
-                        return Err(format!(
-                            "Non-normalized solution found {} {}",
-                            existing_solver, evaluation
-                        ));
-                    }
-                } else {
+        let one = E8s::one();
+
+        for existing_solver in task.solutions.keys() {
+            if let Some(evaluation) = evaluated_solutions.get(existing_solver) {
+                if evaluation > &one {
                     return Err(format!(
-                        "Not all solutions were evaluated! Missing {}",
-                        existing_solver
+                        "Non-normalized solution found {} {}",
+                        existing_solver, evaluation
                     ));
                 }
+            } else {
+                return Err(format!(
+                    "Not all solutions were evaluated! Missing {}",
+                    existing_solver
+                ));
             }
-
-            Ok(())
-        } else {
-            Err(format!("Task {} not found", self.id))
         }
-    }
 
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
         Ok(())
     }
 }
@@ -289,12 +301,12 @@ pub struct GetTasksRequest {
 }
 
 impl Guard<TasksState> for GetTasksRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
-    }
-
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
-        Ok(())
     }
 }
 
@@ -308,12 +320,12 @@ pub struct GetTasksResponse {
 pub struct GetTaskIdsRequest {}
 
 impl Guard<TasksState> for GetTaskIdsRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
-    }
-
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
-        Ok(())
     }
 }
 
@@ -330,26 +342,27 @@ pub struct DeleteRequest {
 }
 
 impl Guard<TasksState> for DeleteRequest {
-    fn assert_valid_for(&self, state: &TasksState, ctx: &GuardContext) -> Result<(), String> {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if let Some(task) = state.tasks.get(&self.id) {
-            if task.creator == ctx.caller && task.can_edit() {
-                return Ok(());
-            }
+        let task = state
+            .tasks
+            .get(&self.id)
+            .ok_or(format!("Task {} not found", self.id))?;
 
-            if task.can_delete() && ctx.caller_is_voting_canister {
-                return Ok(());
-            }
-
-            Err(format!("Access denied"))
-        } else {
-            Err(format!("Task {} not found", self.id))
+        if task.creator == ctx.caller && task.can_edit() {
+            return Ok(());
         }
-    }
 
-    fn escape(&mut self, state: &TasksState) -> Result<(), String> {
-        todo!()
+        if task.can_delete() && ctx.caller_is_voting_canister {
+            return Ok(());
+        }
+
+        Err(format!("Access denied"))
     }
 }
 
