@@ -19,6 +19,8 @@ pub trait Guard<T> {
 pub struct GuardContext {
     pub caller: Principal,
     pub caller_is_voting_canister: bool,
+    pub caller_is_task_canister: bool,
+    pub caller_is_bank_canister: bool,
     pub now: TimestampNs,
 }
 
@@ -28,6 +30,8 @@ impl GuardContext {
             caller,
             now,
             caller_is_voting_canister: caller == canister_ids.votings_canister_id,
+            caller_is_task_canister: caller == canister_ids.tasks_canister_id,
+            caller_is_bank_canister: caller == canister_ids.bank_canister_id,
         }
     }
 }

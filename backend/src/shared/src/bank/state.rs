@@ -5,7 +5,7 @@ use icrc_ledger_types::icrc1::{account::Account, transfer::TransferArg};
 use serde::Deserialize;
 
 use crate::{
-    btreemap, e8s::E8s, humans::types::SpendRequest, icrc1::ICRC1CanisterClient, TimestampNs,
+    btreemap, e8s::E8s, humans::api::SpendRewardsRequest, icrc1::ICRC1CanisterClient, TimestampNs,
 };
 
 use super::{
@@ -47,14 +47,14 @@ impl BankState {
         req: &SwapRewardsRequest,
         caller: Principal,
         now: TimestampNs,
-    ) -> (SpendRequest, ICRC1CanisterClient, TransferArg) {
+    ) -> (SpendRewardsRequest, ICRC1CanisterClient, TransferArg) {
         let (hours, storypoints) = match &req.from {
             SwapFrom::Hour => (req.qty.clone(), E8s::zero()),
             SwapFrom::Storypoint => (E8s::zero(), req.qty.clone()),
         };
 
-        let spend_request = SpendRequest {
-            id: caller,
+        let spend_request = SpendRewardsRequest {
+            spender: caller,
             hours,
             storypoints,
         };

@@ -1,5 +1,6 @@
 mod bank;
-mod interaction;
+mod canister_ids;
+mod humans;
 mod tasks;
 
 #[ic_cdk::query]

@@ -1,7 +1,8 @@
 use std::cell::RefCell;
 
-use ic_cdk::{api::time, caller, query, spawn, update};
+use ic_cdk::{api::time, caller, query, spawn, trap, update};
 use shared::{
+    humans::{api::MintRewardsRequest, client::HumansCanisterClient},
     tasks::{
         api::{
             CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
@@ -15,7 +16,7 @@ use shared::{
     Guard,
 };
 
-use crate::interaction::{create_guard_context, mint_rewards};
+use crate::canister_ids::{create_guard_context, get_canister_ids};
 
 thread_local! {
     static TASKS_STATE: RefCell<Option<TasksState>> = RefCell::default();
@@ -31,8 +32,8 @@ pub fn install_tasks_state(new_state: Option<TasksState>) -> Option<TasksState> 
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
-    let ctx = create_guard_context().await;
+fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
+    let ctx = create_guard_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -44,8 +45,8 @@ async fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
-    let ctx = create_guard_context().await;
+fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
+    let ctx = create_guard_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -57,8 +58,8 @@ async fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResponse {
-    let ctx = create_guard_context().await;
+fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResponse {
+    let ctx = create_guard_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -70,8 +71,8 @@ async fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTa
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
-    let ctx = create_guard_context().await;
+fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
+    let ctx = create_guard_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -83,8 +84,8 @@ async fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse {
-    let ctx = create_guard_context().await;
+fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse {
+    let ctx = create_guard_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -97,7 +98,7 @@ async fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveRes
 #[update]
 #[allow(non_snake_case)]
 async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
-    let ctx = create_guard_context().await;
+    let ctx = create_guard_context();
 
     let (result, rewards) = with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -106,15 +107,24 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
         s.evaluate_task(req)
     });
 
-    spawn(mint_rewards(rewards));
+    let humans_canister = HumansCanisterClient::new(get_canister_ids().humans_canister_id);
+    let mint_rewards_req = MintRewardsRequest { rewards };
+
+    // TODO: add rescheduling
+    if let Err((code, msg)) = humans_canister.humans__mint_rewards(mint_rewards_req).await {
+        trap(&format!(
+            "FATAL!!! Unable to mint rewards: [{:?}] {}",
+            code, msg
+        ));
+    }
 
     result
 }
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
-    let ctx = create_guard_context().await;
+fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
+    let ctx = create_guard_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -126,8 +136,8 @@ async fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
 
 #[query]
 #[allow(non_snake_case)]
-async fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
-    let ctx = create_guard_context().await;
+fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
+    let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
@@ -139,8 +149,8 @@ async fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
 
 #[query]
 #[allow(non_snake_case)]
-async fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
-    let ctx = create_guard_context().await;
+fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
+    let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)

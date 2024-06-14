@@ -246,10 +246,13 @@ pub enum TaskStage {
     Archive,
 }
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Deserialize, Clone, Validate)]
 pub struct RewardEntry {
+    #[garde(skip)]
     pub solver: Principal,
+    #[garde(skip)]
     pub reward_hours: E8s,
+    #[garde(skip)]
     pub reward_storypoints: E8s,
 }
 

@@ -1,199 +1,120 @@
-use candid::{CandidType, Deserialize, Nat, Principal};
+use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 
 use crate::{e8s::E8s, TimestampNs};
 
-#[derive(CandidType, Deserialize, Validate, Clone)]
+#[derive(CandidType, Deserialize, Clone)]
 pub struct Profile {
-    #[garde(skip)]
     pub id: Principal,
-    #[garde(length(graphemes, min = 3, max = 128))]
     pub name: Option<String>,
-    #[garde(length(bytes, max = 5120))]
     pub avatar_src: Option<String>,
-    #[garde(skip)]
     pub registered_at: TimestampNs,
+    pub hours_balance: E8s,
+    pub storypoints_balance: E8s,
+    pub earned_hours: E8s,
+    pub earned_storypoints: E8s,
+    pub employment: Option<Employment>,
 }
 
 impl Profile {
-    pub fn escape(&mut self) {
-        if let Some(name) = &self.name {
-            self.name = Some(html_escape::encode_script(name).to_string());
-        }
-    }
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct GetProfilesRequest {
-    #[garde(length(min = 1))]
-    pub ids: Vec<Principal>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct GetProfilesResponse {
-    #[garde(length(min = 1), dive)]
-    pub profiles: Vec<Profile>,
-}
-
-#[derive(Validate, CandidType, Deserialize)]
-pub struct RegisterOrUpdateRequest {
-    #[garde(length(graphemes, min = 3, max = 128))]
-    pub name: Option<String>,
-    #[garde(length(bytes, max = 5120))]
-    pub avatar_src: Option<String>,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct RewardsInfo {
-    pub hours_balance: E8s,
-    pub total_earned_hours: E8s,
-    pub storypoints_balance: E8s,
-    pub total_earned_storypoints: E8s,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct InitRequest {
-    pub tasks_canister: Principal,
-    pub bank_canister: Principal,
-    pub sasha: Principal,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct BalanceEntry {
-    pub id: Principal,
-    pub hours: E8s,
-    pub storypoints: E8s,
-}
-
-#[derive(CandidType, Deserialize, Clone, Validate)]
-pub struct MintRequest {
-    #[garde(length(min = 1))]
-    pub entries: Vec<BalanceEntry>,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct SpendRequest {
-    pub id: Principal,
-    pub hours: E8s,
-    pub storypoints: E8s,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct RefundRequest {
-    pub id: Principal,
-    pub hours: E8s,
-    pub storypoints: E8s,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct GetInfoRequest {
-    pub of: Principal,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct GetInfoResponse {
-    pub id: Principal,
-    pub hours_total_supply: E8s,
-    pub storypoints_total_supply: E8s,
-    pub info: RewardsInfo,
-}
-
-#[derive(CandidType, Deserialize, Validate, Clone)]
-#[garde(context(WeeklyRateHoursE8sContext))]
-pub struct TeamMemberInfo {
-    #[garde(skip)]
-    pub id: Principal,
-    #[garde(custom(weekly_hours_in_range))]
-    pub weekly_rate_hours: E8s,
-    #[garde(skip)]
-    pub active: bool,
-    #[garde(skip)]
-    pub employed_at: TimestampNs,
-}
-
-pub struct WeeklyRateHoursE8sContext {
-    min: E8s,
-    max: E8s,
-}
-
-impl Default for WeeklyRateHoursE8sContext {
-    fn default() -> Self {
+    pub fn new(
+        id: Principal,
+        name: Option<String>,
+        avatar_src: Option<String>,
+        now: TimestampNs,
+    ) -> Self {
         Self {
-            min: E8s::one(),
-            max: E8s(Nat::from(40u32)),
+            id,
+            name,
+            avatar_src,
+            registered_at: now,
+            hours_balance: E8s::zero(),
+            storypoints_balance: E8s::zero(),
+            earned_hours: E8s::zero(),
+            earned_storypoints: E8s::zero(),
+            employment: None,
+        }
+    }
+
+    pub fn edit_profile(
+        &mut self,
+        new_name_opt: Option<Option<String>>,
+        new_avatar_src_opt: Option<Option<String>>,
+    ) {
+        if let Some(new_name) = new_name_opt {
+            self.name = new_name;
+        }
+
+        if let Some(new_avatar_src) = new_avatar_src_opt {
+            self.avatar_src = new_avatar_src;
+        }
+    }
+
+    pub fn mint_rewards(&mut self, hours: E8s, storypoints: E8s) {
+        self.hours_balance += &hours;
+        self.earned_hours += &hours;
+
+        self.storypoints_balance += &storypoints;
+        self.earned_storypoints += &storypoints;
+
+        if let Some(employment) = &mut self.employment {
+            employment.hours_earned_during_employment += &hours;
+        }
+    }
+
+    pub fn spend_rewards(&mut self, hours: E8s, storypoints: E8s) {
+        self.hours_balance -= hours;
+        self.storypoints_balance -= storypoints;
+    }
+
+    pub fn refund_rewards(&mut self, hours: E8s, storypoints: E8s) {
+        self.hours_balance += hours;
+        self.storypoints_balance += storypoints;
+    }
+
+    pub fn employ(&mut self, hours_a_week_commitment: E8s, now: TimestampNs) {
+        self.employment = Some(Employment::new(hours_a_week_commitment, now));
+    }
+
+    pub fn unemploy(&mut self) {
+        self.employment = None;
+    }
+
+    pub fn is_employed(&self) -> bool {
+        self.employment.is_some()
+    }
+
+    // use simplest formula for now
+    pub fn get_reputation(&self) -> E8s {
+        &self.earned_hours + &self.earned_storypoints
+    }
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct Employment {
+    pub employed_at: TimestampNs,
+    pub hours_a_week_commitment: E8s,
+    pub hours_earned_during_employment: E8s,
+}
+
+impl Employment {
+    pub fn new(hours_a_week_commitment: E8s, now: TimestampNs) -> Self {
+        Self {
+            employed_at: now,
+            hours_a_week_commitment,
+            hours_earned_during_employment: E8s::zero(),
         }
     }
 }
 
-fn weekly_hours_in_range(value: &E8s, context: &WeeklyRateHoursE8sContext) -> garde::Result {
-    if value.ge(&context.min) && value.le(&context.max) {
-        Ok(())
-    } else {
-        Err(garde::Error::new(
-            "Weekly hours rate not in range (from 1 to 40)",
-        ))
-    }
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-#[garde(context(WeeklyRateHoursE8sContext))]
-pub struct Candidate {
+#[derive(CandidType, Deserialize, Clone, Debug, Validate)]
+pub struct ProfileProof {
     #[garde(skip)]
     pub id: Principal,
-    #[garde(custom(weekly_hours_in_range))]
-    pub weekly_rate_hours: E8s,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-#[garde(context(WeeklyRateHoursE8sContext))]
-pub struct EmployRequest {
-    #[garde(length(min = 1), dive)]
-    pub candidates: Vec<Candidate>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct UnemployRequest {
-    #[garde(length(min = 1))]
-    pub team_members: Vec<Principal>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct ModifyControllersRequest {
-    #[garde(length(min = 1))]
-    pub controllers: Vec<Principal>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-#[garde(context(WeeklyRateHoursE8sContext))]
-pub struct WeeklyRateHoursEntry {
     #[garde(skip)]
-    pub id: Principal,
-    #[garde(custom(weekly_hours_in_range))]
-    pub weekly_rate_hours: E8s,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-#[garde(context(WeeklyRateHoursE8sContext))]
-pub struct UpdateWeeklyHourRateRequest {
-    #[garde(length(min = 1), dive)]
-    pub entries: Vec<WeeklyRateHoursEntry>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct GetTeamMemberIdsResponse {
-    #[garde(length(min = 1))]
-    pub ids: Vec<Principal>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct GetTeamMembersRequest {
-    #[garde(length(min = 1))]
-    pub ids: Vec<Principal>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-#[garde(context(WeeklyRateHoursE8sContext))]
-pub struct GetTeamMembersResponse {
-    #[garde(length(min = 1), dive)]
-    pub team_members: Vec<TeamMemberInfo>,
+    pub is_team_member: bool,
+    #[garde(skip)]
+    pub reputation: E8s,
+    #[garde(skip)]
+    pub reputation_total_supply: E8s,
 }
