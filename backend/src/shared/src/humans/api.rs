@@ -2,7 +2,7 @@ use candid::{CandidType, Nat, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, escape_script_tag, tasks::tasks::RewardEntry, Guard};
+use crate::{e8s::E8s, escape_script_tag, tasks::types::RewardEntry, Guard};
 
 use super::{
     state::HumansState,

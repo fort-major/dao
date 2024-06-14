@@ -147,6 +147,19 @@ fn humans__get_profile_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsRespon
     })
 }
 
+#[query]
+#[allow(non_snake_case)]
+fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
+    let ctx = create_guard_context();
+
+    with_state(|s| {
+        req.validate_and_escape(s, &ctx)
+            .expect("Unable to get team member ids");
+
+        s.get_team_member_ids(req)
+    })
+}
+
 #[update]
 #[allow(non_snake_case)]
 fn humans__get_profile_proofs(mut req: GetProfileProofsRequest) -> GetProfileProofsResponse {

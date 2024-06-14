@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use candid::{CandidType, Deserialize, Nat, Principal};
 
@@ -19,6 +19,7 @@ use super::{
 #[derive(CandidType, Deserialize)]
 pub struct HumansState {
     pub profiles: BTreeMap<Principal, Profile>,
+    pub team_members: BTreeSet<Principal>,
     pub total_hours_minted: E8s,
     pub total_storypoints_minted: E8s,
 }
@@ -32,6 +33,7 @@ impl HumansState {
 
         Self {
             profiles: btreemap! { sasha => sasha_profile },
+            team_members: vec![sasha].into_iter().collect(),
             total_hours_minted: E8s::one(),
             total_storypoints_minted: E8s::one(),
         }
@@ -101,6 +103,7 @@ impl HumansState {
     pub fn employ(&mut self, req: EmployRequest, now: TimestampNs) -> EmployResponse {
         let profile = self.profiles.get_mut(&req.candidate).unwrap();
 
+        self.team_members.insert(req.candidate);
         profile.employ(req.hours_a_week_commitment, now);
 
         EmployResponse {}
@@ -109,6 +112,7 @@ impl HumansState {
     pub fn unemploy(&mut self, req: UnemployRequest) -> UnemployResponse {
         let profile = self.profiles.get_mut(&req.team_member).unwrap();
 
+        self.team_members.remove(&req.team_member);
         profile.unemploy();
 
         UnemployResponse {}
@@ -126,6 +130,12 @@ impl HumansState {
 
     pub fn get_profile_ids(&self, req: GetProfileIdsRequest) -> GetProfileIdsResponse {
         let ids = self.profiles.keys().cloned().collect();
+
+        GetProfileIdsResponse { ids }
+    }
+
+    pub fn get_team_member_ids(&self, req: GetProfileIdsRequest) -> GetProfileIdsResponse {
+        let ids = self.team_members.iter().cloned().collect();
 
         GetProfileIdsResponse { ids }
     }

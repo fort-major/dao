@@ -100,6 +100,16 @@ impl HumansCanisterClient {
     }
 
     #[allow(non_snake_case)]
+    pub async fn humans__get_team_member_ids(
+        &self,
+        req: GetProfileIdsRequest,
+    ) -> CallResult<GetProfileIdsResponse> {
+        call(self.canister_id, "humans__get_team_member_ids", (req,))
+            .await
+            .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
     pub async fn humans__get_profile_proofs(
         &self,
         req: GetProfileProofsRequest,

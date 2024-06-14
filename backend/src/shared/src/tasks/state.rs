@@ -11,7 +11,7 @@ use super::{
         FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
         GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
     },
-    tasks::{RewardEntry, Task, TaskId},
+    types::{RewardEntry, Task, TaskId},
 };
 
 pub struct TasksState {

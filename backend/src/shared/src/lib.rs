@@ -6,11 +6,12 @@ pub mod bank;
 pub mod e8s;
 pub mod humans;
 pub mod icrc1;
+pub mod proof;
 pub mod tasks;
-pub mod team_proof;
 pub mod votings;
 
 pub type TimestampNs = u64;
+pub type DurationNs = u64;
 
 pub trait Guard<T> {
     fn validate_and_escape(&mut self, state: &T, ctx: &GuardContext) -> Result<(), String>;

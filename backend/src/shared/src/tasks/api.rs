@@ -4,11 +4,11 @@ use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, escape_script_tag, team_proof::TeamProof, Guard, GuardContext};
+use crate::{e8s::E8s, escape_script_tag, proof::Proof, Guard, GuardContext};
 
 use super::{
     state::TasksState,
-    tasks::{SolutionField, SolverConstraint, Task, TaskId},
+    types::{SolutionField, SolverConstraint, Task, TaskId},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -26,7 +26,7 @@ pub struct CreateTaskRequest {
     #[garde(skip)]
     pub storypoints_budget: E8s,
     #[garde(dive)]
-    pub team_proof: TeamProof,
+    pub team_proof: Proof,
 }
 
 impl Guard<TasksState> for CreateTaskRequest {
@@ -157,7 +157,7 @@ pub struct SolveTaskRequest {
     #[garde(inner(inner(inner(length(graphemes, max = 512)))))]
     pub filled_in_fields_opt: Option<Vec<Option<String>>>,
     #[garde(dive)]
-    pub team_proof: Option<TeamProof>,
+    pub team_proof: Option<Proof>,
 }
 
 impl Guard<TasksState> for SolveTaskRequest {
