@@ -1,9 +1,9 @@
-use async_trait::async_trait;
 use candid::CandidType;
 use garde::Validate;
 use serde::Deserialize;
 
 use crate::{
+    e8s::E8s,
     proof::Proof,
     tasks::{api::GetTasksRequest, client::TasksCanisterClient},
     Guard,
@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
     state::VotingsState,
-    types::{VotingId, VotingKind},
+    types::{Vote, VotingExt, VotingId, VotingKind},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -22,9 +22,8 @@ pub struct StartVotingRequest {
     pub proof: Proof,
 }
 
-#[async_trait]
 impl Guard<VotingsState> for StartVotingRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &VotingsState,
         ctx: &crate::GuardContext,
@@ -36,50 +35,15 @@ impl Guard<VotingsState> for StartVotingRequest {
             return Err(format!("Only team members can start votings"));
         }
 
-        let id = self.kind.to_id();
+        let id = self.kind.get_id();
 
         if let Some(voting) = state.votings.get(&id) {
             return Err(format!("The voting is already in progress"));
         }
 
-        match &mut self.kind {
-            VotingKind::FinishEditTask { task_id } => {
-                let tasks_canister = TasksCanisterClient::new(ctx.canister_ids.tasks_canister_id);
-                let task = tasks_canister
-                    .tasks__get_tasks(GetTasksRequest {
-                        ids: vec![*task_id],
-                    })
-                    .await
-                    .map_err(|(c, m)| format!("Can't call tasks canister [{:?}]: {}", c, m))?
-                    .tasks[0]
-                    .ok_or(format!("Task not found"))?;
+        // TODO: validate the entity the voting trying to modify
 
-                if !task.can_edit() {
-                    return Err(format!("The task is in invalid state"));
-                }
-
-                Ok(())
-            }
-            VotingKind::EvaluateTask { task_id, solutions } => {
-                let tasks_canister = TasksCanisterClient::new(ctx.canister_ids.tasks_canister_id);
-                let task = tasks_canister
-                    .tasks__get_tasks(GetTasksRequest {
-                        ids: vec![*task_id],
-                    })
-                    .await
-                    .map_err(|(c, m)| format!("Can't call tasks canister [{:?}]: {}", c, m))?
-                    .tasks[0]
-                    .ok_or(format!("Task not found"))?;
-
-                if !task.can_evaluate() {
-                    return Err(format!("The task is in invalid state"));
-                }
-
-                *solutions = task.solutions.keys().copied().collect();
-
-                Ok(())
-            }
-        }
+        Ok(())
     }
 }
 
@@ -87,4 +51,73 @@ impl Guard<VotingsState> for StartVotingRequest {
 pub struct StartVotingResponse {
     #[garde(skip)]
     pub id: VotingId,
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct CastVoteRequest {
+    #[garde(skip)]
+    pub id: VotingId,
+    #[garde(skip)]
+    pub proof: Proof,
+    #[garde(skip)]
+    pub option_idx: u32,
+    #[garde(skip)]
+    pub approval_level: Option<E8s>,
+}
+
+impl Guard<VotingsState> for CastVoteRequest {
+    fn validate_and_escape(
+        &mut self,
+        state: &VotingsState,
+        ctx: &crate::GuardContext,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())?;
+        self.proof.assert_valid_for(&ctx.caller)?;
+
+        if let Some(approval) = &self.approval_level {
+            if approval > &self.proof.profile_proof.reputation {
+                return Err(format!("Not enough reputation to cast that vote"));
+            }
+        }
+
+        let voting = state
+            .votings
+            .get(&self.id)
+            .ok_or(format!("The voting does not exist"))?;
+
+        if !voting.can_cast_vote() {
+            return Err(format!("The voting is in invalid state"));
+        }
+
+        if self.option_idx as usize >= voting.base.votes_per_option.len() {
+            return Err(format!("Option {} does not exist", self.option_idx));
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct CastVoteResponse {}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetVotingsRequest {
+    #[garde(length(min = 1))]
+    pub ids: Vec<VotingId>,
+}
+
+impl Guard<VotingsState> for GetVotingsRequest {
+    fn validate_and_escape(
+        &mut self,
+        state: &VotingsState,
+        ctx: &crate::GuardContext,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetVotingsResponse {
+    #[garde(skip)]
+    pub votings: Vec<Option<VotingExt>>,
 }

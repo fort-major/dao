@@ -86,7 +86,7 @@ impl Voting {
             ),
         };
 
-        let id = kind.to_id();
+        let id = kind.get_id();
 
         let base = VotingBase::new(
             duration_ns,
@@ -109,10 +109,16 @@ impl Voting {
     pub fn cast_vote(
         &mut self,
         option_idx: u32,
-        vote: Vote,
+        approval_level: Option<E8s>,
+        voter_reputation: E8s,
         canister_ids: &CanisterIds,
         caller: Principal,
     ) -> Option<CallToExecute> {
+        let vote = Vote {
+            approval_level,
+            total_voter_reputation: voter_reputation,
+        };
+
         self.base.votes_per_option[option_idx as usize].insert(caller, vote);
 
         if !self.base.is_finish_early_reached_for_all_options() {
@@ -149,6 +155,32 @@ impl Voting {
             self.stage = VotingStage::Fail(format!("Consensus not reached"));
 
             None
+        }
+    }
+
+    pub fn as_ext(&self) -> VotingExt {
+        let total_votes_per_option = self
+            .base
+            .votes_per_option
+            .iter()
+            .map(|votes| {
+                votes
+                    .values()
+                    .fold(E8s::zero(), |acc, vote| acc + &vote.total_voter_reputation)
+            })
+            .collect();
+
+        VotingExt {
+            id: self.id,
+            creator: self.base.creator,
+            created_at: self.base.created_at,
+            duration_ns: self.base.duration_ns,
+            quorum: self.base.quorum.clone(),
+            consensus: self.base.consensus.clone(),
+            finish_early: self.base.finish_early.clone(),
+            total_votes_per_option,
+            kind: self.kind.clone(),
+            stage: self.stage.clone(),
         }
     }
 
@@ -207,18 +239,21 @@ pub enum VotingKind {
 }
 
 impl VotingKind {
-    pub fn to_id(&self) -> VotingId {
+    pub fn get_id(&self) -> VotingId {
         match self {
             VotingKind::FinishEditTask { task_id } => VotingId::FinishEditTask(*task_id),
-            VotingKind::EvaluateTask { task_id, solutions } => VotingId::EvaluateTask(*task_id),
+            VotingKind::EvaluateTask {
+                task_id,
+                solutions: _,
+            } => VotingId::EvaluateTask(*task_id),
             VotingKind::BankSetExchangeRate {
                 from,
                 into,
-                new_rate,
+                new_rate: _,
             } => VotingId::BankSetExchangeRate((*from, *into)),
             VotingKind::HumansEmploy {
                 candidate,
-                hours_a_week_commitment,
+                hours_a_week_commitment: _,
             } => VotingId::HumansEmploy(*candidate),
             VotingKind::HumansUnemploy { team_member } => VotingId::HumansUnemploy(*team_member),
         }
@@ -456,7 +491,6 @@ pub struct Vote {
     // None means "Reject"
     pub approval_level: Option<E8s>,
     pub total_voter_reputation: E8s,
-    pub payload: Option<Vec<E8s>>,
 }
 
 pub struct CallToExecute {
@@ -486,4 +520,18 @@ impl CallToExecute {
             .map_err(|(c, m)| format!("Error [{:?}]: {}", c, m))
             .map(|_| ())
     }
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct VotingExt {
+    pub id: VotingId,
+    pub creator: Principal,
+    pub created_at: TimestampNs,
+    pub duration_ns: DurationNs,
+    pub quorum: E8s,
+    pub consensus: E8s,
+    pub finish_early: E8s,
+    pub total_votes_per_option: Vec<E8s>,
+    pub kind: VotingKind,
+    pub stage: VotingStage,
 }

@@ -31,16 +31,15 @@ pub fn install_bank_state(new_state: Option<BankState>) -> Option<BankState> {
 
 #[update]
 #[allow(non_snake_case)]
-async fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchangeRateResponse {
+fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchangeRateResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to set exchange rate");
-    });
 
-    with_state_mut(|s| s.set_exchange_rate(req))
+        s.set_exchange_rate(req)
+    })
 }
 
 #[update]
@@ -48,14 +47,12 @@ async fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchange
 async fn bank__swap_rewards(mut req: SwapRewardsRequest) -> SwapRewardsResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    let (spend_req, icrc1_client, transfer_arg) = with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to set exchange rate");
-    });
 
-    let (spend_req, icrc1_client, transfer_arg) =
-        with_state_mut(|s| s.prepare_swap_data(&req, caller(), time()));
+        s.prepare_swap_data(&req, caller(), time())
+    });
 
     let humans_canister = HumansCanisterClient::new(get_canister_ids().humans_canister_id);
 
@@ -101,16 +98,15 @@ async fn bank__swap_rewards(mut req: SwapRewardsRequest) -> SwapRewardsResponse 
 
 #[query]
 #[allow(non_snake_case)]
-async fn bank__get_exchange_rates(mut req: GetExchangeRatesRequest) -> GetExchangeRatesResponse {
+fn bank__get_exchange_rates(mut req: GetExchangeRatesRequest) -> GetExchangeRatesResponse {
     let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
-            .expect("Unable to get exchange rate")
-    });
+            .expect("Unable to get exchange rate");
 
-    with_state(|s| s.get_exchange_rates(req))
+        s.get_exchange_rates(req)
+    })
 }
 
 fn with_state<R, F: FnOnce(&BankState) -> R>(f: F) -> R {

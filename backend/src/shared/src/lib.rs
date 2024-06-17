@@ -14,10 +14,8 @@ pub mod votings;
 pub type TimestampNs = u64;
 pub type DurationNs = u64;
 
-#[async_trait]
 pub trait Guard<T> {
-    /// IT HAS TO DO ALL THE ASYNC STUFF AFTER IT ACCESSES THE STATE OR CONTEXT
-    async fn validate_and_escape(&mut self, state: &T, ctx: &GuardContext) -> Result<(), String>;
+    fn validate_and_escape(&mut self, state: &T, ctx: &GuardContext) -> Result<(), String>;
 }
 
 pub struct GuardContext {

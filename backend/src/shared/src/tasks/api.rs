@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use async_trait::async_trait;
 use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
@@ -34,15 +33,18 @@ pub struct CreateTaskRequest {
     pub team_proof: Proof,
 }
 
-#[async_trait]
 impl Guard<TasksState> for CreateTaskRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
         self.team_proof.assert_valid_for(&ctx.caller)?;
+
+        if !self.team_proof.profile_proof.is_team_member {
+            return Err(format!("Only team members can create tasks"));
+        }
 
         self.title = escape_script_tag(&self.title);
         self.description = escape_script_tag(&self.description);
@@ -82,9 +84,8 @@ pub struct EditTaskRequest {
     pub new_storypoints_ext_budget_opt: Option<E8s>,
 }
 
-#[async_trait]
 impl Guard<TasksState> for EditTaskRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
@@ -134,9 +135,8 @@ pub struct FinishEditTaskRequest {
     pub id: TaskId,
 }
 
-#[async_trait]
 impl Guard<TasksState> for FinishEditTaskRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
@@ -166,9 +166,8 @@ pub struct AttachToTaskRequest {
     pub detach: bool,
 }
 
-#[async_trait]
 impl Guard<TasksState> for AttachToTaskRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
@@ -201,9 +200,8 @@ pub struct SolveTaskRequest {
     pub team_proof: Option<Proof>,
 }
 
-#[async_trait]
 impl Guard<TasksState> for SolveTaskRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
@@ -261,9 +259,8 @@ pub struct FinishSolveRequest {
     pub id: TaskId,
 }
 
-#[async_trait]
 impl Guard<TasksState> for FinishSolveRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
@@ -299,9 +296,8 @@ pub struct EvaluateRequest {
     pub evaluation_per_solution: Vec<(Principal, Option<E8s>)>,
 }
 
-#[async_trait]
 impl Guard<TasksState> for EvaluateRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
@@ -353,9 +349,8 @@ pub struct GetTasksRequest {
     pub ids: Vec<TaskId>,
 }
 
-#[async_trait]
 impl Guard<TasksState> for GetTasksRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
@@ -373,9 +368,8 @@ pub struct GetTasksResponse {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetTaskIdsRequest {}
 
-#[async_trait]
 impl Guard<TasksState> for GetTaskIdsRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,
@@ -396,9 +390,8 @@ pub struct DeleteRequest {
     pub id: TaskId,
 }
 
-#[async_trait]
 impl Guard<TasksState> for DeleteRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &TasksState,
         ctx: &GuardContext,

@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 use icrc_ledger_types::icrc1::transfer::BlockIndex;
@@ -20,9 +19,8 @@ pub struct SwapRewardsRequest {
     pub qty: E8s,
 }
 
-#[async_trait]
 impl Guard<BankState> for SwapRewardsRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &BankState,
         ctx: &crate::GuardContext,
@@ -57,9 +55,8 @@ pub struct SetExchangeRateRequest {
     pub rate: E8s,
 }
 
-#[async_trait]
 impl Guard<BankState> for SetExchangeRateRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &BankState,
         ctx: &crate::GuardContext,
@@ -80,9 +77,8 @@ pub struct SetExchangeRateResponse {}
 #[derive(CandidType, Deserialize, Validate, Clone)]
 pub struct GetExchangeRatesRequest {}
 
-#[async_trait]
 impl Guard<BankState> for GetExchangeRatesRequest {
-    async fn validate_and_escape(
+    fn validate_and_escape(
         &mut self,
         state: &BankState,
         ctx: &crate::GuardContext,

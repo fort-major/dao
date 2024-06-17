@@ -32,86 +32,80 @@ pub fn install_tasks_state(new_state: Option<TasksState>) -> Option<TasksState> 
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
+fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to create task");
-    });
 
-    with_state_mut(|s| s.create_task(req, caller(), time()))
+        s.create_task(req, caller(), time())
+    })
 }
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
+fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to edit task");
-    });
 
-    with_state_mut(|s| s.edit_task(req))
+        s.edit_task(req)
+    })
 }
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResponse {
+fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to finish editing task");
-    });
 
-    with_state_mut(|s| s.finish_edit_task(req, time()))
+        s.finish_edit_task(req, time())
+    })
 }
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
+fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to solve task");
-    });
 
-    with_state_mut(|s| s.solve_task(req, caller(), time()))
+        s.solve_task(req, caller(), time())
+    })
 }
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__attach_to_task(mut req: AttachToTaskRequest) -> AttachToTaskResponse {
+fn tasks__attach_to_task(mut req: AttachToTaskRequest) -> AttachToTaskResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to attach to task");
-    });
 
-    with_state_mut(|s| s.attach_to_task(req, caller()))
+        s.attach_to_task(req, caller())
+    })
 }
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse {
+fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to finish solving task");
-    });
 
-    with_state_mut(|s| s.finish_solve_task(req))
+        s.finish_solve_task(req)
+    })
 }
 
 #[update]
@@ -119,13 +113,12 @@ async fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveRes
 async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    let (result, rewards) = with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to evaluate task");
-    });
 
-    let (result, rewards) = with_state_mut(|s| s.evaluate_task(req));
+        s.evaluate_task(req)
+    });
 
     let humans_canister = HumansCanisterClient::new(get_canister_ids().humans_canister_id);
     let mint_rewards_req = MintRewardsRequest { rewards };
@@ -143,44 +136,41 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
 
 #[update]
 #[allow(non_snake_case)]
-async fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
+fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
     let ctx = create_guard_context();
 
-    with_state(|s| {
+    with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to delete task");
-    });
 
-    with_state_mut(|s| s.delete_task(req))
+        s.delete_task(req)
+    })
 }
 
 #[query]
 #[allow(non_snake_case)]
-async fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
+fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
     let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to get task ids");
-    });
 
-    with_state(|s| s.get_task_ids(req))
+        s.get_task_ids(req)
+    })
 }
 
 #[query]
 #[allow(non_snake_case)]
-async fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
+fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
     let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
-            .await
             .expect("Unable to get tasks");
-    });
 
-    with_state(|s| s.get_tasks(req))
+        s.get_tasks(req)
+    })
 }
 
 fn with_state<R, F: FnOnce(&TasksState) -> R>(f: F) -> R {

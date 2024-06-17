@@ -77,6 +77,8 @@ impl TasksState {
         let task = self.tasks.get_mut(&req.id).unwrap();
         task.finish_edit(now);
 
+        // TODO: start timer
+
         FinishEditTaskResponse {}
     }
 
