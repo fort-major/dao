@@ -22,9 +22,11 @@ pub struct CreateTaskRequest {
     #[garde(dive)]
     pub solver_constraints: Vec<SolverConstraint>,
     #[garde(skip)]
-    pub hours_estimate: E8s,
+    pub hours_base: E8s,
     #[garde(skip)]
-    pub storypoints_budget: E8s,
+    pub storypoints_base: E8s,
+    #[garde(skip)]
+    pub storypoints_ext_budget: E8s,
     #[garde(dive)]
     pub team_proof: Proof,
 }
@@ -69,9 +71,11 @@ pub struct EditTaskRequest {
     #[garde(dive)]
     pub new_solver_constraints_opt: Option<Vec<SolverConstraint>>,
     #[garde(skip)]
-    pub new_hours_estimate_opt: Option<E8s>,
+    pub new_hours_base_opt: Option<E8s>,
     #[garde(skip)]
-    pub new_storypoints_budget_opt: Option<E8s>,
+    pub new_storypoints_base_opt: Option<E8s>,
+    #[garde(skip)]
+    pub new_storypoints_ext_budget_opt: Option<E8s>,
 }
 
 impl Guard<TasksState> for EditTaskRequest {
@@ -123,8 +127,6 @@ pub struct EditTaskResponse {}
 pub struct FinishEditTaskRequest {
     #[garde(skip)]
     pub id: TaskId,
-    #[garde(skip)]
-    pub final_storypoints_budget: E8s,
 }
 
 impl Guard<TasksState> for FinishEditTaskRequest {
@@ -149,6 +151,38 @@ impl Guard<TasksState> for FinishEditTaskRequest {
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct FinishEditTaskResponse {}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct AttachToTaskRequest {
+    #[garde(skip)]
+    pub id: TaskId,
+    #[garde(skip)]
+    pub detach: bool,
+}
+
+impl Guard<TasksState> for AttachToTaskRequest {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        ctx: &GuardContext,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())?;
+
+        let task = state
+            .tasks
+            .get(&self.id)
+            .ok_or(format!("Task {} not found", self.id))?;
+
+        if !task.can_attach() {
+            return Err(format!("Access denied"));
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct AttachToTaskResponse {}
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct SolveTaskRequest {
@@ -248,7 +282,7 @@ pub struct EvaluateRequest {
     #[garde(skip)]
     pub id: TaskId,
     #[garde(skip)]
-    pub evaluation_per_solution: Vec<(Principal, E8s)>,
+    pub evaluation_per_solution: Vec<(Principal, Option<E8s>)>,
 }
 
 impl Guard<TasksState> for EvaluateRequest {
@@ -268,18 +302,20 @@ impl Guard<TasksState> for EvaluateRequest {
             return Err(format!("Access denied"));
         }
 
-        let evaluated_solutions: BTreeMap<Principal, E8s> =
+        let evaluated_solutions: BTreeMap<Principal, Option<E8s>> =
             self.evaluation_per_solution.iter().cloned().collect();
 
         let one = E8s::one();
 
         for existing_solver in task.solutions.keys() {
-            if let Some(evaluation) = evaluated_solutions.get(existing_solver) {
-                if evaluation > &one {
-                    return Err(format!(
-                        "Non-normalized solution found {} {}",
-                        existing_solver, evaluation
-                    ));
+            if let Some(evaluation_opt) = evaluated_solutions.get(existing_solver) {
+                if let Some(evaluation) = evaluation_opt {
+                    if evaluation > &one {
+                        return Err(format!(
+                            "Non-normalized evaluation found {} {}",
+                            existing_solver, evaluation
+                        ));
+                    }
                 }
             } else {
                 return Err(format!(

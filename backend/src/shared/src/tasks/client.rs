@@ -2,10 +2,11 @@ use candid::Principal;
 use ic_cdk::{api::call::CallResult, call};
 
 use super::api::{
-    CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
-    EditTaskResponse, EvaluateRequest, EvaluateResponse, FinishEditTaskRequest,
-    FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
-    GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+    AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
+    DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
+    EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
+    FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest, GetTasksResponse,
+    SolveTaskRequest, SolveTaskResponse,
 };
 
 pub struct TasksCanisterClient {
@@ -47,6 +48,16 @@ impl TasksCanisterClient {
     #[allow(non_snake_case)]
     pub async fn tasks__solve_task(&self, req: SolveTaskRequest) -> CallResult<SolveTaskResponse> {
         call(self.canister_id, "tasks__solve_task", (req,))
+            .await
+            .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
+    pub async fn tasks__attach_to_task(
+        &self,
+        req: AttachToTaskRequest,
+    ) -> CallResult<AttachToTaskResponse> {
+        call(self.canister_id, "tasks__attach_to_task", (req,))
             .await
             .map(|(it,)| it)
     }

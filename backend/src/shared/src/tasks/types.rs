@@ -19,8 +19,9 @@ pub struct Task {
     pub stage: TaskStage,
     pub solution_fields: Vec<SolutionField>,
     pub solver_constraints: BTreeSet<SolverConstraint>,
-    pub hours_estimate: E8s,
-    pub storypoints_budget: E8s,
+    pub hours_base: E8s,
+    pub storypoints_base: E8s,
+    pub storypoints_ext_budget: E8s,
     pub candidates: BTreeSet<Principal>,
     pub solutions: BTreeMap<Principal, Solution>,
 }
@@ -32,8 +33,9 @@ impl Task {
         description: String,
         solution_fields: Vec<SolutionField>,
         solver_constraints: Vec<SolverConstraint>,
-        hours_estimate: E8s,
-        storypoints_budget: E8s,
+        hours_base: E8s,
+        storypoints_base: E8s,
+        storypoints_ext_budget: E8s,
         caller: Principal,
         now: TimestampNs,
     ) -> Self {
@@ -46,8 +48,9 @@ impl Task {
             stage: TaskStage::Edit,
             solution_fields,
             solver_constraints: solver_constraints.into_iter().collect(),
-            hours_estimate,
-            storypoints_budget,
+            hours_base,
+            storypoints_base,
+            storypoints_ext_budget,
             candidates: BTreeSet::new(),
             solutions: BTreeMap::new(),
         }
@@ -59,8 +62,9 @@ impl Task {
         new_description_opt: Option<String>,
         new_solution_fields_opt: Option<Vec<SolutionField>>,
         new_solver_constraints_opt: Option<Vec<SolverConstraint>>,
-        new_hours_estimate_opt: Option<E8s>,
-        new_storypoints_budget_opt: Option<E8s>,
+        new_hours_base_opt: Option<E8s>,
+        new_storypoints_base_opt: Option<E8s>,
+        new_storypoints_ext_budget_opt: Option<E8s>,
     ) {
         if let Some(new_title) = new_title_opt {
             self.title = new_title;
@@ -78,19 +82,20 @@ impl Task {
             self.solver_constraints = new_solver_constraints.into_iter().collect();
         }
 
-        if let Some(new_hours_estimate) = new_hours_estimate_opt {
-            self.hours_estimate = new_hours_estimate;
+        if let Some(new_hours_base) = new_hours_base_opt {
+            self.hours_base = new_hours_base;
         }
 
-        if let Some(new_storypoints_budget) = new_storypoints_budget_opt {
-            self.storypoints_budget = new_storypoints_budget;
+        if let Some(new_storypoints_base) = new_storypoints_base_opt {
+            self.storypoints_base = new_storypoints_base;
+        }
+
+        if let Some(new_storypoints_ext_budget) = new_storypoints_ext_budget_opt {
+            self.storypoints_ext_budget = new_storypoints_ext_budget;
         }
     }
 
-    // the voting will confirm the budget or edit it according to what people say
-    pub fn finish_edit(&mut self, final_storypoints_budget_opt: E8s) {
-        self.storypoints_budget = final_storypoints_budget_opt;
-
+    pub fn finish_edit(&mut self) {
         self.stage = TaskStage::Solve;
     }
 
@@ -115,6 +120,7 @@ impl Task {
     // makes the task stage Archive and calculates rewards based on the evaluation and the budget
     // called by the voting canister
     // expects normalized evaluation as input (0.0 ... 1.0 values)
+    // if the evaluation is None, the solution is recognized as rejected (it does not receive any reward)
     // storypoints budget is split among all solutions weighted by their evaluation score
     //  example:
     //      if the task defines 100 storypoints as a budget, and ten solutions were provided - each scored 1.0 (max score)
@@ -129,70 +135,54 @@ impl Task {
     //  example:
     //      if the task defines 5 hours estimate and your solution receives a non-zero evaluation - you get 5 hours
     //      if your solution receives a zero evaluation (which is only possible if all votes was against you) - you get 0 hours
-    pub fn evaluate(&mut self, evaluation_per_solution: Vec<(Principal, E8s)>) -> Vec<RewardEntry> {
+    pub fn evaluate(
+        &mut self,
+        evaluation_per_solution: Vec<(Principal, Option<E8s>)>,
+    ) -> Vec<RewardEntry> {
         let mut result = Vec::new();
 
-        if self.storypoints_budget != E8s::zero() {
-            let mut evaluation_sum = E8s::zero();
-            let mut max_evaluation = E8s::zero();
+        let mut evaluation_sum = E8s::zero();
+        let mut max_evaluation = E8s::zero();
 
-            for (_, eval) in evaluation_per_solution.iter() {
+        for (solver, eval_opt) in evaluation_per_solution.iter() {
+            if let Some(eval) = eval_opt {
                 if eval > &max_evaluation {
                     max_evaluation = eval.clone();
                 }
 
                 evaluation_sum += eval;
             }
+        }
 
-            // the best result defines the budget spent
-            let max_reward = &self.storypoints_budget * max_evaluation;
-            let reward_base = max_reward / evaluation_sum;
-            let zero = E8s::zero();
+        // the best result defines the budget spent
+        let storypoints_budget_used_share = &self.storypoints_ext_budget * max_evaluation;
+        let storypoints_budget_unit = storypoints_budget_used_share / evaluation_sum;
 
-            for (solver, evaluation) in evaluation_per_solution {
-                let reward_storypoints = &reward_base * &evaluation;
-                let reward_hours = if evaluation == zero {
-                    zero.clone()
-                } else {
-                    self.hours_estimate.clone()
-                };
+        for (solver, eval_opt) in evaluation_per_solution {
+            let solution = self.solutions.get_mut(&solver).unwrap();
 
-                let entry = RewardEntry {
-                    solver,
-                    reward_storypoints,
-                    reward_hours,
-                };
+            if eval_opt.is_none() {
+                solution.rejected = true;
 
-                let solution = self.solutions.get_mut(&entry.solver).unwrap();
-
-                solution.evaluation = Some(evaluation);
-                solution.reward_storypoints = Some(entry.reward_storypoints.clone());
-
-                result.push(entry);
+                continue;
             }
-        } else {
-            let zero = E8s::zero();
 
-            for (solver, evaluation) in evaluation_per_solution {
-                let reward_hours = if evaluation == zero {
-                    zero.clone()
-                } else {
-                    self.hours_estimate.clone()
-                };
+            let eval = eval_opt.unwrap();
 
-                let entry = RewardEntry {
-                    solver,
-                    reward_storypoints: zero.clone(),
-                    reward_hours,
-                };
+            let reward_storypoints = &self.storypoints_base + &storypoints_budget_unit * &eval;
+            let reward_hours = self.hours_base.clone();
 
-                let solution = self.solutions.get_mut(&entry.solver).unwrap();
+            solution.evaluation = Some(eval);
+            solution.reward_hours = Some(reward_hours.clone());
+            solution.reward_storypoints = Some(reward_storypoints.clone());
 
-                solution.evaluation = Some(evaluation);
-                solution.reward_storypoints = Some(entry.reward_storypoints.clone());
+            let entry = RewardEntry {
+                solver,
+                reward_storypoints,
+                reward_hours,
+            };
 
-                result.push(entry);
-            }
+            result.push(entry);
         }
 
         self.stage = TaskStage::Archive;
@@ -229,6 +219,10 @@ impl Task {
         matches!(self.stage, TaskStage::Solve)
     }
 
+    pub fn can_attach(&self) -> bool {
+        matches!(self.stage, TaskStage::Edit | TaskStage::Solve)
+    }
+
     pub fn can_evaluate(&self) -> bool {
         matches!(self.stage, TaskStage::Evaluate)
     }
@@ -260,7 +254,9 @@ pub struct RewardEntry {
 pub struct Solution {
     pub fields: Vec<Option<String>>,
     pub attached_at: TimestampNs,
+    pub rejected: bool,
     pub evaluation: Option<E8s>,
+    pub reward_hours: Option<E8s>,
     pub reward_storypoints: Option<E8s>,
 }
 
@@ -269,7 +265,9 @@ impl Solution {
         Self {
             fields,
             attached_at: now,
+            rejected: false,
             evaluation: None,
+            reward_hours: None,
             reward_storypoints: None,
         }
     }

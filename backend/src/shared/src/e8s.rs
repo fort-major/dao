@@ -6,6 +6,7 @@ use std::{
 use candid::{CandidType, Nat};
 use serde::Deserialize;
 
+/// Fixed-point (8 digits) decimals with primitive math (+-*/) implemented correctly
 #[derive(CandidType, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct E8s(pub Nat);
 
@@ -16,6 +17,26 @@ impl E8s {
 
     pub fn one() -> Self {
         Self(Nat::from(1_0000_0000u64))
+    }
+
+    pub fn half() -> Self {
+        Self(Nat::from(5000_0000u64))
+    }
+
+    pub fn third() -> Self {
+        Self(Nat::from(3333_3333u64))
+    }
+
+    pub fn two_thrids() -> Self {
+        Self(Nat::from(6666_6667u64))
+    }
+
+    pub fn forth() -> Self {
+        Self(Nat::from(2500_0000u64))
+    }
+
+    pub fn three_forths() -> Self {
+        Self(Nat::from(7500_0000u64))
     }
 }
 

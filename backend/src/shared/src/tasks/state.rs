@@ -6,10 +6,11 @@ use crate::TimestampNs;
 
 use super::{
     api::{
-        CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
-        EditTaskResponse, EvaluateRequest, EvaluateResponse, FinishEditTaskRequest,
-        FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
-        GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+        AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
+        DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
+        EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
+        FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
+        GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
     },
     types::{RewardEntry, Task, TaskId},
 };
@@ -40,8 +41,9 @@ impl TasksState {
             req.description,
             req.solution_fields,
             req.solver_constraints,
-            req.hours_estimate,
-            req.storypoints_budget,
+            req.hours_base,
+            req.storypoints_base,
+            req.storypoints_ext_budget,
             caller,
             now,
         );
@@ -58,8 +60,9 @@ impl TasksState {
             req.new_description_opt,
             req.new_solution_fields_opt,
             req.new_solver_constraints_opt,
-            req.new_hours_estimate_opt,
-            req.new_storypoints_budget_opt,
+            req.new_hours_base_opt,
+            req.new_storypoints_base_opt,
+            req.new_storypoints_ext_budget_opt,
         );
 
         EditTaskResponse {}
@@ -67,9 +70,21 @@ impl TasksState {
 
     pub fn finish_edit_task(&mut self, req: FinishEditTaskRequest) -> FinishEditTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
-        task.finish_edit(req.final_storypoints_budget);
+        task.finish_edit();
 
         FinishEditTaskResponse {}
+    }
+
+    pub fn attach_to_task(
+        &mut self,
+        req: AttachToTaskRequest,
+        caller: Principal,
+    ) -> AttachToTaskResponse {
+        let task = self.tasks.get_mut(&req.id).unwrap();
+
+        task.add_candidate(!req.detach, caller);
+
+        AttachToTaskResponse {}
     }
 
     pub fn solve_task(

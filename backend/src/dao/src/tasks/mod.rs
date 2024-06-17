@@ -5,11 +5,11 @@ use shared::{
     humans::{api::MintRewardsRequest, client::HumansCanisterClient},
     tasks::{
         api::{
-            CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
-            EditTaskResponse, EvaluateRequest, EvaluateResponse, FinishEditTaskRequest,
-            FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
-            GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest,
-            SolveTaskResponse,
+            AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
+            DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
+            EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
+            FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
+            GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
         },
         state::TasksState,
     },
@@ -79,6 +79,19 @@ fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
             .expect("Unable to solve task");
 
         s.solve_task(req, caller(), time())
+    })
+}
+
+#[update]
+#[allow(non_snake_case)]
+fn tasks__attach_to_task(mut req: AttachToTaskRequest) -> AttachToTaskResponse {
+    let ctx = create_guard_context();
+
+    with_state_mut(|s| {
+        req.validate_and_escape(s, &ctx)
+            .expect("Unable to attach to task");
+
+        s.attach_to_task(req, caller())
     })
 }
 
