@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use candid::{CandidType, Nat, Principal};
 use garde::Validate;
 use serde::Deserialize;
@@ -17,8 +18,9 @@ pub struct RegisterRequest {
     pub avatar_src: Option<String>,
 }
 
+#[async_trait]
 impl Guard<HumansState> for RegisterRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -52,8 +54,9 @@ pub struct EditProfileRequest {
     pub new_avatar_src_opt: Option<Option<String>>,
 }
 
+#[async_trait]
 impl Guard<HumansState> for EditProfileRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -89,8 +92,9 @@ pub struct MintRewardsRequest {
     pub rewards: Vec<RewardEntry>,
 }
 
+#[async_trait]
 impl Guard<HumansState> for MintRewardsRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -118,8 +122,9 @@ pub struct SpendRewardsRequest {
     pub storypoints: E8s,
 }
 
+#[async_trait]
 impl Guard<HumansState> for SpendRewardsRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -160,8 +165,9 @@ pub struct RefundRewardsRequest {
     pub storypoints: E8s,
 }
 
+#[async_trait]
 impl Guard<HumansState> for RefundRewardsRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -191,8 +197,9 @@ pub struct EmployRequest {
     pub hours_a_week_commitment: E8s,
 }
 
+#[async_trait]
 impl Guard<HumansState> for EmployRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -229,8 +236,9 @@ pub struct UnemployRequest {
     pub team_member: Principal,
 }
 
+#[async_trait]
 impl Guard<HumansState> for UnemployRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -263,8 +271,9 @@ pub struct GetProfilesRequest {
     pub ids: Vec<Principal>,
 }
 
+#[async_trait]
 impl Guard<HumansState> for GetProfilesRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -282,8 +291,9 @@ pub struct GetProfilesResponse {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetProfileIdsRequest {}
 
+#[async_trait]
 impl Guard<HumansState> for GetProfileIdsRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,
@@ -301,8 +311,9 @@ pub struct GetProfileIdsResponse {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetProfileProofsRequest {}
 
+#[async_trait]
 impl Guard<HumansState> for GetProfileProofsRequest {
-    fn validate_and_escape(
+    async fn validate_and_escape(
         &mut self,
         state: &HumansState,
         ctx: &crate::GuardContext,

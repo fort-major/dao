@@ -33,144 +33,156 @@ pub fn install_humans_state(new_state: Option<HumansState>) -> Option<HumansStat
 
 #[update]
 #[allow(non_snake_case)]
-fn humans__register(mut req: RegisterRequest) -> RegisterResponse {
+async fn humans__register(mut req: RegisterRequest) -> RegisterResponse {
     let ctx = create_guard_context();
 
-    with_state_mut(|s| {
+    with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to register new profile");
+    });
 
-        s.register(req, caller(), time())
-    })
+    with_state_mut(|s| s.register(req, caller(), time()))
 }
 
 #[update]
 #[allow(non_snake_case)]
-fn humans__edit_profile(mut req: EditProfileRequest) -> EditProfileResponse {
+async fn humans__edit_profile(mut req: EditProfileRequest) -> EditProfileResponse {
     let ctx = create_guard_context();
 
-    with_state_mut(|s| {
+    with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to edit profile");
+    });
 
-        s.edit_profile(req, caller())
-    })
+    with_state_mut(|s| s.edit_profile(req, caller()))
 }
 
 #[update]
 #[allow(non_snake_case)]
-fn humans__mint_rewards(mut req: MintRewardsRequest) -> MintRewardsResponse {
+async fn humans__mint_rewards(mut req: MintRewardsRequest) -> MintRewardsResponse {
     let ctx = create_guard_context();
 
-    with_state_mut(|s| {
+    with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to mint rewards");
+    });
 
-        s.mint_rewards(req)
-    })
+    with_state_mut(|s| s.mint_rewards(req))
 }
 
 #[update]
 #[allow(non_snake_case)]
-fn humans__spend_rewards(mut req: SpendRewardsRequest) -> SpendRewardsResponse {
+async fn humans__spend_rewards(mut req: SpendRewardsRequest) -> SpendRewardsResponse {
     let ctx = create_guard_context();
 
-    with_state_mut(|s| {
+    with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to spend rewards");
+    });
 
-        s.spend_rewards(req)
-    })
+    with_state_mut(|s| s.spend_rewards(req))
 }
 
 #[update]
 #[allow(non_snake_case)]
-fn humans__refund_rewards(mut req: RefundRewardsRequest) -> RefundRewardsResponse {
-    let ctx = create_guard_context();
-
-    with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
-            .expect("Unable to refund rewards");
-
-        s.refund_rewards(req)
-    })
-}
-
-#[update]
-#[allow(non_snake_case)]
-fn humans__employ(mut req: EmployRequest) -> EmployResponse {
-    let ctx = create_guard_context();
-
-    with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx).expect("Unable to employ");
-
-        s.employ(req, time())
-    })
-}
-
-#[update]
-#[allow(non_snake_case)]
-fn humans__unemploy(mut req: UnemployRequest) -> UnemployResponse {
-    let ctx = create_guard_context();
-
-    with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
-            .expect("Unable to refund rewards");
-
-        s.unemploy(req)
-    })
-}
-
-#[query]
-#[allow(non_snake_case)]
-fn humans__get_profiles(mut req: GetProfilesRequest) -> GetProfilesResponse {
+async fn humans__refund_rewards(mut req: RefundRewardsRequest) -> RefundRewardsResponse {
     let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
+            .expect("Unable to refund rewards");
+    });
+
+    with_state_mut(|s| s.refund_rewards(req))
+}
+
+#[update]
+#[allow(non_snake_case)]
+async fn humans__employ(mut req: EmployRequest) -> EmployResponse {
+    let ctx = create_guard_context();
+
+    with_state(|s| {
+        req.validate_and_escape(s, &ctx)
+            .await
+            .expect("Unable to employ");
+    });
+
+    with_state_mut(|s| s.employ(req, time()))
+}
+
+#[update]
+#[allow(non_snake_case)]
+async fn humans__unemploy(mut req: UnemployRequest) -> UnemployResponse {
+    let ctx = create_guard_context();
+
+    with_state(|s| {
+        req.validate_and_escape(s, &ctx)
+            .await
+            .expect("Unable to refund rewards");
+    });
+
+    with_state_mut(|s| s.unemploy(req))
+}
+
+#[query]
+#[allow(non_snake_case)]
+async fn humans__get_profiles(mut req: GetProfilesRequest) -> GetProfilesResponse {
+    let ctx = create_guard_context();
+
+    with_state(|s| {
+        req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to get profiles");
+    });
 
-        s.get_profiles(req)
-    })
+    with_state(|s| s.get_profiles(req))
 }
 
 #[query]
 #[allow(non_snake_case)]
-fn humans__get_profile_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
+async fn humans__get_profile_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
     let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to get profile ids");
+    });
 
-        s.get_profile_ids(req)
-    })
+    with_state(|s| s.get_profile_ids(req))
 }
 
 #[query]
 #[allow(non_snake_case)]
-fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
+async fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
     let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to get team member ids");
+    });
 
-        s.get_team_member_ids(req)
-    })
+    with_state(|s| s.get_team_member_ids(req))
 }
 
 #[update]
 #[allow(non_snake_case)]
-fn humans__get_profile_proofs(mut req: GetProfileProofsRequest) -> GetProfileProofsResponse {
+async fn humans__get_profile_proofs(mut req: GetProfileProofsRequest) -> GetProfileProofsResponse {
     let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to get profile proofs");
+    });
 
-        s.get_profile_proofs(req, caller())
-    })
+    with_state(|s| s.get_profile_proofs(req, caller()))
 }
 
 fn with_state<R, F: FnOnce(&HumansState) -> R>(f: F) -> R {

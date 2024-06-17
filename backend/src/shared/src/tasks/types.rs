@@ -5,7 +5,7 @@ use garde::Validate;
 use serde::Deserialize;
 use url::Url;
 
-use crate::{e8s::E8s, TimestampNs};
+use crate::{e8s::E8s, votings::types::ONE_DAY_NS, TimestampNs};
 
 pub type TaskId = u64;
 
@@ -15,6 +15,7 @@ pub struct Task {
     pub title: String,
     pub description: String,
     pub created_at: TimestampNs,
+    pub days_to_solve: u64,
     pub creator: Principal,
     pub stage: TaskStage,
     pub solution_fields: Vec<SolutionField>,
@@ -31,6 +32,7 @@ impl Task {
         id: TaskId,
         title: String,
         description: String,
+        days_to_solve: u64,
         solution_fields: Vec<SolutionField>,
         solver_constraints: Vec<SolverConstraint>,
         hours_base: E8s,
@@ -44,6 +46,7 @@ impl Task {
             title,
             description,
             created_at: now,
+            days_to_solve,
             creator: caller,
             stage: TaskStage::Edit,
             solution_fields,
@@ -95,8 +98,10 @@ impl Task {
         }
     }
 
-    pub fn finish_edit(&mut self) {
-        self.stage = TaskStage::Solve;
+    pub fn finish_edit(&mut self, now: TimestampNs) {
+        let until_timestamp = now + ONE_DAY_NS * self.days_to_solve;
+
+        self.stage = TaskStage::Solve { until_timestamp };
     }
 
     pub fn solve(
@@ -216,11 +221,14 @@ impl Task {
     }
 
     pub fn can_solve(&self) -> bool {
-        matches!(self.stage, TaskStage::Solve)
+        matches!(self.stage, TaskStage::Solve { until_timestamp: _ })
     }
 
     pub fn can_attach(&self) -> bool {
-        matches!(self.stage, TaskStage::Edit | TaskStage::Solve)
+        matches!(
+            self.stage,
+            TaskStage::Edit | TaskStage::Solve { until_timestamp: _ }
+        )
     }
 
     pub fn can_evaluate(&self) -> bool {
@@ -235,7 +243,7 @@ impl Task {
 #[derive(CandidType, Deserialize, Clone, Copy)]
 pub enum TaskStage {
     Edit,
-    Solve,
+    Solve { until_timestamp: TimestampNs },
     Evaluate,
     Archive,
 }

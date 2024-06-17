@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use candid::{CandidType, Principal};
 
 use serde::Deserialize;
@@ -13,8 +14,10 @@ pub mod votings;
 pub type TimestampNs = u64;
 pub type DurationNs = u64;
 
+#[async_trait]
 pub trait Guard<T> {
-    fn validate_and_escape(&mut self, state: &T, ctx: &GuardContext) -> Result<(), String>;
+    /// IT HAS TO DO ALL THE ASYNC STUFF AFTER IT ACCESSES THE STATE OR CONTEXT
+    async fn validate_and_escape(&mut self, state: &T, ctx: &GuardContext) -> Result<(), String>;
 }
 
 pub struct GuardContext {
@@ -23,6 +26,7 @@ pub struct GuardContext {
     pub caller_is_task_canister: bool,
     pub caller_is_bank_canister: bool,
     pub now: TimestampNs,
+    pub canister_ids: CanisterIds,
 }
 
 impl GuardContext {
@@ -33,6 +37,7 @@ impl GuardContext {
             caller_is_voting_canister: caller == canister_ids.votings_canister_id,
             caller_is_task_canister: caller == canister_ids.tasks_canister_id,
             caller_is_bank_canister: caller == canister_ids.bank_canister_id,
+            canister_ids: *canister_ids,
         }
     }
 }

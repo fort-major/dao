@@ -31,15 +31,16 @@ pub fn install_bank_state(new_state: Option<BankState>) -> Option<BankState> {
 
 #[update]
 #[allow(non_snake_case)]
-fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchangeRateResponse {
+async fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchangeRateResponse {
     let ctx = create_guard_context();
 
-    with_state_mut(|s| {
+    with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to set exchange rate");
+    });
 
-        s.set_exchange_rate(req)
-    })
+    with_state_mut(|s| s.set_exchange_rate(req))
 }
 
 #[update]
@@ -47,12 +48,14 @@ fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchangeRateRe
 async fn bank__swap_rewards(mut req: SwapRewardsRequest) -> SwapRewardsResponse {
     let ctx = create_guard_context();
 
-    let (spend_req, icrc1_client, transfer_arg) = with_state_mut(|s| {
+    with_state(|s| {
         req.validate_and_escape(s, &ctx)
+            .await
             .expect("Unable to set exchange rate");
-
-        s.prepare_swap_data(&req, caller(), time())
     });
+
+    let (spend_req, icrc1_client, transfer_arg) =
+        with_state_mut(|s| s.prepare_swap_data(&req, caller(), time()));
 
     let humans_canister = HumansCanisterClient::new(get_canister_ids().humans_canister_id);
 
@@ -98,15 +101,16 @@ async fn bank__swap_rewards(mut req: SwapRewardsRequest) -> SwapRewardsResponse 
 
 #[query]
 #[allow(non_snake_case)]
-fn bank__get_exchange_rates(mut req: GetExchangeRatesRequest) -> GetExchangeRatesResponse {
+async fn bank__get_exchange_rates(mut req: GetExchangeRatesRequest) -> GetExchangeRatesResponse {
     let ctx = create_guard_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
-            .expect("Unable to get exchange rate");
+            .await
+            .expect("Unable to get exchange rate")
+    });
 
-        s.get_exchange_rates(req)
-    })
+    with_state(|s| s.get_exchange_rates(req))
 }
 
 fn with_state<R, F: FnOnce(&BankState) -> R>(f: F) -> R {

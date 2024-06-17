@@ -39,6 +39,7 @@ impl TasksState {
             id,
             req.title,
             req.description,
+            req.days_to_solve,
             req.solution_fields,
             req.solver_constraints,
             req.hours_base,
@@ -68,9 +69,13 @@ impl TasksState {
         EditTaskResponse {}
     }
 
-    pub fn finish_edit_task(&mut self, req: FinishEditTaskRequest) -> FinishEditTaskResponse {
+    pub fn finish_edit_task(
+        &mut self,
+        req: FinishEditTaskRequest,
+        now: TimestampNs,
+    ) -> FinishEditTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
-        task.finish_edit();
+        task.finish_edit(now);
 
         FinishEditTaskResponse {}
     }
