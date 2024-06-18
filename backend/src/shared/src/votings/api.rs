@@ -26,7 +26,7 @@ impl Guard<VotingsState> for StartVotingRequest {
     fn validate_and_escape(
         &mut self,
         state: &VotingsState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
         self.proof.assert_valid_for(&ctx.caller)?;
@@ -69,7 +69,7 @@ impl Guard<VotingsState> for CastVoteRequest {
     fn validate_and_escape(
         &mut self,
         state: &VotingsState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
         self.proof.assert_valid_for(&ctx.caller)?;
@@ -98,7 +98,10 @@ impl Guard<VotingsState> for CastVoteRequest {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct CastVoteResponse {}
+pub struct CastVoteResponse {
+    #[garde(skip)]
+    pub decision_made: bool,
+}
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetVotingsRequest {
@@ -110,7 +113,7 @@ impl Guard<VotingsState> for GetVotingsRequest {
     fn validate_and_escape(
         &mut self,
         state: &VotingsState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }

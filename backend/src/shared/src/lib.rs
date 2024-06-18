@@ -15,10 +15,10 @@ pub type TimestampNs = u64;
 pub type DurationNs = u64;
 
 pub trait Guard<T> {
-    fn validate_and_escape(&mut self, state: &T, ctx: &GuardContext) -> Result<(), String>;
+    fn validate_and_escape(&mut self, state: &T, ctx: &ExecutionContext) -> Result<(), String>;
 }
 
-pub struct GuardContext {
+pub struct ExecutionContext {
     pub caller: Principal,
     pub caller_is_voting_canister: bool,
     pub caller_is_task_canister: bool,
@@ -27,7 +27,7 @@ pub struct GuardContext {
     pub canister_ids: CanisterIds,
 }
 
-impl GuardContext {
+impl ExecutionContext {
     pub fn new(canister_ids: &CanisterIds, caller: Principal, now: TimestampNs) -> Self {
         Self {
             caller,

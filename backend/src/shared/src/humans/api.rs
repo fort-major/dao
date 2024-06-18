@@ -21,7 +21,7 @@ impl Guard<HumansState> for RegisterRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -56,7 +56,7 @@ impl Guard<HumansState> for EditProfileRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -93,7 +93,7 @@ impl Guard<HumansState> for MintRewardsRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -122,7 +122,7 @@ impl Guard<HumansState> for SpendRewardsRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -164,7 +164,7 @@ impl Guard<HumansState> for RefundRewardsRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -195,7 +195,7 @@ impl Guard<HumansState> for EmployRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -233,7 +233,7 @@ impl Guard<HumansState> for UnemployRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -267,7 +267,7 @@ impl Guard<HumansState> for GetProfilesRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -286,7 +286,7 @@ impl Guard<HumansState> for GetProfileIdsRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -305,7 +305,7 @@ impl Guard<HumansState> for GetProfileProofsRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 

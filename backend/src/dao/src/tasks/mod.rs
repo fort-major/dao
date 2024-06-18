@@ -16,7 +16,7 @@ use shared::{
     Guard,
 };
 
-use crate::canister_ids::{create_guard_context, get_canister_ids};
+use crate::utils::{create_exec_context, get_canister_ids};
 
 thread_local! {
     static TASKS_STATE: RefCell<Option<TasksState>> = RefCell::default();
@@ -33,7 +33,7 @@ pub fn install_tasks_state(new_state: Option<TasksState>) -> Option<TasksState> 
 #[update]
 #[allow(non_snake_case)]
 fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -46,7 +46,7 @@ fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -59,7 +59,7 @@ fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -72,7 +72,7 @@ fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResp
 #[update]
 #[allow(non_snake_case)]
 fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -85,7 +85,7 @@ fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__attach_to_task(mut req: AttachToTaskRequest) -> AttachToTaskResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -98,7 +98,7 @@ fn tasks__attach_to_task(mut req: AttachToTaskRequest) -> AttachToTaskResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -111,7 +111,7 @@ fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse 
 #[update]
 #[allow(non_snake_case)]
 async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     let (result, rewards) = with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -137,7 +137,7 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -150,7 +150,7 @@ fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
 #[query]
 #[allow(non_snake_case)]
 fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
@@ -163,7 +163,7 @@ fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
 #[query]
 #[allow(non_snake_case)]
 fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)

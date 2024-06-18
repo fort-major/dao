@@ -23,7 +23,7 @@ impl Guard<BankState> for SwapRewardsRequest {
     fn validate_and_escape(
         &mut self,
         state: &BankState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -59,7 +59,7 @@ impl Guard<BankState> for SetExchangeRateRequest {
     fn validate_and_escape(
         &mut self,
         state: &BankState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -81,7 +81,7 @@ impl Guard<BankState> for GetExchangeRatesRequest {
     fn validate_and_escape(
         &mut self,
         state: &BankState,
-        ctx: &crate::GuardContext,
+        ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }

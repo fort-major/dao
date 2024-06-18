@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use candid::{encode_args, utils::ArgumentEncoder, CandidType, Principal};
 use garde::Validate;
 use ic_cdk::api::call::call_raw;
+use ic_cdk_timers::TimerId;
 use serde::Deserialize;
 
 use crate::{
@@ -113,7 +114,7 @@ impl Voting {
         voter_reputation: E8s,
         canister_ids: &CanisterIds,
         caller: Principal,
-    ) -> Option<CallToExecute> {
+    ) -> Result<Option<CallToExecute>, VotingEvent> {
         let vote = Vote {
             approval_level,
             total_voter_reputation: voter_reputation,
@@ -122,7 +123,7 @@ impl Voting {
         self.base.votes_per_option[option_idx as usize].insert(caller, vote);
 
         if !self.base.is_finish_early_reached_for_all_options() {
-            return None;
+            return Ok(None);
         }
 
         self.stage = VotingStage::Executing;
@@ -130,19 +131,24 @@ impl Voting {
         let call_or_fail = self.kind.generate_resulting_call(&self.base, canister_ids);
 
         if let Some(call) = call_or_fail {
-            Some(call)
+            Ok(Some(call))
         } else {
-            self.stage = VotingStage::Fail(format!("Consensus not reached"));
-
-            None
+            Err(VotingEvent::VotingFail {
+                voting_id: self.id,
+                reason: format!("Consensus not reached"),
+            })
         }
     }
 
-    pub fn resolve_on_timer(&mut self, canister_ids: &CanisterIds) -> Option<CallToExecute> {
+    pub fn resolve_on_timer(
+        &mut self,
+        canister_ids: &CanisterIds,
+    ) -> Result<CallToExecute, VotingEvent> {
         if !self.base.is_quorum_reached_for_all_options() {
-            self.stage = VotingStage::Fail(format!("Quorum not reached for all options"));
-
-            return None;
+            return Err(VotingEvent::VotingFail {
+                voting_id: self.id,
+                reason: format!("Quorum not reached for all options"),
+            });
         }
 
         self.stage = VotingStage::Executing;
@@ -150,11 +156,12 @@ impl Voting {
         let call_or_fail = self.kind.generate_resulting_call(&self.base, canister_ids);
 
         if let Some(call) = call_or_fail {
-            Some(call)
+            Ok(call)
         } else {
-            self.stage = VotingStage::Fail(format!("Consensus not reached"));
-
-            None
+            return Err(VotingEvent::VotingFail {
+                voting_id: self.id,
+                reason: format!("Consensus not reached"),
+            });
         }
     }
 
@@ -191,18 +198,12 @@ impl Voting {
     pub fn can_execute_on_timer(&self) -> bool {
         matches!(self.stage, VotingStage::InProgress)
     }
-
-    pub fn can_start_over(&self) -> bool {
-        matches!(self.stage, VotingStage::Success | VotingStage::Fail(_))
-    }
 }
 
 #[derive(CandidType, Deserialize, Clone)]
 pub enum VotingStage {
     InProgress,
     Executing,
-    Success,
-    Fail(String),
 }
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
@@ -493,6 +494,7 @@ pub struct Vote {
     pub total_voter_reputation: E8s,
 }
 
+#[derive(CandidType, Deserialize, Clone)]
 pub struct CallToExecute {
     pub canister_id: Principal,
     pub method_name: String,
@@ -534,4 +536,37 @@ pub struct VotingExt {
     pub total_votes_per_option: Vec<E8s>,
     pub kind: VotingKind,
     pub stage: VotingStage,
+}
+
+#[derive(CandidType, Deserialize, Clone, Copy)]
+pub enum VotingTimer {
+    ExecOnQuorum {
+        voting_id: VotingId,
+        timestamp: TimestampNs,
+    },
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub enum VotingEvent {
+    VotingCreated {
+        voting_id: VotingId,
+        creator: Principal,
+        quorum: E8s,
+        consensus: E8s,
+        finish_early: E8s,
+        num_options: u32,
+    },
+    VotingExecuting {
+        voting_id: VotingId,
+        call: CallToExecute,
+        rep_per_option: Vec<E8s>,
+        on_timer: bool,
+    },
+    VotingSuccess {
+        voting_id: VotingId,
+    },
+    VotingFail {
+        voting_id: VotingId,
+        reason: String,
+    },
 }

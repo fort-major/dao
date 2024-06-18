@@ -4,7 +4,7 @@ use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, escape_script_tag, proof::Proof, Guard, GuardContext};
+use crate::{e8s::E8s, escape_script_tag, proof::Proof, Guard, ExecutionContext};
 
 use super::{
     state::TasksState,
@@ -37,7 +37,7 @@ impl Guard<TasksState> for CreateTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
         self.team_proof.assert_valid_for(&ctx.caller)?;
@@ -88,7 +88,7 @@ impl Guard<TasksState> for EditTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -139,7 +139,7 @@ impl Guard<TasksState> for FinishEditTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -170,7 +170,7 @@ impl Guard<TasksState> for AttachToTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -204,7 +204,7 @@ impl Guard<TasksState> for SolveTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -263,7 +263,7 @@ impl Guard<TasksState> for FinishSolveRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -300,7 +300,7 @@ impl Guard<TasksState> for EvaluateRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -353,7 +353,7 @@ impl Guard<TasksState> for GetTasksRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -372,7 +372,7 @@ impl Guard<TasksState> for GetTaskIdsRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -394,7 +394,7 @@ impl Guard<TasksState> for DeleteRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &GuardContext,
+        ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 

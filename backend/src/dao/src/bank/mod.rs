@@ -15,7 +15,7 @@ use shared::{
     Guard,
 };
 
-use crate::canister_ids::{create_guard_context, get_canister_ids};
+use crate::utils::{create_exec_context, get_canister_ids};
 
 thread_local! {
     static BANK_STATE: RefCell<Option<BankState>> = RefCell::default();
@@ -32,7 +32,7 @@ pub fn install_bank_state(new_state: Option<BankState>) -> Option<BankState> {
 #[update]
 #[allow(non_snake_case)]
 fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchangeRateResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -45,7 +45,7 @@ fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchangeRateRe
 #[update]
 #[allow(non_snake_case)]
 async fn bank__swap_rewards(mut req: SwapRewardsRequest) -> SwapRewardsResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     let (spend_req, icrc1_client, transfer_arg) = with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -99,7 +99,7 @@ async fn bank__swap_rewards(mut req: SwapRewardsRequest) -> SwapRewardsResponse 
 #[query]
 #[allow(non_snake_case)]
 fn bank__get_exchange_rates(mut req: GetExchangeRatesRequest) -> GetExchangeRatesResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)

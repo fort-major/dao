@@ -17,7 +17,7 @@ use shared::{
     Guard, TimestampNs,
 };
 
-use crate::canister_ids::create_guard_context;
+use crate::utils::create_exec_context;
 
 thread_local! {
     static HUMANS_STATE: RefCell<Option<HumansState>> = RefCell::default();
@@ -34,7 +34,7 @@ pub fn install_humans_state(new_state: Option<HumansState>) -> Option<HumansStat
 #[update]
 #[allow(non_snake_case)]
 fn humans__register(mut req: RegisterRequest) -> RegisterResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -47,7 +47,7 @@ fn humans__register(mut req: RegisterRequest) -> RegisterResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__edit_profile(mut req: EditProfileRequest) -> EditProfileResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -60,7 +60,7 @@ fn humans__edit_profile(mut req: EditProfileRequest) -> EditProfileResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__mint_rewards(mut req: MintRewardsRequest) -> MintRewardsResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -73,7 +73,7 @@ fn humans__mint_rewards(mut req: MintRewardsRequest) -> MintRewardsResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__spend_rewards(mut req: SpendRewardsRequest) -> SpendRewardsResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -86,7 +86,7 @@ fn humans__spend_rewards(mut req: SpendRewardsRequest) -> SpendRewardsResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__refund_rewards(mut req: RefundRewardsRequest) -> RefundRewardsResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -99,7 +99,7 @@ fn humans__refund_rewards(mut req: RefundRewardsRequest) -> RefundRewardsRespons
 #[update]
 #[allow(non_snake_case)]
 fn humans__employ(mut req: EmployRequest) -> EmployResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx).expect("Unable to employ");
@@ -111,7 +111,7 @@ fn humans__employ(mut req: EmployRequest) -> EmployResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__unemploy(mut req: UnemployRequest) -> UnemployResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state_mut(|s| {
         req.validate_and_escape(s, &ctx)
@@ -124,7 +124,7 @@ fn humans__unemploy(mut req: UnemployRequest) -> UnemployResponse {
 #[query]
 #[allow(non_snake_case)]
 fn humans__get_profiles(mut req: GetProfilesRequest) -> GetProfilesResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
@@ -137,7 +137,7 @@ fn humans__get_profiles(mut req: GetProfilesRequest) -> GetProfilesResponse {
 #[query]
 #[allow(non_snake_case)]
 fn humans__get_profile_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
@@ -150,7 +150,7 @@ fn humans__get_profile_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsRespon
 #[query]
 #[allow(non_snake_case)]
 fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
@@ -163,7 +163,7 @@ fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsRe
 #[update]
 #[allow(non_snake_case)]
 fn humans__get_profile_proofs(mut req: GetProfileProofsRequest) -> GetProfileProofsResponse {
-    let ctx = create_guard_context();
+    let ctx = create_exec_context();
 
     with_state(|s| {
         req.validate_and_escape(s, &ctx)
