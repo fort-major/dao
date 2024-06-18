@@ -1,6 +1,5 @@
 use std::{cell::RefCell, time::Duration};
 
-use candid::{CandidType, Deserialize};
 use ic_cdk::{
     api::time,
     caller, export_candid, init, post_upgrade, pre_upgrade, query, spawn,
@@ -17,57 +16,42 @@ use shared::{
         state::VotingsState,
         types::{CallToExecute, VotingEvent, VotingId, VotingKind, VotingTimer},
     },
-    CanisterIds, ExecutionContext, Guard, TimestampNs,
+    Guard, TimestampNs, ENV_VARS,
 };
-use utils::install_canister_ids_state;
-
-use crate::utils::create_exec_context;
-
-mod utils;
-
-#[derive(CandidType, Deserialize)]
-pub struct InitRequest {
-    pub dao_canister_ids: CanisterIds,
-}
 
 #[init]
-fn init_hook(req: InitRequest) {
+fn init_hook() {
     let votings_state = create_votings_state();
 
     install_votings_state(Some(votings_state));
-    install_canister_ids_state(Some(req.dao_canister_ids));
 }
 
 #[pre_upgrade]
 fn pre_upgrade_hook() {
     let votings_state = install_votings_state(None);
-    let canister_ids_state = install_canister_ids_state(None);
 
-    stable_save((votings_state, canister_ids_state)).expect("Unable to stable save");
+    stable_save((votings_state,)).expect("Unable to stable save");
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    let (votings_state, canister_ids_state): (Option<VotingsState>, Option<CanisterIds>) =
+    let (votings_state,): (Option<VotingsState>,) =
         stable_restore().expect("Unable to stable restore");
 
     install_votings_state(votings_state);
-    install_canister_ids_state(canister_ids_state);
 }
 
 #[update]
 #[allow(non_snake_case)]
 async fn votings__start_voting(mut req: StartVotingRequest) -> StartVotingResponse {
-    let ctx = create_exec_context();
-
     // validate the request
     with_state(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to start a voting");
     });
 
     // validate the entity a voting is trying to mutate
-    validate_voting_related_entity(&mut req.kind, &ctx)
+    validate_voting_related_entity(&mut req.kind)
         .await
         .expect("Invalid voting");
 
@@ -82,15 +66,14 @@ async fn votings__start_voting(mut req: StartVotingRequest) -> StartVotingRespon
 #[update]
 #[allow(non_snake_case)]
 async fn votings__cast_vote(mut req: CastVoteRequest) -> CastVoteResponse {
-    let ctx = create_exec_context();
     let id = req.id;
 
     // validate the request
     let (resp, call_to_exec_opt) = with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to cast a vote");
 
-        s.cast_vote(req, &ctx)
+        s.cast_vote(req, caller())
     });
 
     if !resp.decision_made {
@@ -106,7 +89,7 @@ async fn votings__cast_vote(mut req: CastVoteRequest) -> CastVoteResponse {
 #[allow(non_snake_case)]
 fn votings__get_votings(mut req: GetVotingsRequest) -> GetVotingsResponse {
     with_state(|s| {
-        req.validate_and_escape(s, &create_exec_context())
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to get votings");
 
         s.get_votings(req)
@@ -120,12 +103,12 @@ fn start_voting_timer(timer: VotingTimer, now: TimestampNs) {
             timestamp,
         } => {
             if now >= timestamp {
-                resolve_voting_on_timer(voting_id, &create_exec_context());
+                resolve_voting_on_timer(voting_id);
             } else {
                 with_state_mut(|s| s.save_timer(voting_id, timer));
 
                 ic_cdk_timers::set_timer(Duration::from_nanos(timestamp - now), move || {
-                    resolve_voting_on_timer(voting_id, &create_exec_context());
+                    resolve_voting_on_timer(voting_id);
                     with_state_mut(|s| s.remove_timer(&voting_id));
                 });
             }
@@ -133,9 +116,9 @@ fn start_voting_timer(timer: VotingTimer, now: TimestampNs) {
     }
 }
 
-fn resolve_voting_on_timer(voting_id: VotingId, ctx: &ExecutionContext) {
+fn resolve_voting_on_timer(voting_id: VotingId) {
     // resolve on timer
-    let call_to_exec_opt = with_state_mut(|s| s.resolve_on_timer(voting_id, &ctx.canister_ids));
+    let call_to_exec_opt = with_state_mut(|s| s.resolve_on_timer(voting_id));
 
     // if the quorum is reached
     process_voting_result(voting_id, call_to_exec_opt)
@@ -162,13 +145,10 @@ fn process_voting_result(voting_id: VotingId, call_to_exec_opt: Option<CallToExe
     }
 }
 
-async fn validate_voting_related_entity(
-    kind: &mut VotingKind,
-    ctx: &ExecutionContext,
-) -> Result<(), String> {
+async fn validate_voting_related_entity(kind: &mut VotingKind) -> Result<(), String> {
     match kind {
         VotingKind::FinishEditTask { task_id } => {
-            let tasks_canister = TasksCanisterClient::new(ctx.canister_ids.tasks_canister_id);
+            let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
             let response = tasks_canister
                 .tasks__get_tasks(GetTasksRequest {
                     ids: vec![*task_id],
@@ -188,7 +168,7 @@ async fn validate_voting_related_entity(
             }
         }
         VotingKind::EvaluateTask { task_id, solutions } => {
-            let tasks_canister = TasksCanisterClient::new(ctx.canister_ids.tasks_canister_id);
+            let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
             let response = tasks_canister
                 .tasks__get_tasks(GetTasksRequest {
                     ids: vec![*task_id],

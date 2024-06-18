@@ -19,18 +19,12 @@ use shared::{
         },
         state::HumansState,
     },
-    CanisterIds, Guard, TimestampNs,
+    Guard, TimestampNs,
 };
-use utils::install_canister_ids_state;
-
-use crate::utils::create_exec_context;
-
-mod utils;
 
 #[derive(CandidType, Deserialize)]
 pub struct InitRequest {
     pub sasha: Principal,
-    pub dao_canister_ids: CanisterIds,
 }
 
 #[init]
@@ -38,33 +32,28 @@ fn init_hook(req: InitRequest) {
     let humans_state = create_humans_state(req.sasha, time());
 
     install_humans_state(Some(humans_state));
-    install_canister_ids_state(Some(req.dao_canister_ids));
 }
 
 #[pre_upgrade]
 fn pre_upgrade_hook() {
     let humans_state = install_humans_state(None);
-    let canister_ids_state = install_canister_ids_state(None);
 
-    stable_save((humans_state, canister_ids_state)).expect("Unable to stable save");
+    stable_save((humans_state,)).expect("Unable to stable save");
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    let (humans_state, canister_ids_state): (Option<HumansState>, Option<CanisterIds>) =
+    let (humans_state,): (Option<HumansState>,) =
         stable_restore().expect("Unable to stable restore");
 
     install_humans_state(humans_state);
-    install_canister_ids_state(canister_ids_state);
 }
 
 #[update]
 #[allow(non_snake_case)]
 fn humans__register(mut req: RegisterRequest) -> RegisterResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to register new profile");
 
         s.register(req, caller(), time())
@@ -74,10 +63,8 @@ fn humans__register(mut req: RegisterRequest) -> RegisterResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__edit_profile(mut req: EditProfileRequest) -> EditProfileResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to edit profile");
 
         s.edit_profile(req, caller())
@@ -87,10 +74,8 @@ fn humans__edit_profile(mut req: EditProfileRequest) -> EditProfileResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__mint_rewards(mut req: MintRewardsRequest) -> MintRewardsResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to mint rewards");
 
         s.mint_rewards(req)
@@ -100,10 +85,8 @@ fn humans__mint_rewards(mut req: MintRewardsRequest) -> MintRewardsResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__spend_rewards(mut req: SpendRewardsRequest) -> SpendRewardsResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to spend rewards");
 
         s.spend_rewards(req)
@@ -113,10 +96,8 @@ fn humans__spend_rewards(mut req: SpendRewardsRequest) -> SpendRewardsResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__refund_rewards(mut req: RefundRewardsRequest) -> RefundRewardsResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to refund rewards");
 
         s.refund_rewards(req)
@@ -126,10 +107,9 @@ fn humans__refund_rewards(mut req: RefundRewardsRequest) -> RefundRewardsRespons
 #[update]
 #[allow(non_snake_case)]
 fn humans__employ(mut req: EmployRequest) -> EmployResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx).expect("Unable to employ");
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to employ");
 
         s.employ(req, time())
     })
@@ -138,10 +118,8 @@ fn humans__employ(mut req: EmployRequest) -> EmployResponse {
 #[update]
 #[allow(non_snake_case)]
 fn humans__unemploy(mut req: UnemployRequest) -> UnemployResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to refund rewards");
 
         s.unemploy(req)
@@ -151,10 +129,8 @@ fn humans__unemploy(mut req: UnemployRequest) -> UnemployResponse {
 #[query]
 #[allow(non_snake_case)]
 fn humans__get_profiles(mut req: GetProfilesRequest) -> GetProfilesResponse {
-    let ctx = create_exec_context();
-
     with_state(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to get profiles");
 
         s.get_profiles(req)
@@ -164,10 +140,8 @@ fn humans__get_profiles(mut req: GetProfilesRequest) -> GetProfilesResponse {
 #[query]
 #[allow(non_snake_case)]
 fn humans__get_profile_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
-    let ctx = create_exec_context();
-
     with_state(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to get profile ids");
 
         s.get_profile_ids(req)
@@ -177,10 +151,8 @@ fn humans__get_profile_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsRespon
 #[query]
 #[allow(non_snake_case)]
 fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
-    let ctx = create_exec_context();
-
     with_state(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to get team member ids");
 
         s.get_team_member_ids(req)
@@ -190,10 +162,8 @@ fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsRe
 #[update]
 #[allow(non_snake_case)]
 fn humans__get_profile_proofs(mut req: GetProfileProofsRequest) -> GetProfileProofsResponse {
-    let ctx = create_exec_context();
-
     with_state(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to get profile proofs");
 
         s.get_profile_proofs(req, caller())

@@ -94,7 +94,7 @@ impl BankState {
         SetExchangeRateResponse {}
     }
 
-    pub fn get_exchange_rates(&self, req: GetExchangeRatesRequest) -> GetExchangeRatesResponse {
+    pub fn get_exchange_rates(&self, _req: GetExchangeRatesRequest) -> GetExchangeRatesResponse {
         let mut exchange_rates = Vec::new();
 
         for ((from, into), qty) in &self.exchange_rates {

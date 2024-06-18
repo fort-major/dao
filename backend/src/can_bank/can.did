@@ -1,16 +1,5 @@
-type CanisterIds = record {
-  tasks_canister_id : principal;
-  bank_canister_id : principal;
-  humans_canister_id : principal;
-  votings_canister_id : principal;
-};
 type GetExchangeRatesResponse = record {
   exchange_rates : vec record { SwapFrom; SwapInto; nat };
-};
-type InitRequest = record {
-  icp_canister_id : principal;
-  dao_canister_ids : CanisterIds;
-  fmj_canister_id : principal;
 };
 type SetExchangeRateRequest = record {
   from : SwapFrom;
@@ -29,7 +18,7 @@ type SwapRewardsResponse = record {
   asset : principal;
   block_idx : nat;
 };
-service : (InitRequest) -> {
+service : () -> {
   bank__get_exchange_rates : (record {}) -> (GetExchangeRatesResponse) query;
   bank__set_exchange_rate : (SetExchangeRateRequest) -> (record {});
   bank__swap_rewards : (SwapRewardsRequest) -> (SwapRewardsResponse);

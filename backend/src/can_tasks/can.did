@@ -1,10 +1,4 @@
 type AttachToTaskRequest = record { id : nat64; detach : bool };
-type CanisterIds = record {
-  tasks_canister_id : principal;
-  bank_canister_id : principal;
-  humans_canister_id : principal;
-  votings_canister_id : principal;
-};
 type CreateTaskRequest = record {
   solution_fields : vec SolutionField;
   title : text;
@@ -35,7 +29,6 @@ type EvaluateRequest = record {
 type GetTaskIdsResponse = record { ids : vec nat64 };
 type GetTasksRequest = record { ids : vec nat64 };
 type GetTasksResponse = record { tasks : vec opt Task };
-type InitRequest = record { dao_canister_ids : CanisterIds };
 type ProfileProof = record {
   id : principal;
   reputation : nat;
@@ -95,7 +88,7 @@ type URLKind = variant {
   FortMajorSite;
   Twitter;
 };
-service : (InitRequest) -> {
+service : () -> {
   tasks__attach_to_task : (AttachToTaskRequest) -> (record {});
   tasks__create_task : (CreateTaskRequest) -> (CreateTaskResponse);
   tasks__delete_task : (DeleteRequest) -> (record {});

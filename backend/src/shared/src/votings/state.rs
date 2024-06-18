@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, LinkedList};
 use candid::{CandidType, Principal};
 use serde::Deserialize;
 
-use crate::{CanisterIds, ExecutionContext, TimestampNs};
+use crate::{TimestampNs};
 
 use super::{
     api::{
@@ -70,7 +70,7 @@ impl VotingsState {
     pub fn cast_vote(
         &mut self,
         req: CastVoteRequest,
-        ctx: &ExecutionContext,
+        caller: Principal,
     ) -> (CastVoteResponse, Option<CallToExecute>) {
         let voting = self.votings.get_mut(&req.id).unwrap();
 
@@ -81,8 +81,7 @@ impl VotingsState {
                 .profile_proof
                 .expect("Profile proof not computed")
                 .reputation,
-            &ctx.canister_ids,
-            ctx.caller,
+            caller,
         );
 
         match result {
@@ -105,11 +104,7 @@ impl VotingsState {
         }
     }
 
-    pub fn resolve_on_timer(
-        &mut self,
-        id: VotingId,
-        canister_ids: &CanisterIds,
-    ) -> Option<CallToExecute> {
+    pub fn resolve_on_timer(&mut self, id: VotingId) -> Option<CallToExecute> {
         // ignore if no voting is found or invalid state - it means that the timer is triggered for an already finished voting
         let voting = self.votings.get_mut(&id)?;
 
@@ -117,7 +112,7 @@ impl VotingsState {
             return None;
         }
 
-        match voting.resolve_on_timer(canister_ids) {
+        match voting.resolve_on_timer() {
             Ok(c) => Some(c),
             Err(event) => {
                 self.save_event(event);

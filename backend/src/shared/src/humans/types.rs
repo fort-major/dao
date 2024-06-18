@@ -3,6 +3,8 @@ use garde::Validate;
 
 use crate::{e8s::E8s, TimestampNs};
 
+pub const PROOF_MARKER: &str = "FMJ HUMANS CANISTER GET PROFILE PROOFS RESPONSE";
+
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Profile {
     pub id: Principal,

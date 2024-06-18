@@ -2,7 +2,7 @@ use candid::{CandidType, Nat, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, escape_script_tag, tasks::types::RewardEntry, Guard};
+use crate::{e8s::E8s, escape_script_tag, tasks::types::RewardEntry, Guard, ENV_VARS};
 
 use super::{
     state::HumansState,
@@ -21,11 +21,12 @@ impl Guard<HumansState> for RegisterRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if state.profiles.contains_key(&ctx.caller) {
+        if state.profiles.contains_key(&caller) {
             return Err(format!("The profile already exists"));
         }
 
@@ -56,11 +57,12 @@ impl Guard<HumansState> for EditProfileRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if !state.profiles.contains_key(&ctx.caller) {
+        if !state.profiles.contains_key(&caller) {
             return Err(format!("The profile does not exist"));
         }
 
@@ -92,12 +94,13 @@ pub struct MintRewardsRequest {
 impl Guard<HumansState> for MintRewardsRequest {
     fn validate_and_escape(
         &mut self,
-        state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        _state: &HumansState,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if !ctx.caller_is_task_canister {
+        if caller != ENV_VARS.tasks_canister_id {
             return Err(format!("Access denied"));
         }
 
@@ -122,11 +125,12 @@ impl Guard<HumansState> for SpendRewardsRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if !ctx.caller_is_bank_canister {
+        if caller != ENV_VARS.bank_canister_id {
             return Err(format!("Access denied"));
         }
 
@@ -164,11 +168,12 @@ impl Guard<HumansState> for RefundRewardsRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if !ctx.caller_is_bank_canister {
+        if caller != ENV_VARS.bank_canister_id {
             return Err(format!("Access denied"));
         }
 
@@ -195,11 +200,12 @@ impl Guard<HumansState> for EmployRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if !ctx.caller_is_voting_canister {
+        if caller != ENV_VARS.votings_canister_id {
             return Err(format!("Access denied"));
         }
 
@@ -233,11 +239,12 @@ impl Guard<HumansState> for UnemployRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if !ctx.caller_is_voting_canister {
+        if caller != ENV_VARS.votings_canister_id {
             return Err(format!("Access denied"));
         }
 
@@ -266,8 +273,9 @@ pub struct GetProfilesRequest {
 impl Guard<HumansState> for GetProfilesRequest {
     fn validate_and_escape(
         &mut self,
-        state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        _state: &HumansState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -285,8 +293,9 @@ pub struct GetProfileIdsRequest {}
 impl Guard<HumansState> for GetProfileIdsRequest {
     fn validate_and_escape(
         &mut self,
-        state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        _state: &HumansState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -305,11 +314,12 @@ impl Guard<HumansState> for GetProfileProofsRequest {
     fn validate_and_escape(
         &mut self,
         state: &HumansState,
-        ctx: &crate::ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if state.profiles.contains_key(&ctx.caller) {
+        if state.profiles.contains_key(&caller) {
             Ok(())
         } else {
             Err(format!("No profile exist"))
@@ -319,6 +329,8 @@ impl Guard<HumansState> for GetProfileProofsRequest {
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetProfileProofsResponse {
+    #[garde(skip)]
+    pub marker: String,
     #[garde(dive)]
     pub proof: ProfileProof,
 }

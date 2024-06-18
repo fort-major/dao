@@ -2,7 +2,7 @@ use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 use icrc_ledger_types::icrc1::transfer::BlockIndex;
 
-use crate::{e8s::E8s, Guard};
+use crate::{e8s::E8s, Guard, ENV_VARS};
 
 use super::{
     state::BankState,
@@ -22,8 +22,9 @@ pub struct SwapRewardsRequest {
 impl Guard<BankState> for SwapRewardsRequest {
     fn validate_and_escape(
         &mut self,
-        state: &BankState,
-        ctx: &crate::ExecutionContext,
+        _state: &BankState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -58,12 +59,13 @@ pub struct SetExchangeRateRequest {
 impl Guard<BankState> for SetExchangeRateRequest {
     fn validate_and_escape(
         &mut self,
-        state: &BankState,
-        ctx: &crate::ExecutionContext,
+        _state: &BankState,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if ctx.caller_is_voting_canister {
+        if caller == ENV_VARS.votings_canister_id {
             Ok(())
         } else {
             Err(format!("Access denied"))
@@ -80,8 +82,9 @@ pub struct GetExchangeRatesRequest {}
 impl Guard<BankState> for GetExchangeRatesRequest {
     fn validate_and_escape(
         &mut self,
-        state: &BankState,
-        ctx: &crate::ExecutionContext,
+        _state: &BankState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }

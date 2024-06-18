@@ -1,9 +1,3 @@
-type CanisterIds = record {
-  tasks_canister_id : principal;
-  bank_canister_id : principal;
-  humans_canister_id : principal;
-  votings_canister_id : principal;
-};
 type CastVoteRequest = record {
   id : VotingId;
   option_idx : nat32;
@@ -13,7 +7,6 @@ type CastVoteRequest = record {
 type CastVoteResponse = record { decision_made : bool };
 type GetVotingsRequest = record { ids : vec VotingId };
 type GetVotingsResponse = record { votings : vec opt VotingExt };
-type InitRequest = record { dao_canister_ids : CanisterIds };
 type ProfileProof = record {
   id : principal;
   reputation : nat;
@@ -59,7 +52,7 @@ type VotingKind = variant {
   };
 };
 type VotingStage = variant { Executing; InProgress };
-service : (InitRequest) -> {
+service : () -> {
   votings__cast_vote : (CastVoteRequest) -> (CastVoteResponse);
   votings__get_votings : (GetVotingsRequest) -> (GetVotingsResponse) query;
   votings__start_voting : (StartVotingRequest) -> (StartVotingResponse);

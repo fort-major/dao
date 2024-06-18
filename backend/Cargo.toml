@@ -21,3 +21,4 @@ garde = { version = "0.18", features = ["derive", "url", "unicode"] }
 html-escape = "0.2"
 url = "2.5"
 async-trait = "0.1"
+lazy_static = "1.4"

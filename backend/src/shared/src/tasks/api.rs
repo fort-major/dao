@@ -4,7 +4,7 @@ use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, escape_script_tag, proof::Proof, ExecutionContext, Guard};
+use crate::{e8s::E8s, escape_script_tag, proof::Proof, Guard, ENV_VARS};
 
 use super::{
     state::TasksState,
@@ -36,11 +36,12 @@ pub struct CreateTaskRequest {
 impl Guard<TasksState> for CreateTaskRequest {
     fn validate_and_escape(
         &mut self,
-        state: &TasksState,
-        ctx: &ExecutionContext,
+        _state: &TasksState,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.team_proof.assert_valid_for(ctx)?;
+        self.team_proof.assert_valid_for(caller)?;
 
         if !self
             .team_proof
@@ -94,7 +95,8 @@ impl Guard<TasksState> for EditTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -104,9 +106,9 @@ impl Guard<TasksState> for EditTaskRequest {
             .ok_or(format!("Task {} not found", self.id))?;
 
         match (
-            ctx.caller_is_voting_canister,
+            caller == ENV_VARS.votings_canister_id,
             task.can_edit(),
-            task.is_creator(&ctx.caller),
+            task.is_creator(&caller),
         ) {
             (true, _, _) => {}
             (false, true, true) => {}
@@ -145,7 +147,8 @@ impl Guard<TasksState> for FinishEditTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -154,7 +157,7 @@ impl Guard<TasksState> for FinishEditTaskRequest {
             .get(&self.id)
             .ok_or(format!("Task {} not found", self.id))?;
 
-        match (task.can_edit(), ctx.caller_is_voting_canister) {
+        match (task.can_edit(), caller == ENV_VARS.votings_canister_id) {
             (true, true) => Ok(()),
             _ => Err(format!("Access denied")),
         }
@@ -176,7 +179,8 @@ impl Guard<TasksState> for AttachToTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &ExecutionContext,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -210,7 +214,8 @@ impl Guard<TasksState> for SolveTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -226,7 +231,7 @@ impl Guard<TasksState> for SolveTaskRequest {
         if task.is_team_only() {
             let proof = self.team_proof.as_mut().ok_or("No team proof provided")?;
 
-            proof.assert_valid_for(ctx)?;
+            proof.assert_valid_for(caller)?;
 
             if !proof
                 .profile_proof
@@ -277,7 +282,8 @@ impl Guard<TasksState> for FinishSolveRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &ExecutionContext,
+        _caller: Principal,
+        now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -288,7 +294,7 @@ impl Guard<TasksState> for FinishSolveRequest {
 
         match task.stage {
             TaskStage::Solve { until_timestamp } => {
-                if until_timestamp > ctx.now {
+                if until_timestamp > now {
                     Err(format!("Unable to finish solve faster than planned"))
                 } else {
                     Ok(())
@@ -314,7 +320,8 @@ impl Guard<TasksState> for EvaluateRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -323,7 +330,7 @@ impl Guard<TasksState> for EvaluateRequest {
             .get(&self.id)
             .ok_or(format!("Task {} not found", self.id))?;
 
-        if !(task.can_evaluate() && ctx.caller_is_voting_canister) {
+        if !(task.can_evaluate() && caller == ENV_VARS.votings_canister_id) {
             return Err(format!("Access denied"));
         }
 
@@ -366,8 +373,9 @@ pub struct GetTasksRequest {
 impl Guard<TasksState> for GetTasksRequest {
     fn validate_and_escape(
         &mut self,
-        state: &TasksState,
-        ctx: &ExecutionContext,
+        _state: &TasksState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -385,8 +393,9 @@ pub struct GetTaskIdsRequest {}
 impl Guard<TasksState> for GetTaskIdsRequest {
     fn validate_and_escape(
         &mut self,
-        state: &TasksState,
-        ctx: &ExecutionContext,
+        _state: &TasksState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -408,7 +417,8 @@ impl Guard<TasksState> for DeleteRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        ctx: &ExecutionContext,
+        caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -417,11 +427,11 @@ impl Guard<TasksState> for DeleteRequest {
             .get(&self.id)
             .ok_or(format!("Task {} not found", self.id))?;
 
-        if task.creator == ctx.caller && task.can_edit() {
+        if task.creator == caller && task.can_edit() {
             return Ok(());
         }
 
-        if task.can_delete() && ctx.caller_is_voting_canister {
+        if task.can_delete() && caller == ENV_VARS.votings_canister_id {
             return Ok(());
         }
 

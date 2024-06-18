@@ -21,10 +21,11 @@ impl Guard<VotingsState> for StartVotingRequest {
     fn validate_and_escape(
         &mut self,
         state: &VotingsState,
-        ctx: &crate::ExecutionContext,
+        caller: candid::Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.proof.assert_valid_for(ctx)?;
+        self.proof.assert_valid_for(caller)?;
 
         if !self
             .proof
@@ -38,11 +39,9 @@ impl Guard<VotingsState> for StartVotingRequest {
 
         let id = self.kind.get_id();
 
-        if let Some(voting) = state.votings.get(&id) {
+        if let Some(_voting) = state.votings.get(&id) {
             return Err(format!("The voting is already in progress"));
         }
-
-        // TODO: validate the entity the voting trying to modify
 
         Ok(())
     }
@@ -70,10 +69,11 @@ impl Guard<VotingsState> for CastVoteRequest {
     fn validate_and_escape(
         &mut self,
         state: &VotingsState,
-        ctx: &crate::ExecutionContext,
+        caller: candid::Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.proof.assert_valid_for(ctx)?;
+        self.proof.assert_valid_for(caller)?;
 
         if let Some(approval) = &self.approval_level {
             if approval
@@ -120,8 +120,9 @@ pub struct GetVotingsRequest {
 impl Guard<VotingsState> for GetVotingsRequest {
     fn validate_and_escape(
         &mut self,
-        state: &VotingsState,
-        ctx: &crate::ExecutionContext,
+        _state: &VotingsState,
+        _caller: candid::Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }

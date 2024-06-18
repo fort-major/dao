@@ -1,9 +1,3 @@
-type CanisterIds = record {
-  tasks_canister_id : principal;
-  bank_canister_id : principal;
-  humans_canister_id : principal;
-  votings_canister_id : principal;
-};
 type EditProfileRequest = record {
   new_name_opt : opt opt text;
   new_avatar_src_opt : opt opt text;
@@ -18,10 +12,10 @@ type Employment = record {
   hours_earned_during_employment : nat;
 };
 type GetProfileIdsResponse = record { ids : vec principal };
-type GetProfileProofsResponse = record { proof : ProfileProof };
+type GetProfileProofsResponse = record { marker : text; proof : ProfileProof };
 type GetProfilesRequest = record { ids : vec principal };
 type GetProfilesResponse = record { profiles : vec opt Profile };
-type InitRequest = record { sasha : principal; dao_canister_ids : CanisterIds };
+type InitRequest = record { sasha : principal };
 type MintRewardsRequest = record { rewards : vec RewardEntry };
 type Profile = record {
   id : principal;

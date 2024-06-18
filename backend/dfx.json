@@ -19,6 +19,11 @@
       "candid": "src/can_votings/can.did",
       "package": "votings",
       "type": "rust"
+    },
+    "fmj": {
+      "candid": "src/can_fmj/can.did",
+      "wasm": "src/can_fmj/fmj.wasm",
+      "type": "custom"
     }
   },
   "defaults": {

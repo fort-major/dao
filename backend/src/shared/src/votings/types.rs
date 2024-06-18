@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use candid::{encode_args, utils::ArgumentEncoder, CandidType, Principal};
 use garde::Validate;
 use ic_cdk::api::call::call_raw;
-use ic_cdk_timers::TimerId;
+
 use serde::Deserialize;
 
 use crate::{
@@ -17,7 +17,7 @@ use crate::{
         api::{EvaluateRequest, FinishEditTaskRequest},
         types::TaskId,
     },
-    CanisterIds, DurationNs, TimestampNs,
+    DurationNs, TimestampNs, ENV_VARS,
 };
 
 pub const ONE_DAY_NS: u64 = 1_000_000_000 * 60 * 60 * 24;
@@ -43,14 +43,17 @@ pub struct Voting {
 impl Voting {
     pub fn new(total_supply: E8s, kind: VotingKind, caller: Principal, now: TimestampNs) -> Self {
         let (duration_ns, quorum, consensus, finish_early, num_options) = match &kind {
-            VotingKind::FinishEditTask { task_id } => (
+            VotingKind::FinishEditTask { task_id: _ } => (
                 ONE_WEEK_NS,
                 &total_supply * E8s::forth(),
                 E8s::two_thrids(),
                 total_supply * E8s::two_thrids(),
                 1,
             ),
-            VotingKind::EvaluateTask { task_id, solutions } => (
+            VotingKind::EvaluateTask {
+                task_id: _,
+                solutions,
+            } => (
                 ONE_WEEK_NS,
                 &total_supply * E8s::third(),
                 E8s::two_thrids(),
@@ -58,9 +61,9 @@ impl Voting {
                 solutions.len() as u32,
             ),
             VotingKind::BankSetExchangeRate {
-                from,
-                into,
-                new_rate,
+                from: _,
+                into: _,
+                new_rate: _,
             } => (
                 ONE_WEEK_NS,
                 &total_supply * E8s::half(),
@@ -69,8 +72,8 @@ impl Voting {
                 1,
             ),
             VotingKind::HumansEmploy {
-                candidate,
-                hours_a_week_commitment,
+                candidate: _,
+                hours_a_week_commitment: _,
             } => (
                 ONE_WEEK_NS,
                 &total_supply * E8s::half(),
@@ -78,7 +81,7 @@ impl Voting {
                 total_supply * E8s::three_forths(),
                 1,
             ),
-            VotingKind::HumansUnemploy { team_member } => (
+            VotingKind::HumansUnemploy { team_member: _ } => (
                 ONE_WEEK_NS * 2,
                 &total_supply * E8s::half(),
                 E8s::three_forths(),
@@ -112,7 +115,6 @@ impl Voting {
         option_idx: u32,
         approval_level: Option<E8s>,
         voter_reputation: E8s,
-        canister_ids: &CanisterIds,
         caller: Principal,
     ) -> Result<Option<CallToExecute>, VotingEvent> {
         let vote = Vote {
@@ -128,7 +130,7 @@ impl Voting {
 
         self.stage = VotingStage::Executing;
 
-        let call_or_fail = self.kind.generate_resulting_call(&self.base, canister_ids);
+        let call_or_fail = self.kind.generate_resulting_call(&self.base);
 
         if let Some(call) = call_or_fail {
             Ok(Some(call))
@@ -140,10 +142,7 @@ impl Voting {
         }
     }
 
-    pub fn resolve_on_timer(
-        &mut self,
-        canister_ids: &CanisterIds,
-    ) -> Result<CallToExecute, VotingEvent> {
+    pub fn resolve_on_timer(&mut self) -> Result<CallToExecute, VotingEvent> {
         if !self.base.is_quorum_reached_for_all_options() {
             return Err(VotingEvent::VotingFail {
                 voting_id: self.id,
@@ -153,7 +152,7 @@ impl Voting {
 
         self.stage = VotingStage::Executing;
 
-        let call_or_fail = self.kind.generate_resulting_call(&self.base, canister_ids);
+        let call_or_fail = self.kind.generate_resulting_call(&self.base);
 
         if let Some(call) = call_or_fail {
             Ok(call)
@@ -260,11 +259,7 @@ impl VotingKind {
         }
     }
 
-    pub fn generate_resulting_call(
-        &self,
-        base: &VotingBase,
-        canister_ids: &CanisterIds,
-    ) -> Option<CallToExecute> {
+    pub fn generate_resulting_call(&self, base: &VotingBase) -> Option<CallToExecute> {
         let result = match self {
             VotingKind::FinishEditTask { task_id } => {
                 let result = base.calc_binary_results()[0];
@@ -276,7 +271,7 @@ impl VotingKind {
                 let req = FinishEditTaskRequest { id: *task_id };
 
                 CallToExecute::new(
-                    canister_ids.tasks_canister_id,
+                    ENV_VARS.tasks_canister_id,
                     "tasks__finish_edit_task".into(),
                     (req,),
                 )
@@ -295,11 +290,7 @@ impl VotingKind {
                     evaluation_per_solution,
                 };
 
-                CallToExecute::new(
-                    canister_ids.tasks_canister_id,
-                    "tasks__evaluate".into(),
-                    (req,),
-                )
+                CallToExecute::new(ENV_VARS.tasks_canister_id, "tasks__evaluate".into(), (req,))
             }
             VotingKind::BankSetExchangeRate {
                 from,
@@ -319,7 +310,7 @@ impl VotingKind {
                 };
 
                 CallToExecute::new(
-                    canister_ids.bank_canister_id,
+                    ENV_VARS.bank_canister_id,
                     "bank__set_exchange_rate".into(),
                     (req,),
                 )
@@ -339,11 +330,7 @@ impl VotingKind {
                     hours_a_week_commitment: hours_a_week_commitment.clone(),
                 };
 
-                CallToExecute::new(
-                    canister_ids.humans_canister_id,
-                    "humans__employ".into(),
-                    (req,),
-                )
+                CallToExecute::new(ENV_VARS.humans_canister_id, "humans__employ".into(), (req,))
             }
             VotingKind::HumansUnemploy { team_member } => {
                 let result = base.calc_binary_results()[0];
@@ -357,7 +344,7 @@ impl VotingKind {
                 };
 
                 CallToExecute::new(
-                    canister_ids.humans_canister_id,
+                    ENV_VARS.humans_canister_id,
                     "humans__unemploy".into(),
                     (req,),
                 )

@@ -149,7 +149,7 @@ impl Task {
         let mut evaluation_sum = E8s::zero();
         let mut max_evaluation = E8s::zero();
 
-        for (solver, eval_opt) in evaluation_per_solution.iter() {
+        for (_solver, eval_opt) in evaluation_per_solution.iter() {
             if let Some(eval) = eval_opt {
                 if eval > &max_evaluation {
                     max_evaluation = eval.clone();

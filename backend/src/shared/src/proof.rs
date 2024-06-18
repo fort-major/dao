@@ -1,4 +1,4 @@
-use candid::{decode_args, CandidType};
+use candid::{decode_args, CandidType, Principal};
 use garde::Validate;
 use ic_cbor::CertificateToCbor;
 use ic_certificate_verification::VerifyCertificate;
@@ -6,8 +6,10 @@ use ic_certification::{Certificate, LookupResult};
 use serde::Deserialize;
 
 use crate::{
-    humans::{api::GetProfileProofsResponse, types::ProfileProof},
-    ExecutionContext,
+    humans::{
+        api::GetProfileProofsResponse,
+        types::{ProfileProof, PROOF_MARKER},
+    }, ENV_VARS,
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -19,12 +21,14 @@ pub struct Proof {
 }
 
 impl Proof {
-    pub fn assert_valid_for(&mut self, ctx: &ExecutionContext) -> Result<(), String> {
-        let root_key = get_ic_root_key();
+    pub fn assert_valid_for(&mut self, caller: Principal) -> Result<(), String> {
         let cert = self.get_cert()?;
 
-        cert.verify(ctx.canister_ids.humans_canister_id.as_slice(), &root_key)
-            .map_err(|e| e.to_string())?;
+        cert.verify(
+            ENV_VARS.humans_canister_id.as_slice(),
+            &ENV_VARS.ic_root_key,
+        )
+        .map_err(|e| e.to_string())?;
 
         let get_profile_proof_response = match cert.tree.lookup_path([b"reply"]) {
             LookupResult::Found(blob) => {
@@ -35,7 +39,11 @@ impl Proof {
             _ => return Err(format!("Unable to find profile proof in the reply")),
         };
 
-        if get_profile_proof_response.proof.id != ctx.caller {
+        if get_profile_proof_response.marker != PROOF_MARKER {
+            return Err(format!("Invalid proof marker"));
+        }
+
+        if get_profile_proof_response.proof.id != caller {
             return Err(format!("The caller is not the owner of the proof"));
         }
 
@@ -47,14 +55,4 @@ impl Proof {
     fn get_cert(&self) -> Result<Certificate, String> {
         Certificate::from_cbor(&self.cert_raw).map_err(|e| e.to_string())
     }
-}
-
-fn get_ic_root_key() -> Vec<u8> {
-    std::env::var("IC_ROOT_KEY")
-        .expect("No IC_ROOT_KEY env variable is present")
-        .trim_start_matches("[")
-        .trim_end_matches("]")
-        .split(",")
-        .map(|chunk| chunk.trim().parse().expect("Unable to parse ic root key"))
-        .collect()
 }

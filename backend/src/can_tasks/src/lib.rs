@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 
-use candid::{CandidType, Deserialize};
 use ic_cdk::{
     api::time,
     caller, export_candid, init, post_upgrade, pre_upgrade, query,
@@ -19,51 +18,35 @@ use shared::{
         },
         state::TasksState,
     },
-    CanisterIds, Guard,
+    Guard, ENV_VARS,
 };
-use utils::install_canister_ids_state;
-
-use crate::utils::{create_exec_context, get_canister_ids};
-
-mod utils;
-
-#[derive(CandidType, Deserialize)]
-pub struct InitRequest {
-    pub dao_canister_ids: CanisterIds,
-}
 
 #[init]
-fn init_hook(req: InitRequest) {
+fn init_hook() {
     let tasks_state = create_tasks_state();
 
     install_tasks_state(Some(tasks_state));
-    install_canister_ids_state(Some(req.dao_canister_ids));
 }
 
 #[pre_upgrade]
 fn pre_upgrade_hook() {
     let tasks_state = install_tasks_state(None);
-    let canister_ids_state = install_canister_ids_state(None);
 
-    stable_save((tasks_state, canister_ids_state)).expect("Unable to stable save");
+    stable_save((tasks_state,)).expect("Unable to stable save");
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    let (tasks_state, canister_ids_state): (Option<TasksState>, Option<CanisterIds>) =
-        stable_restore().expect("Unable to stable restore");
+    let (tasks_state,): (Option<TasksState>,) = stable_restore().expect("Unable to stable restore");
 
     install_tasks_state(tasks_state);
-    install_canister_ids_state(canister_ids_state);
 }
 
 #[update]
 #[allow(non_snake_case)]
 fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to create task");
 
         s.create_task(req, caller(), time())
@@ -73,10 +56,8 @@ fn tasks__create_task(mut req: CreateTaskRequest) -> CreateTaskResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to edit task");
 
         s.edit_task(req)
@@ -86,10 +67,8 @@ fn tasks__edit_task(mut req: EditTaskRequest) -> EditTaskResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to finish editing task");
 
         s.finish_edit_task(req, time())
@@ -99,10 +78,8 @@ fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResp
 #[update]
 #[allow(non_snake_case)]
 fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to solve task");
 
         s.solve_task(req, caller(), time())
@@ -112,10 +89,8 @@ fn tasks__solve_task(mut req: SolveTaskRequest) -> SolveTaskResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__attach_to_task(mut req: AttachToTaskRequest) -> AttachToTaskResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to attach to task");
 
         s.attach_to_task(req, caller())
@@ -125,10 +100,8 @@ fn tasks__attach_to_task(mut req: AttachToTaskRequest) -> AttachToTaskResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to finish solving task");
 
         s.finish_solve_task(req)
@@ -138,16 +111,14 @@ fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse 
 #[update]
 #[allow(non_snake_case)]
 async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
-    let ctx = create_exec_context();
-
     let (result, rewards) = with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to evaluate task");
 
         s.evaluate_task(req)
     });
 
-    let humans_canister = HumansCanisterClient::new(get_canister_ids().humans_canister_id);
+    let humans_canister = HumansCanisterClient::new(ENV_VARS.humans_canister_id);
     let mint_rewards_req = MintRewardsRequest { rewards };
 
     // TODO: add rescheduling
@@ -164,10 +135,8 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
 #[update]
 #[allow(non_snake_case)]
 fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
-    let ctx = create_exec_context();
-
     with_state_mut(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to delete task");
 
         s.delete_task(req)
@@ -177,10 +146,8 @@ fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
 #[query]
 #[allow(non_snake_case)]
 fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
-    let ctx = create_exec_context();
-
     with_state(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to get task ids");
 
         s.get_task_ids(req)
@@ -190,10 +157,8 @@ fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
 #[query]
 #[allow(non_snake_case)]
 fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
-    let ctx = create_exec_context();
-
     with_state(|s| {
-        req.validate_and_escape(s, &ctx)
+        req.validate_and_escape(s, caller(), time())
             .expect("Unable to get tasks");
 
         s.get_tasks(req)

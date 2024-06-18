@@ -13,7 +13,7 @@ use super::{
         RegisterResponse, SpendRewardsRequest, SpendRewardsResponse, UnemployRequest,
         UnemployResponse,
     },
-    types::{Profile, ProfileProof},
+    types::{Profile, ProfileProof, PROOF_MARKER},
 };
 
 #[derive(CandidType, Deserialize)]
@@ -128,13 +128,13 @@ impl HumansState {
         GetProfilesResponse { profiles }
     }
 
-    pub fn get_profile_ids(&self, req: GetProfileIdsRequest) -> GetProfileIdsResponse {
+    pub fn get_profile_ids(&self, _req: GetProfileIdsRequest) -> GetProfileIdsResponse {
         let ids = self.profiles.keys().cloned().collect();
 
         GetProfileIdsResponse { ids }
     }
 
-    pub fn get_team_member_ids(&self, req: GetProfileIdsRequest) -> GetProfileIdsResponse {
+    pub fn get_team_member_ids(&self, _req: GetProfileIdsRequest) -> GetProfileIdsResponse {
         let ids = self.team_members.iter().cloned().collect();
 
         GetProfileIdsResponse { ids }
@@ -142,7 +142,7 @@ impl HumansState {
 
     pub fn get_profile_proofs(
         &self,
-        req: GetProfileProofsRequest,
+        _req: GetProfileProofsRequest,
         caller: Principal,
     ) -> GetProfileProofsResponse {
         let profile = self.profiles.get(&caller).unwrap();
@@ -154,7 +154,10 @@ impl HumansState {
             reputation_total_supply: self.get_reputation_total_supply(),
         };
 
-        GetProfileProofsResponse { proof }
+        GetProfileProofsResponse {
+            marker: PROOF_MARKER.to_string(),
+            proof,
+        }
     }
 
     fn get_reputation_total_supply(&self) -> E8s {
