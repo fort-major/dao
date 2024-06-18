@@ -4,7 +4,7 @@ use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, escape_script_tag, proof::Proof, Guard, ExecutionContext};
+use crate::{e8s::E8s, escape_script_tag, proof::Proof, ExecutionContext, Guard};
 
 use super::{
     state::TasksState,
@@ -40,9 +40,15 @@ impl Guard<TasksState> for CreateTaskRequest {
         ctx: &ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.team_proof.assert_valid_for(&ctx.caller)?;
+        self.team_proof.assert_valid_for(ctx)?;
 
-        if !self.team_proof.profile_proof.is_team_member {
+        if !self
+            .team_proof
+            .profile_proof
+            .as_ref()
+            .expect("UNREACHEABLE")
+            .is_team_member
+        {
             return Err(format!("Only team members can create tasks"));
         }
 
@@ -218,10 +224,18 @@ impl Guard<TasksState> for SolveTaskRequest {
         }
 
         if task.is_team_only() {
-            self.team_proof
+            let proof = self.team_proof.as_mut().ok_or("No team proof provided")?;
+
+            proof.assert_valid_for(ctx)?;
+
+            if !proof
+                .profile_proof
                 .as_ref()
-                .expect("No team proof provided")
-                .assert_valid_for(&ctx.caller)?;
+                .expect("UNREACHEABLE")
+                .is_team_member
+            {
+                return Err(format!("Only team members can solve this task"));
+            }
         }
 
         if let Some(filled_in_fields) = &self.filled_in_fields_opt {

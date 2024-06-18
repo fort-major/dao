@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use candid::{CandidType, Principal};
 
 use serde::Deserialize;

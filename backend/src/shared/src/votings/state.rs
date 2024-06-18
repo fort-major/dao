@@ -38,7 +38,10 @@ impl VotingsState {
         now: TimestampNs,
     ) -> (StartVotingResponse, VotingTimer) {
         let voting = Voting::new(
-            req.proof.profile_proof.reputation_total_supply,
+            req.proof
+                .profile_proof
+                .expect("Profile proof not computed")
+                .reputation_total_supply,
             req.kind,
             caller,
             now,
@@ -74,7 +77,10 @@ impl VotingsState {
         let result = voting.cast_vote(
             req.option_idx,
             req.approval_level,
-            req.proof.profile_proof.reputation,
+            req.proof
+                .profile_proof
+                .expect("Profile proof not computed")
+                .reputation,
             &ctx.canister_ids,
             ctx.caller,
         );

@@ -6,12 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serde = { workspace = true }
 candid = { workspace = true }
 ic-cdk = { workspace = true }
 ic-cdk-timers = { workspace = true }
-serde = { workspace = true }
+ic-certificate-verification = { workspace = true }
+ic-certification = { workspace = true }
+ic-cbor = { workspace = true }
 garde = { workspace = true }
 icrc-ledger-types = { workspace = true }
 html-escape = { workspace = true }
 url = { workspace = true }
 async-trait = { workspace = true }
+
+[env]

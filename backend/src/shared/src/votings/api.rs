@@ -2,16 +2,11 @@ use candid::CandidType;
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{
-    e8s::E8s,
-    proof::Proof,
-    tasks::{api::GetTasksRequest, client::TasksCanisterClient},
-    Guard,
-};
+use crate::{e8s::E8s, proof::Proof, Guard};
 
 use super::{
     state::VotingsState,
-    types::{Vote, VotingExt, VotingId, VotingKind},
+    types::{VotingExt, VotingId, VotingKind},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -29,9 +24,15 @@ impl Guard<VotingsState> for StartVotingRequest {
         ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.proof.assert_valid_for(&ctx.caller)?;
+        self.proof.assert_valid_for(ctx)?;
 
-        if !self.proof.profile_proof.is_team_member {
+        if !self
+            .proof
+            .profile_proof
+            .as_ref()
+            .expect("UNREACHEABLE")
+            .is_team_member
+        {
             return Err(format!("Only team members can start votings"));
         }
 
@@ -72,10 +73,17 @@ impl Guard<VotingsState> for CastVoteRequest {
         ctx: &crate::ExecutionContext,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.proof.assert_valid_for(&ctx.caller)?;
+        self.proof.assert_valid_for(ctx)?;
 
         if let Some(approval) = &self.approval_level {
-            if approval > &self.proof.profile_proof.reputation {
+            if approval
+                > &self
+                    .proof
+                    .profile_proof
+                    .as_ref()
+                    .expect("UNREACHEABLE")
+                    .reputation
+            {
                 return Err(format!("Not enough reputation to cast that vote"));
             }
         }
