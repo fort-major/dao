@@ -1,6 +1,12 @@
 use std::cell::RefCell;
 
-use ic_cdk::{api::time, caller, query, spawn, trap, update};
+use candid::{CandidType, Deserialize};
+use ic_cdk::{
+    api::time,
+    caller, export_candid, init, post_upgrade, pre_upgrade, query,
+    storage::{stable_restore, stable_save},
+    trap, update,
+};
 use shared::{
     humans::{api::MintRewardsRequest, client::HumansCanisterClient},
     tasks::{
@@ -13,21 +19,42 @@ use shared::{
         },
         state::TasksState,
     },
-    Guard,
+    CanisterIds, Guard,
 };
+use utils::install_canister_ids_state;
 
 use crate::utils::{create_exec_context, get_canister_ids};
 
-thread_local! {
-    static TASKS_STATE: RefCell<Option<TasksState>> = RefCell::default();
+mod utils;
+
+#[derive(CandidType, Deserialize)]
+pub struct InitRequest {
+    pub dao_canister_ids: CanisterIds,
 }
 
-pub fn create_tasks_state() -> TasksState {
-    TasksState::new()
+#[init]
+fn init_hook(req: InitRequest) {
+    let tasks_state = create_tasks_state();
+
+    install_tasks_state(Some(tasks_state));
+    install_canister_ids_state(Some(req.dao_canister_ids));
 }
 
-pub fn install_tasks_state(new_state: Option<TasksState>) -> Option<TasksState> {
-    TASKS_STATE.replace(new_state)
+#[pre_upgrade]
+fn pre_upgrade_hook() {
+    let tasks_state = install_tasks_state(None);
+    let canister_ids_state = install_canister_ids_state(None);
+
+    stable_save((tasks_state, canister_ids_state)).expect("Unable to stable save");
+}
+
+#[post_upgrade]
+fn post_upgrade_hook() {
+    let (tasks_state, canister_ids_state): (Option<TasksState>, Option<CanisterIds>) =
+        stable_restore().expect("Unable to stable restore");
+
+    install_tasks_state(tasks_state);
+    install_canister_ids_state(canister_ids_state);
 }
 
 #[update]
@@ -173,6 +200,18 @@ fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
     })
 }
 
+thread_local! {
+    static TASKS_STATE: RefCell<Option<TasksState>> = RefCell::default();
+}
+
+pub fn create_tasks_state() -> TasksState {
+    TasksState::new()
+}
+
+pub fn install_tasks_state(new_state: Option<TasksState>) -> Option<TasksState> {
+    TASKS_STATE.replace(new_state)
+}
+
 fn with_state<R, F: FnOnce(&TasksState) -> R>(f: F) -> R {
     TASKS_STATE.with(|s| {
         let state_ref = s.borrow();
@@ -190,3 +229,5 @@ fn with_state_mut<R, F: FnOnce(&mut TasksState) -> R>(f: F) -> R {
         f(state)
     })
 }
+
+export_candid!();

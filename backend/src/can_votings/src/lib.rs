@@ -1,6 +1,12 @@
 use std::{cell::RefCell, time::Duration};
 
-use ic_cdk::{api::time, caller, query, spawn, update};
+use candid::{CandidType, Deserialize};
+use ic_cdk::{
+    api::time,
+    caller, export_candid, init, post_upgrade, pre_upgrade, query, spawn,
+    storage::{stable_restore, stable_save},
+    update,
+};
 use shared::{
     tasks::{api::GetTasksRequest, client::TasksCanisterClient},
     votings::{
@@ -11,21 +17,42 @@ use shared::{
         state::VotingsState,
         types::{CallToExecute, VotingEvent, VotingId, VotingKind, VotingTimer},
     },
-    ExecutionContext, Guard, TimestampNs,
+    CanisterIds, ExecutionContext, Guard, TimestampNs,
 };
+use utils::install_canister_ids_state;
 
 use crate::utils::create_exec_context;
 
-thread_local! {
-    static VOTINGS_STATE: RefCell<Option<VotingsState>> = RefCell::default();
+mod utils;
+
+#[derive(CandidType, Deserialize)]
+pub struct InitRequest {
+    pub dao_canister_ids: CanisterIds,
 }
 
-pub fn create_votings_state() -> VotingsState {
-    VotingsState::new()
+#[init]
+fn init_hook(req: InitRequest) {
+    let votings_state = create_votings_state();
+
+    install_votings_state(Some(votings_state));
+    install_canister_ids_state(Some(req.dao_canister_ids));
 }
 
-pub fn install_votings_state(new_state: Option<VotingsState>) -> Option<VotingsState> {
-    VOTINGS_STATE.replace(new_state)
+#[pre_upgrade]
+fn pre_upgrade_hook() {
+    let votings_state = install_votings_state(None);
+    let canister_ids_state = install_canister_ids_state(None);
+
+    stable_save((votings_state, canister_ids_state)).expect("Unable to stable save");
+}
+
+#[post_upgrade]
+fn post_upgrade_hook() {
+    let (votings_state, canister_ids_state): (Option<VotingsState>, Option<CanisterIds>) =
+        stable_restore().expect("Unable to stable restore");
+
+    install_votings_state(votings_state);
+    install_canister_ids_state(canister_ids_state);
 }
 
 #[update]
@@ -135,28 +162,6 @@ fn process_voting_result(voting_id: VotingId, call_to_exec_opt: Option<CallToExe
     }
 }
 
-fn with_state<R, F: FnOnce(&VotingsState) -> R>(f: F) -> R {
-    VOTINGS_STATE.with(|s| {
-        let state_ref = s.borrow();
-        let state = state_ref
-            .as_ref()
-            .expect("Votings state is not initialized");
-
-        f(state)
-    })
-}
-
-fn with_state_mut<R, F: FnOnce(&mut VotingsState) -> R>(f: F) -> R {
-    VOTINGS_STATE.with(|s| {
-        let mut state_ref = s.borrow_mut();
-        let state = state_ref
-            .as_mut()
-            .expect("Votings state is not initialized");
-
-        f(state)
-    })
-}
-
 async fn validate_voting_related_entity(
     kind: &mut VotingKind,
     ctx: &ExecutionContext,
@@ -212,3 +217,39 @@ async fn validate_voting_related_entity(
 
     Ok(())
 }
+
+thread_local! {
+    static VOTINGS_STATE: RefCell<Option<VotingsState>> = RefCell::default();
+}
+
+pub fn create_votings_state() -> VotingsState {
+    VotingsState::new()
+}
+
+pub fn install_votings_state(new_state: Option<VotingsState>) -> Option<VotingsState> {
+    VOTINGS_STATE.replace(new_state)
+}
+
+fn with_state<R, F: FnOnce(&VotingsState) -> R>(f: F) -> R {
+    VOTINGS_STATE.with(|s| {
+        let state_ref = s.borrow();
+        let state = state_ref
+            .as_ref()
+            .expect("Votings state is not initialized");
+
+        f(state)
+    })
+}
+
+fn with_state_mut<R, F: FnOnce(&mut VotingsState) -> R>(f: F) -> R {
+    VOTINGS_STATE.with(|s| {
+        let mut state_ref = s.borrow_mut();
+        let state = state_ref
+            .as_mut()
+            .expect("Votings state is not initialized");
+
+        f(state)
+    })
+}
+
+export_candid!();

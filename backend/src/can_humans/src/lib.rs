@@ -1,7 +1,12 @@
 use std::cell::RefCell;
 
-use candid::Principal;
-use ic_cdk::{api::time, caller, query, update};
+use candid::{CandidType, Deserialize, Principal};
+use ic_cdk::{
+    api::time,
+    caller, export_candid, init, post_upgrade, pre_upgrade, query,
+    storage::{stable_restore, stable_save},
+    update,
+};
 use shared::{
     humans::{
         api::{
@@ -14,21 +19,43 @@ use shared::{
         },
         state::HumansState,
     },
-    Guard, TimestampNs,
+    CanisterIds, Guard, TimestampNs,
 };
+use utils::install_canister_ids_state;
 
 use crate::utils::create_exec_context;
 
-thread_local! {
-    static HUMANS_STATE: RefCell<Option<HumansState>> = RefCell::default();
+mod utils;
+
+#[derive(CandidType, Deserialize)]
+pub struct InitRequest {
+    pub sasha: Principal,
+    pub dao_canister_ids: CanisterIds,
 }
 
-pub fn create_humans_state(sasha: Principal, now: TimestampNs) -> HumansState {
-    HumansState::new(sasha, now)
+#[init]
+fn init_hook(req: InitRequest) {
+    let humans_state = create_humans_state(req.sasha, time());
+
+    install_humans_state(Some(humans_state));
+    install_canister_ids_state(Some(req.dao_canister_ids));
 }
 
-pub fn install_humans_state(new_state: Option<HumansState>) -> Option<HumansState> {
-    HUMANS_STATE.replace(new_state)
+#[pre_upgrade]
+fn pre_upgrade_hook() {
+    let humans_state = install_humans_state(None);
+    let canister_ids_state = install_canister_ids_state(None);
+
+    stable_save((humans_state, canister_ids_state)).expect("Unable to stable save");
+}
+
+#[post_upgrade]
+fn post_upgrade_hook() {
+    let (humans_state, canister_ids_state): (Option<HumansState>, Option<CanisterIds>) =
+        stable_restore().expect("Unable to stable restore");
+
+    install_humans_state(humans_state);
+    install_canister_ids_state(canister_ids_state);
 }
 
 #[update]
@@ -173,6 +200,18 @@ fn humans__get_profile_proofs(mut req: GetProfileProofsRequest) -> GetProfilePro
     })
 }
 
+thread_local! {
+    static HUMANS_STATE: RefCell<Option<HumansState>> = RefCell::default();
+}
+
+pub fn create_humans_state(sasha: Principal, now: TimestampNs) -> HumansState {
+    HumansState::new(sasha, now)
+}
+
+pub fn install_humans_state(new_state: Option<HumansState>) -> Option<HumansState> {
+    HUMANS_STATE.replace(new_state)
+}
+
 fn with_state<R, F: FnOnce(&HumansState) -> R>(f: F) -> R {
     HUMANS_STATE.with(|s| {
         let state_ref = s.borrow();
@@ -190,3 +229,5 @@ fn with_state_mut<R, F: FnOnce(&mut HumansState) -> R>(f: F) -> R {
         f(state)
     })
 }
+
+export_candid!();

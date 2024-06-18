@@ -1,5 +1,11 @@
 [workspace]
-members = ["src/shared", "src/dao"]
+members = [
+    "src/shared",
+    "src/can_bank",
+    "src/can_humans",
+    "src/can_tasks",
+    "src/can_votings",
+]
 resolver = "2"
 
 [workspace.dependencies]

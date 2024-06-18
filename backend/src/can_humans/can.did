@@ -1,0 +1,72 @@
+type CanisterIds = record {
+  tasks_canister_id : principal;
+  bank_canister_id : principal;
+  humans_canister_id : principal;
+  votings_canister_id : principal;
+};
+type EditProfileRequest = record {
+  new_name_opt : opt opt text;
+  new_avatar_src_opt : opt opt text;
+};
+type EmployRequest = record {
+  hours_a_week_commitment : nat;
+  candidate : principal;
+};
+type Employment = record {
+  hours_a_week_commitment : nat;
+  employed_at : nat64;
+  hours_earned_during_employment : nat;
+};
+type GetProfileIdsResponse = record { ids : vec principal };
+type GetProfileProofsResponse = record { proof : ProfileProof };
+type GetProfilesRequest = record { ids : vec principal };
+type GetProfilesResponse = record { profiles : vec opt Profile };
+type InitRequest = record { sasha : principal; dao_canister_ids : CanisterIds };
+type MintRewardsRequest = record { rewards : vec RewardEntry };
+type Profile = record {
+  id : principal;
+  earned_hours : nat;
+  avatar_src : opt text;
+  name : opt text;
+  hours_balance : nat;
+  storypoints_balance : nat;
+  employment : opt Employment;
+  earned_storypoints : nat;
+  registered_at : nat64;
+};
+type ProfileProof = record {
+  id : principal;
+  reputation : nat;
+  is_team_member : bool;
+  reputation_total_supply : nat;
+};
+type RefundRewardsRequest = record {
+  hours : nat;
+  storypoints : nat;
+  spender : principal;
+};
+type RegisterRequest = record { avatar_src : opt text; name : opt text };
+type RewardEntry = record {
+  solver : principal;
+  reward_hours : nat;
+  reward_storypoints : nat;
+};
+type SpendRewardsRequest = record {
+  hours : nat;
+  storypoints : nat;
+  spender : principal;
+};
+type UnemployRequest = record { team_member : principal };
+service : (InitRequest) -> {
+  humans__edit_profile : (EditProfileRequest) -> (record {});
+  humans__employ : (EmployRequest) -> (record {});
+  humans__get_profile_ids : (record {}) -> (GetProfileIdsResponse) query;
+  humans__get_profile_proofs : (record {}) -> (GetProfileProofsResponse);
+  humans__get_profiles : (GetProfilesRequest) -> (GetProfilesResponse) query;
+  humans__get_team_member_ids : (record {}) -> (GetProfilesRequest) query;
+  humans__mint_rewards : (MintRewardsRequest) -> (record {});
+  humans__refund_rewards : (RefundRewardsRequest) -> (record {});
+  humans__register : (RegisterRequest) -> (record {});
+  humans__spend_rewards : (SpendRewardsRequest) -> (record {});
+  humans__unemploy : (UnemployRequest) -> (record {});
+}

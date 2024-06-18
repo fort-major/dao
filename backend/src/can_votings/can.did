@@ -1,0 +1,66 @@
+type CanisterIds = record {
+  tasks_canister_id : principal;
+  bank_canister_id : principal;
+  humans_canister_id : principal;
+  votings_canister_id : principal;
+};
+type CastVoteRequest = record {
+  id : VotingId;
+  option_idx : nat32;
+  approval_level : opt nat;
+  proof : Proof;
+};
+type CastVoteResponse = record { decision_made : bool };
+type GetVotingsRequest = record { ids : vec VotingId };
+type GetVotingsResponse = record { votings : vec opt VotingExt };
+type InitRequest = record { dao_canister_ids : CanisterIds };
+type ProfileProof = record {
+  id : principal;
+  reputation : nat;
+  is_team_member : bool;
+  reputation_total_supply : nat;
+};
+type Proof = record { profile_proof : opt ProfileProof; cert_raw : blob };
+type StartVotingRequest = record { kind : VotingKind; proof : Proof };
+type StartVotingResponse = record { id : VotingId };
+type SwapFrom = variant { Hour; Storypoint };
+type SwapInto = variant { FMJ; ICP };
+type VotingExt = record {
+  id : VotingId;
+  creator : principal;
+  total_votes_per_option : vec nat;
+  finish_early : nat;
+  kind : VotingKind;
+  created_at : nat64;
+  stage : VotingStage;
+  consensus : nat;
+  quorum : nat;
+  duration_ns : nat64;
+};
+type VotingId = variant {
+  HumansEmploy : principal;
+  HumansUnemploy : principal;
+  EvaluateTask : nat64;
+  FinishEditTask : nat64;
+  BankSetExchangeRate : record { SwapFrom; SwapInto };
+};
+type VotingKind = variant {
+  HumansEmploy : record {
+    hours_a_week_commitment : nat;
+    candidate : principal;
+  };
+  HumansUnemploy : record { team_member : principal };
+  EvaluateTask : record { task_id : nat64; solutions : vec principal };
+  FinishEditTask : record { task_id : nat64 };
+  BankSetExchangeRate : record {
+    from : SwapFrom;
+    into : SwapInto;
+    new_rate : nat;
+  };
+};
+type VotingStage = variant { Executing; InProgress };
+service : (InitRequest) -> {
+  votings__cast_vote : (CastVoteRequest) -> (CastVoteResponse);
+  votings__get_votings : (GetVotingsRequest) -> (GetVotingsResponse) query;
+  votings__start_voting : (StartVotingRequest) -> (StartVotingResponse);
+}

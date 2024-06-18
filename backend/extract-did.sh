@@ -2,7 +2,7 @@
 
 function generate_did() {
   local canister=$1
-  local canister_root="src/$canister"
+  local canister_root="src/can_$canister"
 
   cargo build --manifest-path="$canister_root/Cargo.toml" \
       --target wasm32-unknown-unknown \
@@ -11,6 +11,6 @@ function generate_did() {
 }
 
 generate_did "humans"
-generate_did "team"
 generate_did "votings"
-generate_did "rewards"
+generate_did "tasks"
+generate_did "bank"

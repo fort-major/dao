@@ -1,7 +1,12 @@
 use std::cell::RefCell;
 
-use candid::Principal;
-use ic_cdk::{api::time, caller, query, trap, update};
+use candid::{CandidType, Deserialize, Principal};
+use ic_cdk::{
+    api::time,
+    caller, export_candid, init, post_upgrade, pre_upgrade, query,
+    storage::{stable_restore, stable_save},
+    trap, update,
+};
 use shared::{
     bank::{
         api::{
@@ -12,21 +17,44 @@ use shared::{
     },
     e8s::E8s,
     humans::{api::RefundRewardsRequest, client::HumansCanisterClient},
-    Guard,
+    CanisterIds, Guard,
 };
+use utils::install_canister_ids_state;
+
+mod utils;
 
 use crate::utils::{create_exec_context, get_canister_ids};
 
-thread_local! {
-    static BANK_STATE: RefCell<Option<BankState>> = RefCell::default();
+#[derive(CandidType, Deserialize)]
+pub struct InitRequest {
+    pub fmj_canister_id: Principal,
+    pub icp_canister_id: Principal,
+    pub dao_canister_ids: CanisterIds,
 }
 
-pub fn create_bank_state(fmj_canister_id: Principal, icp_canister_id: Principal) -> BankState {
-    BankState::new(fmj_canister_id, icp_canister_id)
+#[init]
+fn init_hook(req: InitRequest) {
+    let bank_state = create_bank_state(req.fmj_canister_id, req.icp_canister_id);
+
+    install_bank_state(Some(bank_state));
+    install_canister_ids_state(Some(req.dao_canister_ids));
 }
 
-pub fn install_bank_state(new_state: Option<BankState>) -> Option<BankState> {
-    BANK_STATE.replace(new_state)
+#[pre_upgrade]
+fn pre_upgrade_hook() {
+    let bank_state = install_bank_state(None);
+    let canister_ids_state = install_canister_ids_state(None);
+
+    stable_save((bank_state, canister_ids_state)).expect("Unable to stable save");
+}
+
+#[post_upgrade]
+fn post_upgrade_hook() {
+    let (bank_state, canister_ids_state): (Option<BankState>, Option<CanisterIds>) =
+        stable_restore().expect("Unable to stable restore");
+
+    install_bank_state(bank_state);
+    install_canister_ids_state(canister_ids_state);
 }
 
 #[update]
@@ -109,6 +137,18 @@ fn bank__get_exchange_rates(mut req: GetExchangeRatesRequest) -> GetExchangeRate
     })
 }
 
+thread_local! {
+    static BANK_STATE: RefCell<Option<BankState>> = RefCell::default();
+}
+
+pub fn create_bank_state(fmj_canister_id: Principal, icp_canister_id: Principal) -> BankState {
+    BankState::new(fmj_canister_id, icp_canister_id)
+}
+
+pub fn install_bank_state(new_state: Option<BankState>) -> Option<BankState> {
+    BANK_STATE.replace(new_state)
+}
+
 fn with_state<R, F: FnOnce(&BankState) -> R>(f: F) -> R {
     BANK_STATE.with(|s| {
         let state_ref = s.borrow();
@@ -126,3 +166,5 @@ fn with_state_mut<R, F: FnOnce(&mut BankState) -> R>(f: F) -> R {
         f(state)
     })
 }
+
+export_candid!();

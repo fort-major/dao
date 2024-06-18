@@ -1,25 +1,10 @@
 use std::cell::RefCell;
 
-use candid::Principal;
 use ic_cdk::{api::time, caller};
 use shared::{CanisterIds, ExecutionContext};
 
 thread_local! {
     static CANISTER_IDS_STATE: RefCell<Option<CanisterIds>> = RefCell::default();
-}
-
-pub fn create_canister_ids_state(
-    humans_canister_id: Principal,
-    votings_canister_id: Principal,
-    tasks_canister_id: Principal,
-    bank_canister_id: Principal,
-) -> CanisterIds {
-    CanisterIds {
-        humans_canister_id,
-        votings_canister_id,
-        tasks_canister_id,
-        bank_canister_id,
-    }
 }
 
 pub fn install_canister_ids_state(new_state: Option<CanisterIds>) -> Option<CanisterIds> {

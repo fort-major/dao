@@ -1,0 +1,109 @@
+type AttachToTaskRequest = record { id : nat64; detach : bool };
+type CanisterIds = record {
+  tasks_canister_id : principal;
+  bank_canister_id : principal;
+  humans_canister_id : principal;
+  votings_canister_id : principal;
+};
+type CreateTaskRequest = record {
+  solution_fields : vec SolutionField;
+  title : text;
+  solver_constraints : vec SolverConstraint;
+  storypoints_base : nat;
+  days_to_solve : nat64;
+  hours_base : nat;
+  description : text;
+  team_proof : Proof;
+  storypoints_ext_budget : nat;
+};
+type CreateTaskResponse = record { id : nat64 };
+type DeleteRequest = record { id : nat64 };
+type EditTaskRequest = record {
+  id : nat64;
+  new_solution_fields_opt : opt vec SolutionField;
+  new_storypoints_base_opt : opt nat;
+  new_solver_constraints_opt : opt vec SolverConstraint;
+  new_storypoints_ext_budget_opt : opt nat;
+  new_description_opt : opt text;
+  new_title_opt : opt text;
+  new_hours_base_opt : opt nat;
+};
+type EvaluateRequest = record {
+  id : nat64;
+  evaluation_per_solution : vec record { principal; opt nat };
+};
+type GetTaskIdsResponse = record { ids : vec nat64 };
+type GetTasksRequest = record { ids : vec nat64 };
+type GetTasksResponse = record { tasks : vec opt Task };
+type InitRequest = record { dao_canister_ids : CanisterIds };
+type ProfileProof = record {
+  id : principal;
+  reputation : nat;
+  is_team_member : bool;
+  reputation_total_supply : nat;
+};
+type Proof = record { profile_proof : opt ProfileProof; cert_raw : blob };
+type Solution = record {
+  evaluation : opt nat;
+  attached_at : nat64;
+  reward_hours : opt nat;
+  fields : vec opt text;
+  rejected : bool;
+  reward_storypoints : opt nat;
+};
+type SolutionField = record {
+  kind : SolutionFieldKind;
+  name : text;
+  description : text;
+  required : bool;
+};
+type SolutionFieldKind = variant { Md; Url : record { kind : URLKind } };
+type SolveTaskRequest = record {
+  id : nat64;
+  filled_in_fields_opt : opt vec opt text;
+  team_proof : opt Proof;
+};
+type SolverConstraint = variant { TeamOnly };
+type Task = record {
+  id : nat64;
+  solution_fields : vec SolutionField;
+  title : text;
+  creator : principal;
+  solver_constraints : vec SolverConstraint;
+  storypoints_base : nat;
+  days_to_solve : nat64;
+  hours_base : nat;
+  description : text;
+  created_at : nat64;
+  stage : TaskStage;
+  storypoints_ext_budget : nat;
+  candidates : vec principal;
+  solutions : vec record { principal; Solution };
+};
+type TaskStage = variant {
+  Solve : record { until_timestamp : nat64 };
+  Edit;
+  Archive;
+  Evaluate;
+};
+type URLKind = variant {
+  Any;
+  Github;
+  Notion;
+  Figma;
+  DfinityForum;
+  FortMajorSite;
+  Twitter;
+};
+service : (InitRequest) -> {
+  tasks__attach_to_task : (AttachToTaskRequest) -> (record {});
+  tasks__create_task : (CreateTaskRequest) -> (CreateTaskResponse);
+  tasks__delete_task : (DeleteRequest) -> (record {});
+  tasks__edit_task : (EditTaskRequest) -> (record {});
+  tasks__evaluate_task : (EvaluateRequest) -> (record {});
+  tasks__finish_edit_task : (DeleteRequest) -> (record {});
+  tasks__finish_solve_task : (DeleteRequest) -> (record {});
+  tasks__get_task_ids : (record {}) -> (GetTaskIdsResponse) query;
+  tasks__get_tasks : (GetTasksRequest) -> (GetTasksResponse) query;
+  tasks__solve_task : (SolveTaskRequest) -> (record {});
+}

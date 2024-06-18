@@ -1,33 +1,23 @@
 {
   "canisters": {
     "humans": {
-      "candid": "src/humans/can.did",
+      "candid": "src/can_humans/can.did",
       "package": "humans",
       "type": "rust"
     },
-    "team": {
-      "candid": "src/team/can.did",
-      "package": "team",
-      "type": "rust"
-    },
-    "rewards": {
-      "candid": "src/rewards/can.did",
-      "package": "rewards",
-      "type": "rust"
-    },
     "bank": {
-      "candid": "src/bank/can.did",
+      "candid": "src/can_bank/can.did",
       "package": "bank",
       "type": "rust"
     },
-    "fmj": {
-      "candid": "src/fmj/can.did",
-      "wasm": "src/fmj/fmj.wasm",
-      "type": "custom"
+    "tasks": {
+      "candid": "src/can_tasks/can.did",
+      "package": "tasks",
+      "type": "rust"
     },
-    "dao": {
-      "candid": "src/dao/can.did",
-      "package": "dao",
+    "votings": {
+      "candid": "src/can_votings/can.did",
+      "package": "votings",
       "type": "rust"
     }
   },

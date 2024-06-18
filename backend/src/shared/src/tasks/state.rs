@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use candid::Principal;
+use candid::{CandidType, Principal};
+use serde::Deserialize;
 
 use crate::TimestampNs;
 
@@ -15,6 +16,7 @@ use super::{
     types::{RewardEntry, Task, TaskId},
 };
 
+#[derive(CandidType, Deserialize)]
 pub struct TasksState {
     pub task_id_generator: TaskId,
     pub tasks: BTreeMap<TaskId, Task>,
