@@ -13,26 +13,26 @@ dfx canister --network=$network create --all
 
 # put env vars into backend
 
-file_backend="$network.env"
+file_backend=".env.$network"
 rm -f $file_backend
 touch $file_backend
 
-echo "APP_BANK_CANISTER_ID=\"$(dfx canister --network=$network id bank)\"" >> $file_backend
-echo "APP_HUMANS_CANISTER_ID=\"$(dfx canister --network=$network id humans)\"" >> $file_backend
-echo "APP_TASKS_CANISTER_ID=\"$(dfx canister --network=$network id tasks)\"" >> $file_backend
-echo "APP_VOTINGS_CANISTER_ID=\"$(dfx canister --network=$network id votings)\"" >> $file_backend
-echo "APP_FMJ_CANISTER_ID=\"$(dfx canister --network=$network id fmj)\"" >> $file_backend
-echo "APP_ICP_CANISTER_ID=\"ryjl3-tyaaa-aaaaa-aaaba-cai\"" >> $file_backend
-echo "APP_ROOT_KEY=\"$(dfx ping $network | grep -oP '(?<="root_key": )\[.*\]')\"" >> $file_backend
+echo "CAN_BANK_CANISTER_ID=\"$(dfx canister --network=$network id bank)\"" >> $file_backend
+echo "CAN_HUMANS_CANISTER_ID=\"$(dfx canister --network=$network id humans)\"" >> $file_backend
+echo "CAN_TASKS_CANISTER_ID=\"$(dfx canister --network=$network id tasks)\"" >> $file_backend
+echo "CAN_VOTINGS_CANISTER_ID=\"$(dfx canister --network=$network id votings)\"" >> $file_backend
+echo "CAN_FMJ_CANISTER_ID=\"$(dfx canister --network=$network id fmj)\"" >> $file_backend
+echo "CAN_ICP_CANISTER_ID=\"ryjl3-tyaaa-aaaaa-aaaba-cai\"" >> $file_backend
+echo "CAN_ROOT_KEY=\"$(dfx ping $network | grep -oP '(?<="root_key": )\[.*\]')\"" >> $file_backend
 
 mkdir -p /tmp/fmj
 
-sed "1 c const PREFIX: &str = \"$network\";" ./src/shared/build.rs >> /tmp/fmj/build.rs
+sed "1 c const MODE: &str = \"$network\";" ./src/shared/build.rs >> /tmp/fmj/build.rs
 mv /tmp/fmj/build.rs ./src/shared/build.rs
 
 # pub env vars into frontend
 
-file_frontend="../frontend/app/$network.env"
+file_frontend="../frontend/app/.env.$network"
 rm -f $file_frontend
 touch $file_frontend
 
@@ -43,3 +43,9 @@ echo "VITE_VOTINGS_CANISTER_ID=\"$(dfx canister --network=$network id votings)\"
 echo "VITE_FMJ_CANISTER_ID=\"$(dfx canister --network=$network id fmj)\"" >> $file_frontend
 echo "VITE_ICP_CANISTER_ID=\"ryjl3-tyaaa-aaaaa-aaaba-cai\"" >> $file_frontend
 echo "VITE_ROOT_KEY=\"$(dfx ping $network | grep -oP '(?<="root_key": )\[.*\]')\"" >> $file_frontend
+
+if [ $network = local ]; then
+    echo "VITE_IC_HOST=\"http://localhost:$(dfx info replica-port)\"" >> $file_frontend
+else
+    echo "VITE_IC_HOST=\"https://icp-api.io\"" >> $file_frontend
+fi

@@ -4,12 +4,26 @@ import { TaskStore } from "./store/tasks";
 import { HumanStore } from "./store/humans";
 import { IChildren } from "./utils/types";
 import { Toaster } from "solid-toast";
+import { AuthStore } from "./store/auth";
+import { ErrorBoundary } from "solid-js";
+import { ErrorCode, err } from "./utils/error";
+import { debugStringify } from "./utils/encoding";
 
 const AppRoot = (props: IChildren) => (
-  <TaskStore>
-    <HumanStore>{props.children}</HumanStore>
+  <>
+    <ErrorBoundary
+      fallback={(e) => {
+        err(ErrorCode.UNKNOWN, `FATAL: ${debugStringify(e)}`);
+      }}
+    >
+      <AuthStore>
+        <TaskStore>
+          <HumanStore>{props.children}</HumanStore>
+        </TaskStore>
+      </AuthStore>
+    </ErrorBoundary>
     <Toaster />
-  </TaskStore>
+  </>
 );
 
 function App() {

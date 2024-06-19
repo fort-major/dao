@@ -4,9 +4,10 @@ use ic_cdk::{api::call::CallResult, call};
 use super::api::{
     EditProfileRequest, EditProfileResponse, EmployRequest, EmployResponse, GetProfileIdsRequest,
     GetProfileIdsResponse, GetProfileProofsRequest, GetProfileProofsResponse, GetProfilesRequest,
-    GetProfilesResponse, MintRewardsRequest, MintRewardsResponse, RefundRewardsRequest,
-    RefundRewardsResponse, RegisterRequest, RegisterResponse, SpendRewardsRequest,
-    SpendRewardsResponse, UnemployRequest, UnemployResponse,
+    GetProfilesResponse, GetTotalHoursAndStorypointsRequest, GetTotalHoursAndStorypointsResponse,
+    MintRewardsRequest, MintRewardsResponse, RefundRewardsRequest, RefundRewardsResponse,
+    RegisterRequest, RegisterResponse, SpendRewardsRequest, SpendRewardsResponse, UnemployRequest,
+    UnemployResponse,
 };
 
 pub struct HumansCanisterClient {
@@ -117,5 +118,19 @@ impl HumansCanisterClient {
         call(self.canister_id, "humans__get_profile_proofs", (req,))
             .await
             .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
+    pub async fn humans__get_total_hours_and_storypoints(
+        &self,
+        req: GetTotalHoursAndStorypointsRequest,
+    ) -> CallResult<GetTotalHoursAndStorypointsResponse> {
+        call(
+            self.canister_id,
+            "humans__get_total_hours_and_storypoints",
+            (req,),
+        )
+        .await
+        .map(|(it,)| it)
     }
 }

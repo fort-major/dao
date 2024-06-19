@@ -12,10 +12,11 @@ use shared::{
         api::{
             EditProfileRequest, EditProfileResponse, EmployRequest, EmployResponse,
             GetProfileIdsRequest, GetProfileIdsResponse, GetProfileProofsRequest,
-            GetProfileProofsResponse, GetProfilesRequest, GetProfilesResponse, MintRewardsRequest,
-            MintRewardsResponse, RefundRewardsRequest, RefundRewardsResponse, RegisterRequest,
-            RegisterResponse, SpendRewardsRequest, SpendRewardsResponse, UnemployRequest,
-            UnemployResponse,
+            GetProfileProofsResponse, GetProfilesRequest, GetProfilesResponse,
+            GetTotalHoursAndStorypointsRequest, GetTotalHoursAndStorypointsResponse,
+            MintRewardsRequest, MintRewardsResponse, RefundRewardsRequest, RefundRewardsResponse,
+            RegisterRequest, RegisterResponse, SpendRewardsRequest, SpendRewardsResponse,
+            UnemployRequest, UnemployResponse,
         },
         state::HumansState,
     },
@@ -156,6 +157,19 @@ fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsRe
             .expect("Unable to get team member ids");
 
         s.get_team_member_ids(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn humans__get_total_hours_and_storypoints(
+    mut req: GetTotalHoursAndStorypointsRequest,
+) -> GetTotalHoursAndStorypointsResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get total hours and storypoints");
+
+        s.get_total_hours_and_storypoints(req)
     })
 }
 

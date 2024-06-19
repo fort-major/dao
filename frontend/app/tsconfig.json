@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": "node_modules",
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "node",
@@ -7,6 +8,9 @@
     "esModuleInterop": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "paths": {
+        
+    }
   }
 }

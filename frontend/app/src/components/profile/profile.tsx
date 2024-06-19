@@ -1,19 +1,18 @@
 import { Show } from "solid-js";
-import { IProfile } from "../../data/entities/profile";
 import { IClass } from "../../utils/types";
 import { Avatar, AvatarSkeleton } from "../avatar";
 import { Principal } from "@dfinity/principal";
+import { Profile } from "../../declarations/humans/humans.did";
+import { IProfile } from "../../store/humans";
 
 export interface IProfileProps extends IClass {
   profile: IProfile;
 }
 
-export function Profile(props: IProfileProps) {
+export function ProfileMini(props: IProfileProps) {
   return (
     <div class="flex flex-row items-center gap-2">
-      <Show when={props.profile.avatarUrl} fallback={<AvatarSkeleton />}>
-        <Avatar url={props.profile.avatarUrl!} />
-      </Show>
+      <Avatar url={props.profile.avatar_src} />
       <div class="flex flex-col">
         <p class="font-sans text-md">
           <Show when={props.profile.name} fallback={"Anonymous"}>

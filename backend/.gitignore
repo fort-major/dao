@@ -23,6 +23,7 @@ dist/
 
 # environment variables
 .env
+.env.*
 
 # local json files
 *.local.json

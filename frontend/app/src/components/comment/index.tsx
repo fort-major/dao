@@ -1,7 +1,7 @@
 import { Show, onMount } from "solid-js";
 import { IComment } from "../../data/entities/comment";
 import { useHumans } from "../../store/humans";
-import { Profile, ProfileSkeleton } from "../profile/profile";
+import { ProfileMini, ProfileSkeleton } from "../profile/profile";
 import { timestampToStr } from "../../utils/encoding";
 import { SolidMarkdown } from "solid-markdown";
 import { Chip } from "../chip";
@@ -24,7 +24,7 @@ export function Comment(props: ICommentProps) {
     <div class="w-full flex flex-col gap-1">
       <div class="flex flex-row justify-between gap-2 items-center">
         <Show when={getProfile()} fallback={<ProfileSkeleton />}>
-          <Profile profile={getProfile()!} />
+          <ProfileMini profile={getProfile()!} />
         </Show>
         <div class="flex flex-col justify-end gap-1">
           <p class="text-gray-500 font-thin text-xs">

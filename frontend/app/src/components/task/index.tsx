@@ -10,7 +10,7 @@ import { Chip, ChipSkeleton } from "../chip";
 import { useTasks } from "../../store/tasks";
 import remarkGFM from "remark-gfm";
 import { useHumans } from "../../store/humans";
-import { Profile } from "../profile/profile";
+import { ProfileMini } from "../profile/profile";
 import { timestampToStr, tokensToStr } from "../../utils/encoding";
 import { CommentSkeleton, Comment } from "../comment";
 
@@ -106,7 +106,7 @@ export function Task(props: ITaskProps) {
                     }
                     fallback={"Loading..."}
                   >
-                    <Profile
+                    <ProfileMini
                       profile={
                         profiles[
                           internalTaskDetails(props.task)!.assignee.toText()

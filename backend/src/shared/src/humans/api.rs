@@ -334,3 +334,25 @@ pub struct GetProfileProofsResponse {
     #[garde(dive)]
     pub proof: ProfileProof,
 }
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetTotalHoursAndStorypointsRequest {}
+
+impl Guard<HumansState> for GetTotalHoursAndStorypointsRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &HumansState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetTotalHoursAndStorypointsResponse {
+    #[garde(skip)]
+    pub hours: E8s,
+    #[garde(skip)]
+    pub storypoints: E8s,
+}

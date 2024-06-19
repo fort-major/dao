@@ -13,3 +13,8 @@ export function err(code: ErrorCode, msg?: string): never {
   toast.error(str);
   throw new Error(str);
 }
+
+export function info(msg: string) {
+  console.info(msg);
+  toast(msg);
+}

@@ -15,6 +15,10 @@ type GetProfileIdsResponse = record { ids : vec principal };
 type GetProfileProofsResponse = record { marker : text; proof : ProfileProof };
 type GetProfilesRequest = record { ids : vec principal };
 type GetProfilesResponse = record { profiles : vec opt Profile };
+type GetTotalHoursAndStorypointsResponse = record {
+  hours : nat;
+  storypoints : nat;
+};
 type InitRequest = record { sasha : principal };
 type MintRewardsRequest = record { rewards : vec RewardEntry };
 type Profile = record {
@@ -58,6 +62,9 @@ service : (InitRequest) -> {
   humans__get_profile_proofs : (record {}) -> (GetProfileProofsResponse);
   humans__get_profiles : (GetProfilesRequest) -> (GetProfilesResponse) query;
   humans__get_team_member_ids : (record {}) -> (GetProfilesRequest) query;
+  humans__get_total_hours_and_storypoints : (record {}) -> (
+      GetTotalHoursAndStorypointsResponse,
+    ) query;
   humans__mint_rewards : (MintRewardsRequest) -> (record {});
   humans__refund_rewards : (RefundRewardsRequest) -> (record {});
   humans__register : (RegisterRequest) -> (record {});

@@ -14,6 +14,9 @@ dependencies:
   '@dfinity/principal':
     specifier: ^1.3.0
     version: 1.3.0
+  '@fort-major/agent-js-fork':
+    specifier: ^1.3.1
+    version: 1.3.1(@dfinity/candid@1.4.0)(@dfinity/principal@1.3.0)
   '@fort-major/msq-client':
     specifier: ^0.3.4
     version: 0.3.4(react-native@0.74.2)(react@18.3.1)
@@ -26,6 +29,9 @@ dependencies:
   '@ts-stack/markdown':
     specifier: ^1.5.0
     version: 1.5.0
+  agent:
+    specifier: link:@fort-major/agent-js-fork:@dfinity/agent
+    version: link:@fort-major/agent-js-fork:@dfinity/agent
   remark-gfm:
     specifier: 3.0.1
     version: 3.0.1
@@ -2203,6 +2209,22 @@ packages:
       '@ethereumjs/rlp': 4.0.1
       ethereum-cryptography: 2.2.0
       micro-ftch: 0.3.1
+    dev: false
+
+  /@fort-major/agent-js-fork@1.3.1(@dfinity/candid@1.4.0)(@dfinity/principal@1.3.0):
+    resolution: {integrity: sha512-/995YyaZMcJvW/Fl0OJlLc6pWhFWVZOt3BSj+jKNkRQBdJIkL/GB5KGiZnSbdb10AqffO70aSR8daDvdW0MR6A==}
+    peerDependencies:
+      '@dfinity/candid': ^1.3.0
+      '@dfinity/principal': ^1.3.0
+    dependencies:
+      '@dfinity/candid': 1.4.0(@dfinity/principal@1.3.0)
+      '@dfinity/principal': 1.3.0
+      '@noble/curves': 1.4.0
+      '@noble/hashes': 1.4.0
+      base64-arraybuffer: 0.2.0
+      borc: 2.1.2
+      buffer: 6.0.3
+      simple-cbor: 0.4.1
     dev: false
 
   /@fort-major/msq-client@0.3.4(react-native@0.74.2)(react@18.3.1):

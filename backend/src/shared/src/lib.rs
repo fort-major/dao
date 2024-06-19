@@ -1,8 +1,8 @@
 use candid::{CandidType, Principal};
 
 use env::{
-    APP_BANK_CANISTER_ID, APP_FMJ_CANISTER_ID, APP_HUMANS_CANISTER_ID, APP_ICP_CANISTER_ID,
-    APP_ROOT_KEY, APP_TASKS_CANISTER_ID, APP_VOTINGS_CANISTER_ID,
+    CAN_BANK_CANISTER_ID, CAN_FMJ_CANISTER_ID, CAN_HUMANS_CANISTER_ID, CAN_ICP_CANISTER_ID,
+    CAN_ROOT_KEY, CAN_TASKS_CANISTER_ID, CAN_VOTINGS_CANISTER_ID,
 };
 use lazy_static::lazy_static;
 use serde::Deserialize;
@@ -46,13 +46,13 @@ pub struct EnvVarsState {
 impl EnvVarsState {
     pub fn new() -> Self {
         Self {
-            humans_canister_id: Principal::from_text(APP_HUMANS_CANISTER_ID).unwrap(),
-            votings_canister_id: Principal::from_text(APP_VOTINGS_CANISTER_ID).unwrap(),
-            tasks_canister_id: Principal::from_text(APP_TASKS_CANISTER_ID).unwrap(),
-            bank_canister_id: Principal::from_text(APP_BANK_CANISTER_ID).unwrap(),
-            fmj_canister_id: Principal::from_text(APP_FMJ_CANISTER_ID).unwrap(),
-            icp_canister_id: Principal::from_text(APP_ICP_CANISTER_ID).unwrap(),
-            ic_root_key: APP_ROOT_KEY
+            humans_canister_id: Principal::from_text(CAN_HUMANS_CANISTER_ID).unwrap(),
+            votings_canister_id: Principal::from_text(CAN_VOTINGS_CANISTER_ID).unwrap(),
+            tasks_canister_id: Principal::from_text(CAN_TASKS_CANISTER_ID).unwrap(),
+            bank_canister_id: Principal::from_text(CAN_BANK_CANISTER_ID).unwrap(),
+            fmj_canister_id: Principal::from_text(CAN_FMJ_CANISTER_ID).unwrap(),
+            icp_canister_id: Principal::from_text(CAN_ICP_CANISTER_ID).unwrap(),
+            ic_root_key: CAN_ROOT_KEY
                 .trim_start_matches("[")
                 .trim_end_matches("]")
                 .split(",")

@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-dfx generate && mv ./src/declarations ../frontend/app/src/declarations
+rm -rf ../frontend/app/src/declarations && dfx generate && mv ./src/declarations ../frontend/app/src/declarations

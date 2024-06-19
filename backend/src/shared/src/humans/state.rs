@@ -8,10 +8,11 @@ use super::{
     api::{
         EditProfileRequest, EditProfileResponse, EmployRequest, EmployResponse,
         GetProfileIdsRequest, GetProfileIdsResponse, GetProfileProofsRequest,
-        GetProfileProofsResponse, GetProfilesRequest, GetProfilesResponse, MintRewardsRequest,
-        MintRewardsResponse, RefundRewardsRequest, RefundRewardsResponse, RegisterRequest,
-        RegisterResponse, SpendRewardsRequest, SpendRewardsResponse, UnemployRequest,
-        UnemployResponse,
+        GetProfileProofsResponse, GetProfilesRequest, GetProfilesResponse,
+        GetTotalHoursAndStorypointsRequest, GetTotalHoursAndStorypointsResponse,
+        MintRewardsRequest, MintRewardsResponse, RefundRewardsRequest, RefundRewardsResponse,
+        RegisterRequest, RegisterResponse, SpendRewardsRequest, SpendRewardsResponse,
+        UnemployRequest, UnemployResponse,
     },
     types::{Profile, ProfileProof, PROOF_MARKER},
 };
@@ -157,6 +158,16 @@ impl HumansState {
         GetProfileProofsResponse {
             marker: PROOF_MARKER.to_string(),
             proof,
+        }
+    }
+
+    pub fn get_total_hours_and_storypoints(
+        &self,
+        _req: GetTotalHoursAndStorypointsRequest,
+    ) -> GetTotalHoursAndStorypointsResponse {
+        GetTotalHoursAndStorypointsResponse {
+            hours: self.total_hours_minted.clone(),
+            storypoints: self.total_storypoints_minted.clone(),
         }
     }
 
