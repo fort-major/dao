@@ -22,10 +22,10 @@ impl Guard<VotingsState> for StartVotingRequest {
         &mut self,
         state: &VotingsState,
         caller: candid::Principal,
-        _now: crate::TimestampNs,
+        now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.proof.assert_valid_for(caller)?;
+        self.proof.assert_valid_for(caller, now)?;
 
         if !self
             .proof
@@ -70,10 +70,10 @@ impl Guard<VotingsState> for CastVoteRequest {
         &mut self,
         state: &VotingsState,
         caller: candid::Principal,
-        _now: crate::TimestampNs,
+        now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.proof.assert_valid_for(caller)?;
+        self.proof.assert_valid_for(caller, now)?;
 
         if let Some(approval) = &self.approval_level {
             if approval

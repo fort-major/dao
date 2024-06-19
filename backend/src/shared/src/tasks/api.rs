@@ -38,10 +38,10 @@ impl Guard<TasksState> for CreateTaskRequest {
         &mut self,
         _state: &TasksState,
         caller: Principal,
-        _now: crate::TimestampNs,
+        now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.team_proof.assert_valid_for(caller)?;
+        self.team_proof.assert_valid_for(caller, now)?;
 
         if !self
             .team_proof
@@ -215,7 +215,7 @@ impl Guard<TasksState> for SolveTaskRequest {
         &mut self,
         state: &TasksState,
         caller: Principal,
-        _now: crate::TimestampNs,
+        now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -231,7 +231,7 @@ impl Guard<TasksState> for SolveTaskRequest {
         if task.is_team_only() {
             let proof = self.team_proof.as_mut().ok_or("No team proof provided")?;
 
-            proof.assert_valid_for(caller)?;
+            proof.assert_valid_for(caller, now)?;
 
             if !proof
                 .profile_proof

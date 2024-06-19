@@ -9,8 +9,12 @@ use crate::{
     humans::{
         api::GetProfileProofsResponse,
         types::{ProfileProof, PROOF_MARKER},
-    }, ENV_VARS,
+    },
+    votings::types::ONE_HOUR_NS,
+    DurationNs, TimestampNs, ENV_VARS,
 };
+
+const PROOF_TTL_NS: DurationNs = ONE_HOUR_NS * 8;
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct Proof {
@@ -21,15 +25,27 @@ pub struct Proof {
 }
 
 impl Proof {
-    pub fn assert_valid_for(&mut self, caller: Principal) -> Result<(), String> {
+    pub fn assert_valid_for(&mut self, caller: Principal, now: TimestampNs) -> Result<(), String> {
         let cert = self.get_cert()?;
 
+        // verify that the certificate indeed comes from an IC's canister
         cert.verify(
             ENV_VARS.humans_canister_id.as_slice(),
             &ENV_VARS.ic_root_key,
         )
         .map_err(|e| e.to_string())?;
 
+        // verify that the certificate is not expired
+        if let LookupResult::Found(mut date_bytes) = cert.tree.lookup_path(&["time"]) {
+            let timestamp_nanos =
+                leb128::read::unsigned(&mut date_bytes).map_err(|e| e.to_string())?;
+
+            if now > timestamp_nanos && (now - timestamp_nanos) >= PROOF_TTL_NS {
+                return Err(format!("The proof has expired"));
+            }
+        }
+
+        // verify that the certificate contains the expected response
         let get_profile_proof_response = match cert.tree.lookup_path([b"reply"]) {
             LookupResult::Found(blob) => {
                 decode_args::<(GetProfileProofsResponse,)>(blob)
@@ -43,6 +59,7 @@ impl Proof {
             return Err(format!("Invalid proof marker"));
         }
 
+        // verify that the response is about the caller
         if get_profile_proof_response.proof.id != caller {
             return Err(format!("The caller is not the owner of the proof"));
         }
