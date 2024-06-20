@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ -z "$1" ]]; then
-    echo "Must provide network name (local OR ic)" 1>&2
+    echo "Must provide network name (dev OR ic)" 1>&2
     exit 1
 fi
 
@@ -13,7 +13,7 @@ dfx canister --network=$network create --all
 
 # put env vars into backend
 
-file_backend=".env.$network"
+file_backend="./backend/.env.$network"
 rm -f $file_backend
 touch $file_backend
 
@@ -27,12 +27,12 @@ echo "CAN_ROOT_KEY=\"$(dfx ping $network | grep -oP '(?<="root_key": )\[.*\]')\"
 
 mkdir -p /tmp/fmj
 
-sed "1 c const MODE: &str = \"$network\";" ./src/shared/build.rs >> /tmp/fmj/build.rs
-mv /tmp/fmj/build.rs ./src/shared/build.rs
+sed "1 c const MODE: &str = \"$network\";" ./backend/src/shared/build.rs >> /tmp/fmj/build.rs
+mv /tmp/fmj/build.rs ./backend/src/shared/build.rs
 
 # pub env vars into frontend
 
-file_frontend="../frontend/app/.env.$network"
+file_frontend="./frontend/app/.env.$network"
 rm -f $file_frontend
 touch $file_frontend
 
@@ -44,8 +44,8 @@ echo "VITE_FMJ_CANISTER_ID=\"$(dfx canister --network=$network id fmj)\"" >> $fi
 echo "VITE_ICP_CANISTER_ID=\"ryjl3-tyaaa-aaaaa-aaaba-cai\"" >> $file_frontend
 echo "VITE_ROOT_KEY=\"$(dfx ping $network | grep -oP '(?<="root_key": )\[.*\]')\"" >> $file_frontend
 
-if [ $network = local ]; then
-    echo "VITE_IC_HOST=\"http://localhost:$(dfx info replica-port)\"" >> $file_frontend
+if [ $network = dev ]; then
+    echo "VITE_IC_HOST=\"http://localhost:$(dfx info webserver-port)\"" >> $file_frontend
 else
     echo "VITE_IC_HOST=\"https://icp-api.io\"" >> $file_frontend
 fi

@@ -1,10 +1,10 @@
 [workspace]
 members = [
-    "src/shared",
-    "src/can_bank",
-    "src/can_humans",
-    "src/can_tasks",
-    "src/can_votings",
+    "backend/src/shared",
+    "backend/src/can_bank",
+    "backend/src/can_humans",
+    "backend/src/can_tasks",
+    "backend/src/can_votings",
 ]
 resolver = "2"
 

@@ -15,16 +15,16 @@
 
 # rust
 target/
+**/target/
 
 # frontend code
 node_modules/
+**/node_modules/
 dist/
-.svelte-kit/
+**/dist/
 
 # environment variables
 .env
 .env.*
-
-# local json files
-*.local.json
-**/*.local.json
+**/.env
+**/.env.*

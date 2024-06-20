@@ -1,6 +1,7 @@
 import { Component, onMount } from "solid-js";
 import { TestPage } from "./pages/test";
-import { redirect, useNavigate } from "@solidjs/router";
+import { redirect } from "@solidjs/router";
+import { HumansPage } from "./pages/humans";
 
 export type IRoute = {
   path: string | string[];
@@ -28,6 +29,10 @@ export const ROOT = route({
     route({
       path: "/test",
       component: TestPage,
+    }),
+    route({
+      path: "/humans",
+      component: HumansPage,
     }),
   ],
 });

@@ -7,23 +7,33 @@ import {
 } from "solid-js";
 import { IChildren } from "../utils/types";
 import { ErrorCode, err, info } from "../utils/error";
-import { Identity, SignIdentity } from "@fort-major/agent-js-fork";
+import { Identity, Agent } from "@dfinity/agent";
 import { MsqClient, MsqIdentity } from "@fort-major/msq-client";
-import { debugStringify } from "../utils/encoding";
-import { Agent } from "@fort-major/agent-js-fork";
+import { Principal, debugStringify } from "../utils/encoding";
 import {
   makeAgent,
   makeAnonymousAgent,
   newHumansActor,
 } from "../utils/backend";
+import { E8s } from "../utils/math";
+
+export interface IProfileProof {
+  id: Principal;
+  reputation: E8s;
+  is_team_member: boolean;
+  reputation_total_supply: E8s;
+}
 
 export interface IAuthStoreContext {
   authorize: () => Promise<boolean>;
   identity: Accessor<Identity | undefined>;
   msqClient: Accessor<MsqClient | undefined>;
   agent: Accessor<Agent | undefined>;
-  anonymousAgent: Accessor<Agent>;
+  anonymousAgent: Accessor<Agent | undefined>;
   isAuthorized: Accessor<boolean>;
+  isReadyToFetch: Accessor<boolean>;
+  profileProof: Accessor<IProfileProof | undefined>;
+  profileProofCert: Accessor<ArrayBuffer | undefined>;
 }
 
 const AuthContext = createContext<IAuthStoreContext>();
@@ -42,7 +52,13 @@ export function AuthStore(props: IChildren) {
   const [identity, setIdentity] = createSignal<Identity | undefined>();
   const [msqClient, setMsqClient] = createSignal<MsqClient | undefined>();
   const [agent, setAgent] = createSignal<Agent | undefined>();
-  const [anonymousAgent, setAnonymousAgent] = createSignal<Agent>();
+  const [anonymousAgent, setAnonymousAgent] = createSignal<Agent | undefined>();
+  const [profileProof, setProfileProof] = createSignal<
+    IProfileProof | undefined
+  >();
+  const [profileProofCert, setProfileProofCert] = createSignal<
+    ArrayBuffer | undefined
+  >();
 
   onMount(async () => {
     setAnonymousAgent(await makeAnonymousAgent());
@@ -52,7 +68,7 @@ export function AuthStore(props: IChildren) {
     const msq = msqClient();
 
     if (msq) {
-      let id: MsqIdentity;
+      let id: MsqIdentity | null;
 
       if (await msq.isAuthorized()) {
         id = await MsqIdentity.create(msq);
@@ -88,6 +104,24 @@ export function AuthStore(props: IChildren) {
 
       info("Login successful");
 
+      const { proof } =
+        await humansActor.humans__get_profile_proofs.withOptions({
+          onRawCertificatePolled(cert) {
+            setProfileProofCert(cert);
+          },
+        })({});
+
+      const proofExt: IProfileProof = {
+        id: proof.id,
+        is_team_member: proof.is_team_member,
+        reputation: new E8s(proof.reputation),
+        reputation_total_supply: new E8s(proof.reputation_total_supply),
+      };
+
+      info("Profile proof fetched successfully");
+
+      setProfileProof(proofExt);
+
       return true;
     }
 
@@ -106,6 +140,10 @@ export function AuthStore(props: IChildren) {
     return !!agent();
   };
 
+  const isReadyToFetch = () => {
+    return !!anonymousAgent();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -115,6 +153,9 @@ export function AuthStore(props: IChildren) {
         agent,
         anonymousAgent,
         isAuthorized,
+        isReadyToFetch,
+        profileProof,
+        profileProofCert,
       }}
     >
       {props.children}

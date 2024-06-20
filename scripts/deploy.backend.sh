@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ -z "$1" ]]; then
-    echo "Must provide network name (local OR ic)" 1>&2
+    echo "Must provide network name (dev OR ic)" 1>&2
     exit 1
 fi
 
@@ -11,7 +11,7 @@ if [[ -z "$2" ]]; then
 fi
 
 network=$1
-file_name="$network.env"
+file_name="./backend/.env.$network"
 
 sasha_principal=$2
 

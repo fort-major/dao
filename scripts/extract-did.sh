@@ -2,12 +2,12 @@
 
 function generate_did() {
   local canister=$1
-  local canister_root="src/can_$canister"
+  local canister_root="./backend/src/can_$canister"
 
   cargo build --manifest-path="$canister_root/Cargo.toml" \
       --target wasm32-unknown-unknown \
       --release --locked --package "$canister" && \
-  candid-extractor "target/wasm32-unknown-unknown/release/$canister.wasm" > "$canister_root/can.did"
+  candid-extractor "./target/wasm32-unknown-unknown/release/$canister.wasm" > "$canister_root/can.did"
 }
 
 generate_did "humans"

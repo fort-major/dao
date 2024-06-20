@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "author": "Fort Major",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode=dev",
     "build": "vite build",
     "serve": "vite preview"
   },

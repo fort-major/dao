@@ -51,14 +51,18 @@ export function useHumans(): IHumanStoreContext {
 }
 
 export function HumanStore(props: IChildren) {
-  const { anonymousAgent } = useAuth();
+  const { anonymousAgent, isReadyToFetch } = useAuth();
 
   const [profiles, setProfiles] = createStore<ProfilesStore>();
   const [profileIds, setProfileIds] = createStore<ProfileIdsStore>();
   const [totals, setTotals] = createSignal<[E8s, E8s]>([E8s.one(), E8s.one()]);
 
   const fetchTotals: IHumanStoreContext["fetchTotals"] = async () => {
-    const humansActor = newHumansActor(anonymousAgent());
+    if (!isReadyToFetch()) {
+      err(ErrorCode.UNREACHEABLE, "Not ready to fetch");
+    }
+
+    const humansActor = newHumansActor(anonymousAgent()!);
     const { hours, storypoints } =
       await humansActor.humans__get_total_hours_and_storypoints({});
 
@@ -66,7 +70,11 @@ export function HumanStore(props: IChildren) {
   };
 
   const fetchProfileIds: IHumanStoreContext["fetchProfileIds"] = async () => {
-    const humansActor = newHumansActor(anonymousAgent());
+    if (!isReadyToFetch()) {
+      err(ErrorCode.UNREACHEABLE, "Not ready to fetch");
+    }
+
+    const humansActor = newHumansActor(anonymousAgent()!);
     const { ids } = await humansActor.humans__get_profile_ids({});
 
     for (let id of ids) {
@@ -76,6 +84,10 @@ export function HumanStore(props: IChildren) {
 
   // refetches all known profiles when ids == undefined
   const fetchProfiles: IHumanStoreContext["fetchProfiles"] = async (ids) => {
+    if (!isReadyToFetch()) {
+      err(ErrorCode.UNREACHEABLE, "Not ready to fetch");
+    }
+
     if (!ids) {
       ids = Object.keys(profileIds);
     }
@@ -86,12 +98,12 @@ export function HumanStore(props: IChildren) {
       typeof id === "string" ? Principal.fromText(id) : id
     );
 
-    const humansActor = newHumansActor(anonymousAgent());
+    const humansActor = newHumansActor(anonymousAgent()!);
     const { profiles } = await humansActor.humans__get_profiles({ ids });
 
     for (let i = 0; i < profiles.length; i++) {
       if (profiles[i][0]) {
-        const p = profiles[i][0];
+        const p = profiles[i][0]!;
         const id = p.id.toText();
 
         const e = optUnwrap(p.employment);
@@ -101,13 +113,15 @@ export function HumanStore(props: IChildren) {
           name: optUnwrap(p.name),
           avatar_src: optUnwrap(p.avatar_src),
           registered_at: p.registered_at,
-          employment: {
-            employed_at: e.employed_at,
-            hours_a_week_commitment: new E8s(e.hours_a_week_commitment),
-            hours_earned_during_employment: new E8s(
-              e.hours_earned_during_employment
-            ),
-          },
+          employment: e
+            ? {
+                employed_at: e.employed_at,
+                hours_a_week_commitment: new E8s(e.hours_a_week_commitment),
+                hours_earned_during_employment: new E8s(
+                  e.hours_earned_during_employment
+                ),
+              }
+            : undefined,
           hours_balance: new E8s(p.hours_balance),
           earned_hours: new E8s(p.earned_hours),
           storypoints_balance: new E8s(p.storypoints_balance),

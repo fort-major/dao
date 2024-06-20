@@ -1,6 +1,8 @@
-import { render } from 'solid-js/web'
+(window as any).global = window;
 
-import App from './App'
-import './index.css'
+import { render } from "solid-js/web";
 
-render(() => <App />, document.getElementById('root'))
+import App from "./App";
+import "./index.css";
+
+render(() => <App />, document.getElementById("root")!);

@@ -1,15 +1,27 @@
-import { For, createEffect } from "solid-js";
+import { For, Show, createEffect } from "solid-js";
 import { IProfile, useHumans } from "../../store/humans";
 import { ProfileMini } from "../../components/profile/profile";
-import { timestampToStr } from "../../utils/encoding";
+import { Principal, timestampToStr } from "../../utils/encoding";
 import { E8s } from "../../utils/math";
 import { ONE_WEEK_NS } from "../../utils/types";
+import { useAuth } from "../../store/auth";
 
 export function HumansPage() {
   const { fetchProfileIds, fetchProfiles, profiles, totals, fetchTotals } =
     useHumans();
+  const { profileProof, isReadyToFetch } = useAuth();
+
+  const hasReputation = () => {
+    const proof = profileProof();
+
+    if (!proof) return false;
+
+    return proof.reputation.gt(E8s.zero());
+  };
 
   createEffect(async () => {
+    if (!isReadyToFetch()) return;
+
     if (totals()[0].eq(E8s.one())) {
       fetchTotals();
     }
@@ -21,8 +33,12 @@ export function HumansPage() {
   });
 
   const getProfiles = () => {
-    return Object.values(profiles);
+    return Object.values(profiles) as IProfile[];
   };
+
+  // TODO: votings
+  const handleFire = (id: Principal) => {};
+  const handleEmploy = (id: Principal) => {};
 
   const profile = (p: IProfile, totalHours: E8s, totalStorypoints: E8s) => {
     const rep = p.earned_hours
@@ -56,6 +72,18 @@ export function HumansPage() {
         <p>{p.earned_storypoints.toString()}</p>
         <p>{timestampToStr(p.registered_at)}</p>
         <p>{commitmentStr}</p>
+        <p>
+          <Show when={hasReputation()} fallback={"-"}>
+            <Show
+              when={p.employment}
+              fallback={
+                <button onClick={() => handleEmploy(p.id)}>Employ</button>
+              }
+            >
+              <button onClick={() => handleFire(p.id)}>Fire</button>
+            </Show>
+          </Show>
+        </p>
       </>
     );
   };
@@ -80,6 +108,7 @@ export function HumansPage() {
         <p>Storypoints earned</p>
         <p>Registered at</p>
         <p>Commitment</p>
+        <p>Action</p>
         <For each={getProfiles()}>
           {(p) => profile(p, totals()[0], totals()[1])}
         </For>

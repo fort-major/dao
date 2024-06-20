@@ -1,27 +1,27 @@
 {
   "canisters": {
     "humans": {
-      "candid": "src/can_humans/can.did",
+      "candid": "backend/src/can_humans/can.did",
       "package": "humans",
       "type": "rust"
     },
     "bank": {
-      "candid": "src/can_bank/can.did",
+      "candid": "backend/src/can_bank/can.did",
       "package": "bank",
       "type": "rust"
     },
     "tasks": {
-      "candid": "src/can_tasks/can.did",
+      "candid": "backend/src/can_tasks/can.did",
       "package": "tasks",
       "type": "rust"
     },
     "votings": {
-      "candid": "src/can_votings/can.did",
+      "candid": "backend/src/can_votings/can.did",
       "package": "votings",
       "type": "rust"
     },
     "fmj": {
-      "candid": "src/can_fmj/can.did",
+      "candid": "backend/src/can_fmj/can.did",
       "wasm": "src/can_fmj/fmj.wasm",
       "type": "custom"
     }
@@ -31,6 +31,14 @@
       "args": "",
       "packtool": ""
     }
+  },
+  "networks": {  
+    "dev": {  
+      "providers": [
+        "http://localhost:8080"
+      ],
+      "type": "persistent"
+    }  
   },
   "output_env_file": ".env",
   "version": 1

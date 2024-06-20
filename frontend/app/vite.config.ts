@@ -6,6 +6,11 @@ export default defineConfig({
   build: {
     target: "esnext",
   },
+  resolve: {
+    alias: {
+      "@dfinity/agent": "@fort-major/agent-js-fork",
+    },
+  },
   server: {
     port: 8000,
     cors: true,

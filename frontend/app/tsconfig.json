@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "strict": true,
     "baseUrl": "node_modules",
     "target": "ESNext",
     "module": "ESNext",
@@ -10,7 +11,7 @@
     "jsxImportSource": "solid-js",
     "types": ["node", "vite/client"],
     "paths": {
-        
+        "@dfinity/agent": ["@fort-major/agent-js-fork"]
     }
   }
 }
