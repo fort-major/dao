@@ -10,16 +10,17 @@ use super::{
         AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
         DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
         EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
-        FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
-        GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+        FinishSolveResponse, GetArchivedTasksRequest, GetArchivedTasksResponse, GetTaskIdsRequest,
+        GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
     },
-    types::{RewardEntry, Task, TaskId},
+    types::{ArchivedTask, RewardEntry, Task, TaskId},
 };
 
 #[derive(CandidType, Deserialize)]
 pub struct TasksState {
     pub task_id_generator: TaskId,
     pub tasks: BTreeMap<TaskId, Task>,
+    pub archive: BTreeMap<TaskId, ArchivedTask>,
 }
 
 impl TasksState {
@@ -27,6 +28,7 @@ impl TasksState {
         Self {
             task_id_generator: 0,
             tasks: BTreeMap::new(),
+            archive: BTreeMap::new(),
         }
     }
 
@@ -79,8 +81,6 @@ impl TasksState {
         let task = self.tasks.get_mut(&req.id).unwrap();
         task.finish_edit(now);
 
-        // TODO: start timer
-
         FinishEditTaskResponse {}
     }
 
@@ -91,7 +91,7 @@ impl TasksState {
     ) -> AttachToTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
 
-        task.add_candidate(!req.detach, caller);
+        task.add_solver(!req.detach, caller);
 
         AttachToTaskResponse {}
     }
@@ -122,6 +122,12 @@ impl TasksState {
         (EvaluateResponse {}, rewards)
     }
 
+    pub fn archive_task(&mut self, id: TaskId) {
+        let task = self.tasks.remove(&id).unwrap().to_archived();
+
+        self.archive.insert(id, task);
+    }
+
     pub fn delete_task(&mut self, req: DeleteRequest) -> DeleteResponse {
         self.tasks.remove(&req.id);
 
@@ -142,6 +148,22 @@ impl TasksState {
             .collect();
 
         GetTasksResponse { tasks }
+    }
+
+    pub fn get_archived_task_ids(&self, _: GetTaskIdsRequest) -> GetTaskIdsResponse {
+        let ids = self.archive.keys().copied().collect();
+
+        GetTaskIdsResponse { ids }
+    }
+
+    pub fn get_archived_tasks(&self, req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
+        let tasks = req
+            .ids
+            .iter()
+            .map(|id| self.archive.get(id).cloned())
+            .collect();
+
+        GetArchivedTasksResponse { tasks }
     }
 
     fn generate_id(&mut self) -> TaskId {

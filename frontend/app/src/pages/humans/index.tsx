@@ -101,7 +101,7 @@ export function HumansPage() {
           <p>total storypoints earned</p>
         </div>
       </div>
-      <div class="grid grid-cols-5">
+      <div class="grid grid-cols-7">
         <p>Human</p>
         <p>Reputation %</p>
         <p>Hours spent</p>

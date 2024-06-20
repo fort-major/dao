@@ -22,7 +22,7 @@
     },
     "fmj": {
       "candid": "backend/src/can_fmj/can.did",
-      "wasm": "src/can_fmj/fmj.wasm",
+      "wasm": "backend/src/can_fmj/fmj.wasm",
       "type": "custom"
     }
   },

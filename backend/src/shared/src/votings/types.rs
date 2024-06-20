@@ -136,19 +136,19 @@ impl Voting {
         if let Some(call) = call_or_fail {
             Ok(Some(call))
         } else {
-            Err(VotingEvent::VotingFail {
+            Err(VotingEvent::V0001(VotingEventV1::VotingFail {
                 voting_id: self.id,
                 reason: format!("Consensus not reached"),
-            })
+            }))
         }
     }
 
     pub fn resolve_on_timer(&mut self) -> Result<CallToExecute, VotingEvent> {
         if !self.base.is_quorum_reached_for_all_options() {
-            return Err(VotingEvent::VotingFail {
+            return Err(VotingEvent::V0001(VotingEventV1::VotingFail {
                 voting_id: self.id,
                 reason: format!("Quorum not reached for all options"),
-            });
+            }));
         }
 
         self.stage = VotingStage::Executing;
@@ -158,10 +158,10 @@ impl Voting {
         if let Some(call) = call_or_fail {
             Ok(call)
         } else {
-            return Err(VotingEvent::VotingFail {
+            return Err(VotingEvent::V0001(VotingEventV1::VotingFail {
                 voting_id: self.id,
                 reason: format!("Consensus not reached"),
-            });
+            }));
         }
     }
 
@@ -536,6 +536,11 @@ pub enum VotingTimer {
 
 #[derive(CandidType, Deserialize, Clone)]
 pub enum VotingEvent {
+    V0001(VotingEventV1),
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub enum VotingEventV1 {
     VotingCreated {
         voting_id: VotingId,
         creator: Principal,

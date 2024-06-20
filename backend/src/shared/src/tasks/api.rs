@@ -8,7 +8,7 @@ use crate::{e8s::E8s, escape_script_tag, proof::Proof, Guard, ENV_VARS};
 
 use super::{
     state::TasksState,
-    types::{SolutionField, SolverConstraint, Task, TaskId, TaskStage},
+    types::{ArchivedTask, SolutionField, SolverConstraint, Task, TaskId, TaskStage},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -385,6 +385,29 @@ impl Guard<TasksState> for GetTasksRequest {
 pub struct GetTasksResponse {
     #[garde(skip)]
     pub tasks: Vec<Option<Task>>,
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetArchivedTasksRequest {
+    #[garde(length(min = 1, max = 100))]
+    pub ids: Vec<TaskId>,
+}
+
+impl Guard<TasksState> for GetArchivedTasksRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &TasksState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetArchivedTasksResponse {
+    #[garde(skip)]
+    pub tasks: Vec<Option<ArchivedTask>>,
 }
 
 #[derive(CandidType, Deserialize, Validate)]

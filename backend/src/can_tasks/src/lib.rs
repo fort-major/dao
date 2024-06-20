@@ -13,8 +13,9 @@ use shared::{
             AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
             DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
             EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
-            FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
-            GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+            FinishSolveResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
+            GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest, GetTasksResponse,
+            SolveTaskRequest, SolveTaskResponse,
         },
         state::TasksState,
     },
@@ -111,6 +112,8 @@ fn tasks__finish_solve_task(mut req: FinishSolveRequest) -> FinishSolveResponse 
 #[update]
 #[allow(non_snake_case)]
 async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
+    let task_id = req.id;
+
     let (result, rewards) = with_state_mut(|s| {
         req.validate_and_escape(s, caller(), time())
             .expect("Unable to evaluate task");
@@ -128,6 +131,8 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
             code, msg
         ));
     }
+
+    with_state_mut(|s| s.archive_task(task_id));
 
     result
 }
@@ -162,6 +167,28 @@ fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
             .expect("Unable to get tasks");
 
         s.get_tasks(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn tasks__get_archived_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get task ids");
+
+        s.get_archived_task_ids(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn tasks__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get tasks");
+
+        s.get_archived_tasks(req)
     })
 }
 

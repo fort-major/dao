@@ -6,7 +6,7 @@ use crate::{e8s::E8s, proof::Proof, Guard};
 
 use super::{
     state::VotingsState,
-    types::{VotingExt, VotingId, VotingKind},
+    types::{VotingEvent, VotingExt, VotingId, VotingKind},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -132,4 +132,24 @@ impl Guard<VotingsState> for GetVotingsRequest {
 pub struct GetVotingsResponse {
     #[garde(skip)]
     pub votings: Vec<Option<VotingExt>>,
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetVotingEventsRequest {}
+
+impl Guard<VotingsState> for GetVotingEventsRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &VotingsState,
+        _caller: candid::Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetVotingEventsResponse {
+    #[garde(skip)]
+    pub events: Vec<VotingEvent>,
 }

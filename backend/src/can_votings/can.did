@@ -1,3 +1,8 @@
+type CallToExecute = record {
+  canister_id : principal;
+  method_name : text;
+  args_raw : blob;
+};
 type CastVoteRequest = record {
   id : VotingId;
   option_idx : nat32;
@@ -5,6 +10,7 @@ type CastVoteRequest = record {
   proof : Proof;
 };
 type CastVoteResponse = record { decision_made : bool };
+type GetVotingEventsResponse = record { events : vec VotingEvent };
 type GetVotingsRequest = record { ids : vec VotingId };
 type GetVotingsResponse = record { votings : vec opt VotingExt };
 type ProfileProof = record {
@@ -18,6 +24,25 @@ type StartVotingRequest = record { kind : VotingKind; proof : Proof };
 type StartVotingResponse = record { id : VotingId };
 type SwapFrom = variant { Hour; Storypoint };
 type SwapInto = variant { FMJ; ICP };
+type VotingEvent = variant { V0001 : VotingEventV1 };
+type VotingEventV1 = variant {
+  VotingExecuting : record {
+    rep_per_option : vec nat;
+    call : CallToExecute;
+    voting_id : VotingId;
+    on_timer : bool;
+  };
+  VotingSuccess : record { voting_id : VotingId };
+  VotingFail : record { voting_id : VotingId; reason : text };
+  VotingCreated : record {
+    creator : principal;
+    num_options : nat32;
+    finish_early : nat;
+    voting_id : VotingId;
+    consensus : nat;
+    quorum : nat;
+  };
+};
 type VotingExt = record {
   id : VotingId;
   creator : principal;
@@ -54,6 +79,7 @@ type VotingKind = variant {
 type VotingStage = variant { Executing; InProgress };
 service : () -> {
   votings__cast_vote : (CastVoteRequest) -> (CastVoteResponse);
+  votings__get_events : (record {}) -> (GetVotingEventsResponse) query;
   votings__get_votings : (GetVotingsRequest) -> (GetVotingsResponse) query;
   votings__start_voting : (StartVotingRequest) -> (StartVotingResponse);
 }

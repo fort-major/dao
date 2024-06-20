@@ -23,7 +23,7 @@ pub struct Task {
     pub hours_base: E8s,
     pub storypoints_base: E8s,
     pub storypoints_ext_budget: E8s,
-    pub candidates: BTreeSet<Principal>,
+    pub solvers: BTreeSet<Principal>,
     pub solutions: BTreeMap<Principal, Solution>,
 }
 
@@ -54,7 +54,7 @@ impl Task {
             hours_base,
             storypoints_base,
             storypoints_ext_budget,
-            candidates: BTreeSet::new(),
+            solvers: BTreeSet::new(),
             solutions: BTreeMap::new(),
         }
     }
@@ -190,21 +190,19 @@ impl Task {
             result.push(entry);
         }
 
-        self.stage = TaskStage::Archive;
-
         result
     }
 
-    pub fn add_candidate(&mut self, is_candidate: bool, caller: Principal) {
-        if is_candidate {
-            self.candidates.insert(caller);
+    pub fn add_solver(&mut self, is_solver: bool, caller: Principal) {
+        if is_solver {
+            self.solvers.insert(caller);
         } else {
-            self.candidates.remove(&caller);
+            self.solvers.remove(&caller);
         }
     }
 
-    pub fn is_candidate(&self, candidate: &Principal) -> bool {
-        self.candidates.contains(candidate)
+    pub fn is_solver(&self, candidate: &Principal) -> bool {
+        self.solvers.contains(candidate)
     }
 
     pub fn is_creator(&self, creator: &Principal) -> bool {
@@ -236,7 +234,19 @@ impl Task {
     }
 
     pub fn can_delete(&self) -> bool {
-        !matches!(self.stage, TaskStage::Archive)
+        true
+    }
+
+    pub fn to_archived(self) -> ArchivedTask {
+        ArchivedTask::V0001(ArchivedTaskV1 {
+            id: self.id,
+            title: self.title,
+            description: self.description,
+            created_at: self.created_at,
+            creator: self.creator,
+            solution_fields: self.solution_fields,
+            solutions: self.solutions,
+        })
     }
 }
 
@@ -245,7 +255,6 @@ pub enum TaskStage {
     Edit,
     Solve { until_timestamp: TimestampNs },
     Evaluate,
-    Archive,
 }
 
 #[derive(CandidType, Deserialize, Clone, Validate)]
@@ -391,4 +400,20 @@ impl URLKind {
             }
         }
     }
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub enum ArchivedTask {
+    V0001(ArchivedTaskV1),
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+pub struct ArchivedTaskV1 {
+    pub id: TaskId,
+    pub title: String,
+    pub description: String,
+    pub created_at: TimestampNs,
+    pub creator: Principal,
+    pub solution_fields: Vec<SolutionField>,
+    pub solutions: BTreeMap<Principal, Solution>,
 }

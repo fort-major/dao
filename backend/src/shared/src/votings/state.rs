@@ -3,14 +3,14 @@ use std::collections::{BTreeMap, LinkedList};
 use candid::{CandidType, Principal};
 use serde::Deserialize;
 
-use crate::{TimestampNs};
+use crate::TimestampNs;
 
 use super::{
     api::{
-        CastVoteRequest, CastVoteResponse, GetVotingsRequest, GetVotingsResponse,
-        StartVotingRequest, StartVotingResponse,
+        CastVoteRequest, CastVoteResponse, GetVotingEventsRequest, GetVotingEventsResponse,
+        GetVotingsRequest, GetVotingsResponse, StartVotingRequest, StartVotingResponse,
     },
-    types::{CallToExecute, Voting, VotingEvent, VotingId, VotingTimer},
+    types::{CallToExecute, Voting, VotingEvent, VotingEventV1, VotingId, VotingTimer},
 };
 
 const EVENTS_LOG_LEN: usize = 1000;
@@ -52,14 +52,14 @@ impl VotingsState {
             voting_id: voting.id,
             timestamp: now + voting.base.duration_ns,
         };
-        let event = VotingEvent::VotingCreated {
+        let event = VotingEvent::V0001(VotingEventV1::VotingCreated {
             voting_id: voting.id,
             creator: voting.base.creator,
             quorum: voting.base.quorum.clone(),
             consensus: voting.base.consensus.clone(),
             finish_early: voting.base.finish_early.clone(),
             num_options: voting.base.votes_per_option.len() as u32,
-        };
+        });
 
         self.votings.insert(voting.id, voting);
         self.save_event(event);
@@ -141,6 +141,12 @@ impl VotingsState {
         }
 
         self.events.push_front(event);
+    }
+
+    pub fn get_events(&self, _req: GetVotingEventsRequest) -> GetVotingEventsResponse {
+        GetVotingEventsResponse {
+            events: self.events.iter().cloned().collect(),
+        }
     }
 
     pub fn save_timer(&mut self, id: VotingId, timer: VotingTimer) {

@@ -1,3 +1,13 @@
+type ArchivedTask = variant { V0001 : ArchivedTaskV1 };
+type ArchivedTaskV1 = record {
+  id : nat64;
+  solution_fields : vec SolutionField;
+  title : text;
+  creator : principal;
+  description : text;
+  created_at : nat64;
+  solutions : vec record { principal; Solution };
+};
 type AttachToTaskRequest = record { id : nat64; detach : bool };
 type CreateTaskRequest = record {
   solution_fields : vec SolutionField;
@@ -26,6 +36,7 @@ type EvaluateRequest = record {
   id : nat64;
   evaluation_per_solution : vec record { principal; opt nat };
 };
+type GetArchivedTasksResponse = record { tasks : vec opt ArchivedTask };
 type GetTaskIdsResponse = record { ids : vec nat64 };
 type GetTasksRequest = record { ids : vec nat64 };
 type GetTasksResponse = record { tasks : vec opt Task };
@@ -69,14 +80,13 @@ type Task = record {
   description : text;
   created_at : nat64;
   stage : TaskStage;
+  solvers : vec principal;
   storypoints_ext_budget : nat;
-  candidates : vec principal;
   solutions : vec record { principal; Solution };
 };
 type TaskStage = variant {
   Solve : record { until_timestamp : nat64 };
   Edit;
-  Archive;
   Evaluate;
 };
 type URLKind = variant {
@@ -96,6 +106,10 @@ service : () -> {
   tasks__evaluate_task : (EvaluateRequest) -> (record {});
   tasks__finish_edit_task : (DeleteRequest) -> (record {});
   tasks__finish_solve_task : (DeleteRequest) -> (record {});
+  tasks__get_archived_task_ids : (record {}) -> (GetTaskIdsResponse) query;
+  tasks__get_archived_tasks : (GetTaskIdsResponse) -> (
+      GetArchivedTasksResponse,
+    ) query;
   tasks__get_task_ids : (record {}) -> (GetTaskIdsResponse) query;
   tasks__get_tasks : (GetTasksRequest) -> (GetTasksResponse) query;
   tasks__solve_task : (SolveTaskRequest) -> (record {});

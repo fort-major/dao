@@ -10,11 +10,11 @@ use shared::{
     tasks::{api::GetTasksRequest, client::TasksCanisterClient},
     votings::{
         api::{
-            CastVoteRequest, CastVoteResponse, GetVotingsRequest, GetVotingsResponse,
-            StartVotingRequest, StartVotingResponse,
+            CastVoteRequest, CastVoteResponse, GetVotingEventsRequest, GetVotingEventsResponse,
+            GetVotingsRequest, GetVotingsResponse, StartVotingRequest, StartVotingResponse,
         },
         state::VotingsState,
-        types::{CallToExecute, VotingEvent, VotingId, VotingKind, VotingTimer},
+        types::{CallToExecute, VotingEvent, VotingEventV1, VotingId, VotingKind, VotingTimer},
     },
     Guard, TimestampNs, ENV_VARS,
 };
@@ -39,6 +39,13 @@ fn post_upgrade_hook() {
         stable_restore().expect("Unable to stable restore");
 
     install_votings_state(votings_state);
+
+    let timers = with_state(|s| s.timers.values().copied().collect::<Vec<_>>());
+    let now = time();
+
+    for timer in timers {
+        start_voting_timer(timer, now);
+    }
 }
 
 #[update]
@@ -96,6 +103,17 @@ fn votings__get_votings(mut req: GetVotingsRequest) -> GetVotingsResponse {
     })
 }
 
+#[query]
+#[allow(non_snake_case)]
+fn votings__get_events(mut req: GetVotingEventsRequest) -> GetVotingEventsResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get voting events");
+
+        s.get_events(req)
+    })
+}
+
 fn start_voting_timer(timer: VotingTimer, now: TimestampNs) {
     match timer {
         VotingTimer::ExecOnQuorum {
@@ -129,11 +147,11 @@ fn process_voting_result(voting_id: VotingId, call_to_exec_opt: Option<CallToExe
         spawn(async move {
             // execute the call
             let event = match call_to_exec.execute().await {
-                Ok(_) => VotingEvent::VotingSuccess { voting_id },
-                Err(e) => VotingEvent::VotingFail {
+                Ok(_) => VotingEvent::V0001(VotingEventV1::VotingSuccess { voting_id }),
+                Err(e) => VotingEvent::V0001(VotingEventV1::VotingFail {
                     voting_id,
                     reason: e,
-                },
+                }),
             };
 
             // save the produced events and delete the voting
