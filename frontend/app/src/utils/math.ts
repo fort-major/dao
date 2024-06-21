@@ -111,4 +111,12 @@ export class E8s {
   public toString() {
     return tokensToStr(this.val, 8);
   }
+
+  public toPrecision(digits: number) {
+    return tokensToStr(this.val, 8, digits);
+  }
+
+  public toBool() {
+    return this.val > 0n;
+  }
 }

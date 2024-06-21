@@ -1,10 +1,10 @@
 import { toast } from "solid-toast";
 
 export enum ErrorCode {
-  AUTH = 3,
-  SECURITY_VIOLATION = 2,
-  UNREACHEABLE = 1,
-  UNKNOWN = -1,
+  AUTH = "AUTH",
+  SECURITY_VIOLATION = "SECURITY_VIOLATION",
+  UNREACHEABLE = "UNREACHEABLE",
+  UNKNOWN = "UNKNOWN",
 }
 
 export function err(code: ErrorCode, msg?: string): never {
@@ -14,7 +14,14 @@ export function err(code: ErrorCode, msg?: string): never {
   throw new Error(str);
 }
 
-export function info(msg: string) {
+export function logErr(code: ErrorCode, msg?: string) {
+  const str = `[code: ${code}]${msg ? `: ${msg}` : ""}`;
+
+  console.error(str);
+  toast.error(str);
+}
+
+export function logInfo(msg: string) {
   console.info(msg);
   toast(msg);
 }

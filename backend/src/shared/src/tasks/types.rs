@@ -244,6 +244,7 @@ impl Task {
             description: self.description,
             created_at: self.created_at,
             creator: self.creator,
+            solver_constraints: self.solver_constraints,
             solution_fields: self.solution_fields,
             solutions: self.solutions,
         })
@@ -414,6 +415,7 @@ pub struct ArchivedTaskV1 {
     pub description: String,
     pub created_at: TimestampNs,
     pub creator: Principal,
+    pub solver_constraints: BTreeSet<SolverConstraint>,
     pub solution_fields: Vec<SolutionField>,
     pub solutions: BTreeMap<Principal, Solution>,
 }

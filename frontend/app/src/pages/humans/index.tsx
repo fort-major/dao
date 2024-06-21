@@ -43,7 +43,8 @@ export function HumansPage() {
   const profile = (p: IProfile, totalHours: E8s, totalStorypoints: E8s) => {
     const rep = p.earned_hours
       .add(p.earned_storypoints)
-      .div(totalHours.add(totalStorypoints));
+      .div(totalHours.add(totalStorypoints))
+      .mul(E8s.fromNumber(100n));
 
     let commitmentStr = "N/A";
 

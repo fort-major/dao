@@ -20,14 +20,14 @@ source $file_name
 dfx deploy --network=$network fmj --argument "(variant { Init = record { \
   token_symbol = \"FMJ\"; \
   token_name = \"Fort Major\"; \
-  minting_account = record { owner = principal \"$APP_BANK_CANISTER_ID\"  }; \
+  minting_account = record { owner = principal \"$CAN_BANK_CANISTER_ID\"  }; \
   transfer_fee = 10_000; \
   metadata = vec {}; \
   initial_balances = vec {}; \
   archive_options = record { \
     num_blocks_to_archive = 2000; \
     trigger_threshold = 1000; \
-    controller_id = principal \"$APP_VOTINGS_CANISTER_ID\"; \
+    controller_id = principal \"$CAN_VOTINGS_CANISTER_ID\"; \
   }; \
 }})"
 

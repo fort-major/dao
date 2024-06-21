@@ -6,7 +6,7 @@ import {
   useContext,
 } from "solid-js";
 import { IChildren } from "../utils/types";
-import { ErrorCode, err, info } from "../utils/error";
+import { ErrorCode, err, logInfo } from "../utils/error";
 import { Identity, Agent } from "@dfinity/agent";
 import { MsqClient, MsqIdentity } from "@fort-major/msq-client";
 import { Principal, debugStringify } from "../utils/encoding";
@@ -32,6 +32,7 @@ export interface IAuthStoreContext {
   anonymousAgent: Accessor<Agent | undefined>;
   isAuthorized: Accessor<boolean>;
   isReadyToFetch: Accessor<boolean>;
+  assertReadyToFetch: () => never | void;
   profileProof: Accessor<IProfileProof | undefined>;
   profileProofCert: Accessor<ArrayBuffer | undefined>;
 }
@@ -88,7 +89,9 @@ export function AuthStore(props: IChildren) {
       });
 
       if (!profiles[0][0]) {
-        info(`First time here? Registering ${id.getPrincipal().toText()}...`);
+        logInfo(
+          `First time here? Registering ${id.getPrincipal().toText()}...`
+        );
 
         const name = await id.getPseudonym();
         const avatarSrc = await id.getAvatarSrc();
@@ -102,7 +105,7 @@ export function AuthStore(props: IChildren) {
       setIdentity(id as unknown as Identity);
       setAgent(a);
 
-      info("Login successful");
+      logInfo("Login successful");
 
       const { proof } =
         await humansActor.humans__get_profile_proofs.withOptions({
@@ -118,7 +121,7 @@ export function AuthStore(props: IChildren) {
         reputation_total_supply: new E8s(proof.reputation_total_supply),
       };
 
-      info("Profile proof fetched successfully");
+      logInfo("Profile proof fetched successfully");
 
       setProfileProof(proofExt);
 
@@ -144,6 +147,12 @@ export function AuthStore(props: IChildren) {
     return !!anonymousAgent();
   };
 
+  const assertReadyToFetch = () => {
+    if (!isReadyToFetch()) {
+      err(ErrorCode.UNREACHEABLE, "Not ready to fetch");
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -154,6 +163,7 @@ export function AuthStore(props: IChildren) {
         anonymousAgent,
         isAuthorized,
         isReadyToFetch,
+        assertReadyToFetch,
         profileProof,
         profileProofCert,
       }}

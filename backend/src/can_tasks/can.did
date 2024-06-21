@@ -4,6 +4,7 @@ type ArchivedTaskV1 = record {
   solution_fields : vec SolutionField;
   title : text;
   creator : principal;
+  solver_constraints : vec SolverConstraint;
   description : text;
   created_at : nat64;
   solutions : vec record { principal; Solution };

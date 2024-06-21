@@ -37,7 +37,7 @@
       "providers": [
         "http://localhost:8080"
       ],
-      "type": "persistent"
+      "type": "ephemeral"
     }  
   },
   "output_env_file": ".env",

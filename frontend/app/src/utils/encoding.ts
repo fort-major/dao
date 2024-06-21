@@ -1,3 +1,8 @@
+import { match } from "assert";
+import { VotingId } from "../declarations/votings/votings.did";
+import { ErrorCode, err } from "./error";
+import { Principal } from "@dfinity/principal";
+
 export { Principal } from "@dfinity/principal";
 
 const textEncoder = new TextEncoder();
@@ -96,14 +101,14 @@ export const bytesToBigInt = (bytes: Uint8Array): bigint => {
  *
  * @param {bigint} qty - the amount of tokens
  * @param {number} decimals - the position of decimal point of this token
- * @param {boolean} padTail - if true, the result will be correctly padded with zeros at the end
+ * @param {number} floor - if undefined, all meaningless zeros at the end will be removed, if set to some number less than {decimals}, will floor down to that number of digits after the point
  * @param {boolean} insertQuotes - if true, the result's whole part will be separated by thousands with quotemarks
  * @returns {string}
  */
 export function tokensToStr(
   qty: bigint,
   decimals: number,
-  padTail: boolean = false,
+  floor: number | undefined = undefined,
   insertQuotes: boolean = false
 ): string {
   // 0.0 -> 0
@@ -136,14 +141,18 @@ export function tokensToStr(
   const tailFormatted = tail.toString().padStart(decimals, "0");
 
   // 1'000.00012300 -> 1'000.000123
-  let tailPadded: string = tailFormatted;
-  if (!padTail) {
-    while (tailPadded.charAt(tailPadded.length - 1) === "0") {
-      tailPadded = tailPadded.slice(0, -1);
+  let tailRounded: string = tailFormatted;
+  if (floor === undefined) {
+    while (tailRounded.charAt(tailRounded.length - 1) === "0") {
+      tailRounded = tailRounded.slice(0, -1);
+    }
+  } else if (floor < decimals) {
+    for (let i = 0; i < decimals - floor; i++) {
+      tailRounded = tailRounded.slice(0, -1);
     }
   }
 
-  return `${headFormatted}.${tailPadded}`;
+  return `${headFormatted}.${tailRounded}`;
 }
 
 /**
@@ -243,4 +252,53 @@ export function timestampToStr(timestamp: number | bigint) {
   const minutes = date.getMinutes().toString().padStart(2, "0");
 
   return `${day} ${month} ${year}, ${hours}:${minutes}`;
+}
+
+const VOTING_ID_STR_DELIMITER = ":::";
+
+export function encodeVotingId(id: VotingId): string {
+  if ("HumansEmploy" in id) {
+    return `HumansEmploy${VOTING_ID_STR_DELIMITER}${id.HumansEmploy.toText()}`;
+  }
+  if ("HumansUnemploy" in id) {
+    return `HumansUnemploy${VOTING_ID_STR_DELIMITER}${id.HumansUnemploy.toText()}`;
+  }
+  if ("EvaluateTask" in id) {
+    return `EvaluateTask${VOTING_ID_STR_DELIMITER}${id.EvaluateTask.toString()}`;
+  }
+  if ("FinishEditTask" in id) {
+    return `FinishEditTask${VOTING_ID_STR_DELIMITER}${id.FinishEditTask.toString()}`;
+  }
+  if ("BankSetExchangeRate" in id) {
+    const [swapFrom, swapInto] = id.BankSetExchangeRate;
+
+    const from = Object.keys(swapFrom)[0];
+    const into = Object.keys(swapInto)[0];
+
+    return `BankSetExchangeRate${VOTING_ID_STR_DELIMITER}${from}${VOTING_ID_STR_DELIMITER}${into}`;
+  }
+
+  err(ErrorCode.UNREACHEABLE, "Invalid voting id kind found");
+}
+
+export function decodeVotingId(idStr: string): VotingId {
+  const [kind, ...args] = idStr.split(VOTING_ID_STR_DELIMITER);
+
+  switch (kind) {
+    case "HumansEmploy":
+      return { HumansEmploy: Principal.fromText(args[0]) };
+    case "HumansUnemploy":
+      return { HumansUnemploy: Principal.fromText(args[0]) };
+    case "EvaluateTask":
+      return { EvaluateTask: BigInt(args[0]) };
+    case "FinishEditTask":
+      return { FinishEditTask: BigInt(args[0]) };
+    case "BankSetExchangeRate":
+      return {
+        // @ts-expect-error - invalid SwapFrom and SwapInto keys will fail on backend
+        BankSetExchangeRate: [{ [args[0]]: null }, { [args[1]]: null }],
+      };
+    default:
+      err(ErrorCode.UNREACHEABLE, "Invalid input string");
+  }
 }
