@@ -20,6 +20,7 @@ url = { workspace = true }
 async-trait = { workspace = true }
 lazy_static = { workspace = true }
 leb128 = { workspace = true }
+derivative = { workspace = true }
 
 [build-dependencies]
 dotenv = "0.15"

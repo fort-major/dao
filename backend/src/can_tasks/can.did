@@ -37,6 +37,7 @@ type EvaluateRequest = record {
   id : nat64;
   evaluation_per_solution : vec record { principal; opt nat };
 };
+type FinishSolveRequest = record { id : nat64; proof : Proof };
 type GetArchivedTasksResponse = record { tasks : vec opt ArchivedTask };
 type GetTaskIdsResponse = record { ids : vec nat64 };
 type GetTasksRequest = record { ids : vec nat64 };
@@ -66,9 +67,9 @@ type SolutionFieldKind = variant { Md; Url : record { kind : URLKind } };
 type SolveTaskRequest = record {
   id : nat64;
   filled_in_fields_opt : opt vec opt text;
-  team_proof : opt Proof;
+  proof : opt Proof;
 };
-type SolverConstraint = variant { TeamOnly };
+type SolverConstraint = variant { MaxSolutions : nat32; TeamOnly };
 type Task = record {
   id : nat64;
   solution_fields : vec SolutionField;
@@ -106,7 +107,7 @@ service : () -> {
   tasks__edit_task : (EditTaskRequest) -> (record {});
   tasks__evaluate_task : (EvaluateRequest) -> (record {});
   tasks__finish_edit_task : (DeleteRequest) -> (record {});
-  tasks__finish_solve_task : (DeleteRequest) -> (record {});
+  tasks__finish_solve_task : (FinishSolveRequest) -> (record {});
   tasks__get_archived_task_ids : (record {}) -> (GetTaskIdsResponse) query;
   tasks__get_archived_tasks : (GetTaskIdsResponse) -> (
       GetArchivedTasksResponse,

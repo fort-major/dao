@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use candid::{CandidType, Principal};
+use derivative::Derivative;
 use garde::Validate;
 use serde::Deserialize;
 use url::Url;
@@ -214,6 +215,23 @@ impl Task {
             .contains(&SolverConstraint::TeamOnly)
     }
 
+    pub fn max_solutions(&self) -> u32 {
+        let constraint = self
+            .solver_constraints
+            .iter()
+            .find(|it| matches!(it, SolverConstraint::MaxSolutions(_)));
+
+        if constraint.is_none() {
+            return 0;
+        }
+
+        if let SolverConstraint::MaxSolutions(max) = constraint.copied().unwrap() {
+            max
+        } else {
+            unreachable!()
+        }
+    }
+
     pub fn can_edit(&self) -> bool {
         matches!(self.stage, TaskStage::Edit)
     }
@@ -291,9 +309,20 @@ impl Solution {
     }
 }
 
-#[derive(CandidType, Deserialize, Clone, Copy, Validate, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(CandidType, Deserialize, Clone, Copy, Validate, Derivative)]
+#[derivative(
+    PartialEq,
+    Eq,
+    PartialOrd = "feature_allow_slow_enum",
+    Ord = "feature_allow_slow_enum"
+)]
 pub enum SolverConstraint {
     TeamOnly,
+    MaxSolutions(
+        #[garde(skip)]
+        #[derivative(PartialEq = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+        u32,
+    ),
 }
 
 #[derive(CandidType, Deserialize, Clone, Validate)]

@@ -207,7 +207,7 @@ pub struct SolveTaskRequest {
     #[garde(inner(inner(inner(length(graphemes, max = 512)))))]
     pub filled_in_fields_opt: Option<Vec<Option<String>>>,
     #[garde(dive)]
-    pub team_proof: Option<Proof>,
+    pub proof: Option<Proof>,
 }
 
 impl Guard<TasksState> for SolveTaskRequest {
@@ -228,8 +228,12 @@ impl Guard<TasksState> for SolveTaskRequest {
             return Err(format!("Access denied"));
         }
 
+        if task.max_solutions() == (task.solutions.len() as u32) {
+            return Err(format!("Max solutions number reached"));
+        }
+
         if task.is_team_only() {
-            let proof = self.team_proof.as_mut().ok_or("No team proof provided")?;
+            let proof = self.proof.as_mut().ok_or("No team proof provided")?;
 
             proof.assert_valid_for(caller, now)?;
 
@@ -276,26 +280,37 @@ pub struct SolveTaskResponse {}
 pub struct FinishSolveRequest {
     #[garde(skip)]
     pub id: TaskId,
+    #[garde(dive)]
+    pub proof: Proof,
 }
 
 impl Guard<TasksState> for FinishSolveRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        _caller: Principal,
+        caller: Principal,
         now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
+        self.proof.assert_valid_for(caller, now)?;
 
         let task = state
             .tasks
             .get(&self.id)
             .ok_or(format!("Task {} not found", self.id))?;
 
+        let proof = self.proof.profile_proof.as_ref().unwrap();
+
+        if !proof.is_team_member {
+            return Err(format!("Only team members can finish tasks solve stage"));
+        }
+
         match task.stage {
             TaskStage::Solve { until_timestamp } => {
                 if until_timestamp > now {
-                    Err(format!("Unable to finish solve faster than planned"))
+                    Err(format!(
+                        "Unable to finish task solve stage faster than planned"
+                    ))
                 } else {
                     Ok(())
                 }

@@ -38,8 +38,8 @@ type VotingEventV1 = variant {
     creator : principal;
     num_options : nat32;
     finish_early : nat;
+    consensus_normalized : nat;
     voting_id : VotingId;
-    consensus : nat;
     quorum : nat;
   };
 };
@@ -49,9 +49,9 @@ type VotingExt = record {
   total_votes_per_option : vec nat;
   finish_early : nat;
   kind : VotingKind;
+  consensus_normalized : nat;
   created_at : nat64;
   stage : VotingStage;
-  consensus : nat;
   quorum : nat;
   duration_ns : nat64;
 };

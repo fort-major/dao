@@ -8,7 +8,7 @@ export interface IClass {
   class?: string;
 }
 
-export type TTaskId = number;
+export type TTaskId = bigint;
 export type TTaskTagId = number;
 export type TTokenId = number;
 export type TPrincipalStr = string;

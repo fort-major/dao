@@ -14,6 +14,8 @@ pub struct Profile {
     pub hours_balance: E8s,
     pub storypoints_balance: E8s,
     pub reputation: E8s,
+    pub earned_hours: E8s,
+    pub earned_storypoints: E8s,
     pub employment: Option<Employment>,
 }
 
@@ -32,6 +34,8 @@ impl Profile {
             hours_balance: E8s::zero(),
             storypoints_balance: E8s::zero(),
             reputation: E8s::zero(),
+            earned_hours: E8s::zero(),
+            earned_storypoints: E8s::zero(),
             employment: None,
         }
     }
@@ -52,6 +56,8 @@ impl Profile {
 
     pub fn mint_rewards(&mut self, hours: E8s, storypoints: E8s) {
         self.reputation += &hours + &storypoints;
+        self.earned_hours += &hours;
+        self.earned_storypoints += &storypoints;
 
         self.hours_balance += &hours;
         self.storypoints_balance += &storypoints;

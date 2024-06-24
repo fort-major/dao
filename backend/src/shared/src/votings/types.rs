@@ -43,12 +43,12 @@ pub struct Voting {
 
 impl Voting {
     pub fn new(total_supply: E8s, kind: VotingKind, caller: Principal, now: TimestampNs) -> Self {
-        let (duration_ns, quorum, consensus, finish_early, num_options) = match &kind {
+        let (duration_ns, quorum, consensus_normalized, finish_early, num_options) = match &kind {
             VotingKind::FinishEditTask { task_id: _ } => (
                 ONE_WEEK_NS,
-                &total_supply * E8s::forth(),
-                E8s::two_thrids(),
-                total_supply * E8s::two_thrids(),
+                &total_supply * E8s::f0_25(),
+                E8s::f0_5(),
+                total_supply * E8s::f0_75(),
                 1,
             ),
             VotingKind::EvaluateTask {
@@ -56,9 +56,9 @@ impl Voting {
                 solutions,
             } => (
                 ONE_WEEK_NS,
-                &total_supply * E8s::third(),
-                E8s::two_thrids(),
-                total_supply * E8s::two_thrids(),
+                &total_supply * E8s::f0_2(),
+                E8s::f0_5(),
+                total_supply * E8s::f0_67(),
                 solutions.len() as u32,
             ),
             VotingKind::BankSetExchangeRate {
@@ -67,9 +67,9 @@ impl Voting {
                 new_rate: _,
             } => (
                 ONE_WEEK_NS,
-                &total_supply * E8s::half(),
-                E8s::two_thrids(),
-                total_supply * E8s::two_thrids(),
+                &total_supply * E8s::f0_33(),
+                E8s::f0_67(),
+                total_supply * E8s::f0_67(),
                 1,
             ),
             VotingKind::HumansEmploy {
@@ -77,16 +77,16 @@ impl Voting {
                 hours_a_week_commitment: _,
             } => (
                 ONE_WEEK_NS,
-                &total_supply * E8s::half(),
-                E8s::three_forths(),
-                total_supply * E8s::three_forths(),
+                &total_supply * E8s::f0_5(),
+                E8s::f0_75(),
+                total_supply * E8s::f0_75(),
                 1,
             ),
             VotingKind::HumansUnemploy { team_member: _ } => (
                 ONE_WEEK_NS * 2,
-                &total_supply * E8s::half(),
-                E8s::three_forths(),
-                total_supply * E8s::three_forths(),
+                &total_supply * E8s::f0_5(),
+                E8s::f0_75(),
+                total_supply * E8s::f0_75(),
                 1,
             ),
         };
@@ -96,7 +96,7 @@ impl Voting {
         let base = VotingBase::new(
             duration_ns,
             quorum,
-            consensus,
+            consensus_normalized,
             finish_early,
             num_options,
             caller,
@@ -123,7 +123,14 @@ impl Voting {
             total_voter_reputation: voter_reputation,
         };
 
-        self.base.votes_per_option[option_idx as usize].insert(caller, vote);
+        let option_votes = self
+            .base
+            .votes_per_option
+            .get_mut(option_idx as usize)
+            .unwrap();
+
+        option_votes.revert_prev_vote(&caller);
+        option_votes.cast_vote(caller, vote);
 
         if !self.base.is_finish_early_reached_for_all_options() {
             return Ok(None);
@@ -170,11 +177,7 @@ impl Voting {
             .base
             .votes_per_option
             .iter()
-            .map(|votes| {
-                votes
-                    .values()
-                    .fold(E8s::zero(), |acc, vote| acc + &vote.total_voter_reputation)
-            })
+            .map(|votes| votes.total_voted.clone())
             .collect();
 
         VotingExt {
@@ -183,7 +186,7 @@ impl Voting {
             created_at: self.base.created_at,
             duration_ns: self.base.duration_ns,
             quorum: self.base.quorum.clone(),
-            consensus: self.base.consensus.clone(),
+            consensus_normalized: self.base.consensus_normalized.clone(),
             finish_early: self.base.finish_early.clone(),
             total_votes_per_option,
             kind: self.kind.clone(),
@@ -278,7 +281,7 @@ impl VotingKind {
                 )
             }
             VotingKind::EvaluateTask { task_id, solutions } => {
-                let normalized_results = base.calc_ranged_results();
+                let normalized_results = base.calc_ranged_results_normalized();
 
                 let evaluation_per_solution = normalized_results
                     .into_iter()
@@ -364,16 +367,16 @@ pub struct VotingBase {
     pub created_at: TimestampNs,
     pub duration_ns: DurationNs,
     pub quorum: E8s,
-    pub consensus: E8s,
+    pub consensus_normalized: E8s,
     pub finish_early: E8s,
-    pub votes_per_option: Vec<BTreeMap<Principal, Vote>>,
+    pub votes_per_option: Vec<OptionVotes>,
 }
 
 impl VotingBase {
     pub fn new(
         duration_ns: DurationNs,
         quorum: E8s,
-        consensus: E8s,
+        consensus_normalized: E8s,
         finish_early: E8s,
         num_options: u32,
         caller: Principal,
@@ -384,21 +387,15 @@ impl VotingBase {
             created_at: now,
             duration_ns,
             quorum,
-            consensus,
+            consensus_normalized,
             finish_early,
-            votes_per_option: vec![BTreeMap::new(); num_options as usize],
+            votes_per_option: vec![OptionVotes::default(); num_options as usize],
         }
     }
 
     pub fn is_quorum_reached_for_all_options(&self) -> bool {
         for option_votes in &self.votes_per_option {
-            let voted_rep = option_votes
-                .values()
-                .fold(E8s::zero(), |acc, v| acc + &v.total_voter_reputation);
-
-            let quorum_reached_for_option = self.quorum <= voted_rep;
-
-            if !quorum_reached_for_option {
+            if !option_votes.total_reached_threshold(&self.quorum) {
                 return false;
             }
         }
@@ -408,13 +405,7 @@ impl VotingBase {
 
     pub fn is_finish_early_reached_for_all_options(&self) -> bool {
         for option_votes in &self.votes_per_option {
-            let voted_rep = option_votes
-                .values()
-                .fold(E8s::zero(), |acc, v| acc + &v.total_voter_reputation);
-
-            let finish_early_reached_for_option = self.finish_early <= voted_rep;
-
-            if !finish_early_reached_for_option {
+            if !option_votes.total_reached_threshold(&self.finish_early) {
                 return false;
             }
         }
@@ -422,55 +413,42 @@ impl VotingBase {
         true
     }
 
-    pub fn calc_results_raw(&self) -> Vec<(E8s, E8s, E8s)> {
+    pub fn calc_results_raw_normilized(&self) -> Vec<(E8s, E8s, E8s)> {
         self.votes_per_option
             .iter()
-            .map(|option_votes| {
-                let (mut total, mut approve, mut reject) = (E8s::zero(), E8s::zero(), E8s::zero());
-
-                for (_, vote) in option_votes {
-                    total += &vote.total_voter_reputation;
-
-                    if let Some(voter_approval) = &vote.approval_level {
-                        approve += voter_approval;
-                    } else {
-                        reject += &vote.total_voter_reputation;
-                    }
-                }
-
-                (total, approve, reject)
-            })
+            .map(OptionVotes::get_normalized_results)
             .collect()
     }
 
-    pub fn calc_ranged_results(&self) -> Vec<Option<E8s>> {
-        let raw_results = self.calc_results_raw();
+    pub fn calc_ranged_results_normalized(&self) -> Vec<Option<E8s>> {
+        let raw_results = self.calc_results_raw_normilized();
+        let one = E8s::one();
 
         raw_results
             .into_iter()
-            .map(|(total, approve, reject)| {
-                if reject >= self.consensus {
+            .map(|(_, approve, reject)| {
+                if reject > (&one - &self.consensus_normalized) {
                     None
                 } else {
-                    Some(approve / total)
+                    Some(approve)
                 }
             })
             .collect()
     }
 
     pub fn calc_binary_results(&self) -> Vec<bool> {
-        let raw_results = self.calc_results_raw();
+        let raw_results = self.calc_results_raw_normilized();
 
         raw_results
             .into_iter()
-            .map(|(_, approve, _)| approve >= self.consensus)
+            .map(|(_, approve, _)| approve >= self.consensus_normalized)
             .collect()
     }
 
     pub fn get_voters(&self) -> Vec<Vec<Principal>> {
         self.votes_per_option
             .iter()
-            .map(|votes| votes.keys().copied().collect::<Vec<_>>())
+            .map(|option_votes| option_votes.votes.keys().copied().collect::<Vec<_>>())
             .collect()
     }
 }
@@ -519,7 +497,7 @@ pub struct VotingExt {
     pub created_at: TimestampNs,
     pub duration_ns: DurationNs,
     pub quorum: E8s,
-    pub consensus: E8s,
+    pub consensus_normalized: E8s,
     pub finish_early: E8s,
     pub total_votes_per_option: Vec<E8s>,
     pub kind: VotingKind,
@@ -545,7 +523,7 @@ pub enum VotingEventV1 {
         voting_id: VotingId,
         creator: Principal,
         quorum: E8s,
-        consensus: E8s,
+        consensus_normalized: E8s,
         finish_early: E8s,
         num_options: u32,
     },
@@ -562,4 +540,50 @@ pub enum VotingEventV1 {
         voting_id: VotingId,
         reason: String,
     },
+}
+
+#[derive(CandidType, Deserialize, Clone, Default)]
+pub struct OptionVotes {
+    pub votes: BTreeMap<Principal, Vote>,
+    pub total_voted: E8s,
+    pub approve: E8s,
+    pub reject: E8s,
+}
+
+impl OptionVotes {
+    pub fn revert_prev_vote(&mut self, caller: &Principal) {
+        if let Some(prev_vote) = self.votes.get(&caller) {
+            self.total_voted -= &prev_vote.total_voter_reputation;
+
+            if let Some(approval) = &prev_vote.approval_level {
+                self.approve -= approval;
+            } else {
+                self.reject -= &prev_vote.total_voter_reputation;
+            }
+        }
+    }
+
+    pub fn cast_vote(&mut self, caller: Principal, vote: Vote) {
+        self.total_voted += &vote.total_voter_reputation;
+
+        if let Some(approval) = &vote.approval_level {
+            self.approve += approval;
+        } else {
+            self.reject += &vote.total_voter_reputation;
+        }
+
+        self.votes.insert(caller, vote);
+    }
+
+    pub fn get_normalized_results(&self) -> (E8s, E8s, E8s) {
+        (
+            self.total_voted.clone(),
+            &self.approve / &self.total_voted,
+            &self.reject / &self.total_voted,
+        )
+    }
+
+    pub fn total_reached_threshold(&self, threshold: &E8s) -> bool {
+        &self.total_voted >= threshold
+    }
 }

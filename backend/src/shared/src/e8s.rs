@@ -15,28 +15,60 @@ impl E8s {
         Self(Nat::from(0u32))
     }
 
-    pub fn one() -> Self {
-        Self(Nat::from(1_0000_0000u64))
+    pub fn f0_1() -> Self {
+        Self(Nat::from(1000_0000u64))
     }
 
-    pub fn half() -> Self {
-        Self(Nat::from(5000_0000u64))
+    pub fn f0_2() -> Self {
+        Self(Nat::from(2000_0000u64))
     }
 
-    pub fn third() -> Self {
-        Self(Nat::from(3333_3333u64))
-    }
-
-    pub fn two_thrids() -> Self {
-        Self(Nat::from(6666_6667u64))
-    }
-
-    pub fn forth() -> Self {
+    pub fn f0_25() -> Self {
         Self(Nat::from(2500_0000u64))
     }
 
-    pub fn three_forths() -> Self {
+    pub fn f0_3() -> Self {
+        Self(Nat::from(3000_0000u64))
+    }
+
+    pub fn f0_33() -> Self {
+        Self(Nat::from(3333_3333u64))
+    }
+
+    pub fn f0_4() -> Self {
+        Self(Nat::from(4000_0000u64))
+    }
+
+    pub fn f0_5() -> Self {
+        Self(Nat::from(5000_0000u64))
+    }
+
+    pub fn f0_6() -> Self {
+        Self(Nat::from(6000_0000u64))
+    }
+
+    pub fn f0_67() -> Self {
+        Self(Nat::from(6666_6667u64))
+    }
+
+    pub fn f0_7() -> Self {
+        Self(Nat::from(7000_0000u64))
+    }
+
+    pub fn f0_75() -> Self {
         Self(Nat::from(7500_0000u64))
+    }
+
+    pub fn f0_8() -> Self {
+        Self(Nat::from(8000_0000u64))
+    }
+
+    pub fn f0_9() -> Self {
+        Self(Nat::from(9000_0000u64))
+    }
+
+    pub fn one() -> Self {
+        Self(Nat::from(1_0000_0000u64))
     }
 }
 

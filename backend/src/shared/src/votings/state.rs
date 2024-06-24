@@ -56,7 +56,7 @@ impl VotingsState {
             voting_id: voting.id,
             creator: voting.base.creator,
             quorum: voting.base.quorum.clone(),
-            consensus: voting.base.consensus.clone(),
+            consensus_normalized: voting.base.consensus_normalized.clone(),
             finish_early: voting.base.finish_early.clone(),
             num_options: voting.base.votes_per_option.len() as u32,
         });

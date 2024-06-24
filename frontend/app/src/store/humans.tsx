@@ -19,10 +19,17 @@ export interface IProfile {
   name?: string;
   registered_at: bigint;
   employment?: IEmployment;
-  earned_hours: E8s;
   hours_balance: E8s;
   storypoints_balance: E8s;
+  earned_hours: E8s;
   earned_storypoints: E8s;
+  reputation: E8s;
+}
+
+export interface ITotals {
+  hours: E8s;
+  storypoints: E8s;
+  reputation: E8s;
 }
 
 type ProfilesStore = Partial<Record<TPrincipalStr, IProfile>>;
@@ -33,7 +40,7 @@ export interface IHumansStoreContext {
   fetchProfiles: (ids?: Principal[] | TPrincipalStr[]) => Promise<void>;
   profileIds: Store<ProfileIdsStore>;
   fetchProfileIds: () => Promise<void>;
-  totals: Accessor<[E8s, E8s]>;
+  totals: Accessor<ITotals>;
   fetchTotals: () => Promise<void>;
 }
 
@@ -54,16 +61,23 @@ export function HumanStore(props: IChildren) {
 
   const [profiles, setProfiles] = createStore<ProfilesStore>();
   const [profileIds, setProfileIds] = createStore<ProfileIdsStore>();
-  const [totals, setTotals] = createSignal<[E8s, E8s]>([E8s.one(), E8s.one()]);
+  const [totals, setTotals] = createSignal<ITotals>({
+    hours: E8s.one(),
+    storypoints: E8s.one(),
+    reputation: E8s.one(),
+  });
 
   const fetchTotals: IHumansStoreContext["fetchTotals"] = async () => {
     assertReadyToFetch();
 
     const humansActor = newHumansActor(anonymousAgent()!);
-    const { hours, storypoints } =
-      await humansActor.humans__get_total_hours_and_storypoints({});
+    const resp = await humansActor.humans__get_totals({});
 
-    setTotals([new E8s(hours), new E8s(storypoints)]);
+    setTotals({
+      hours: new E8s(resp.hours),
+      storypoints: new E8s(resp.storypoints),
+      reputation: new E8s(resp.reputation),
+    });
   };
 
   const fetchProfileIds: IHumansStoreContext["fetchProfileIds"] = async () => {
@@ -124,9 +138,10 @@ export function HumanStore(props: IChildren) {
             }
           : undefined,
         hours_balance: new E8s(p.hours_balance),
-        earned_hours: new E8s(p.earned_hours),
         storypoints_balance: new E8s(p.storypoints_balance),
+        earned_hours: new E8s(p.earned_hours),
         earned_storypoints: new E8s(p.earned_storypoints),
+        reputation: new E8s(p.reputation),
       };
 
       setProfiles(id, profile);

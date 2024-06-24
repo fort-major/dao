@@ -119,4 +119,12 @@ export class E8s {
   public toBool() {
     return this.val > 0n;
   }
+
+  public isZero() {
+    return this.val === 0n;
+  }
+
+  public toBigInt() {
+    return this.val;
+  }
 }

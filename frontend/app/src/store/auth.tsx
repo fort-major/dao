@@ -33,8 +33,10 @@ export interface IAuthStoreContext {
   isAuthorized: Accessor<boolean>;
   isReadyToFetch: Accessor<boolean>;
   assertReadyToFetch: () => never | void;
+  assertAuthorized: () => never | void;
+  assertWithProof: () => never | void;
   profileProof: Accessor<IProfileProof | undefined>;
-  profileProofCert: Accessor<ArrayBuffer | undefined>;
+  profileProofCert: Accessor<Uint8Array | undefined>;
 }
 
 const AuthContext = createContext<IAuthStoreContext>();
@@ -58,7 +60,7 @@ export function AuthStore(props: IChildren) {
     IProfileProof | undefined
   >();
   const [profileProofCert, setProfileProofCert] = createSignal<
-    ArrayBuffer | undefined
+    Uint8Array | undefined
   >();
 
   onMount(async () => {
@@ -110,7 +112,7 @@ export function AuthStore(props: IChildren) {
       const { proof } =
         await humansActor.humans__get_profile_proofs.withOptions({
           onRawCertificatePolled(cert) {
-            setProfileProofCert(cert);
+            setProfileProofCert(new Uint8Array(cert));
           },
         })({});
 
@@ -153,6 +155,18 @@ export function AuthStore(props: IChildren) {
     }
   };
 
+  const assertAuthorized = () => {
+    if (!isAuthorized()) {
+      err(ErrorCode.UNREACHEABLE, "Not authorized");
+    }
+  };
+
+  const assertWithProof = () => {
+    if (!profileProof() || !profileProofCert()) {
+      err(ErrorCode.UNREACHEABLE, "Profile proof is not fetched");
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -164,6 +178,8 @@ export function AuthStore(props: IChildren) {
         isAuthorized,
         isReadyToFetch,
         assertReadyToFetch,
+        assertAuthorized,
+        assertWithProof,
         profileProof,
         profileProofCert,
       }}

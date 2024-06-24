@@ -24,12 +24,14 @@ type InitRequest = record { sasha : principal };
 type MintRewardsRequest = record { rewards : vec RewardEntry };
 type Profile = record {
   id : principal;
+  earned_hours : nat;
   avatar_src : opt text;
   name : opt text;
   reputation : nat;
   hours_balance : nat;
   storypoints_balance : nat;
   employment : opt Employment;
+  earned_storypoints : nat;
   registered_at : nat64;
 };
 type ProfileProof = record {
