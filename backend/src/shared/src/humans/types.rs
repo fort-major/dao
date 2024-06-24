@@ -13,8 +13,7 @@ pub struct Profile {
     pub registered_at: TimestampNs,
     pub hours_balance: E8s,
     pub storypoints_balance: E8s,
-    pub earned_hours: E8s,
-    pub earned_storypoints: E8s,
+    pub reputation: E8s,
     pub employment: Option<Employment>,
 }
 
@@ -32,8 +31,7 @@ impl Profile {
             registered_at: now,
             hours_balance: E8s::zero(),
             storypoints_balance: E8s::zero(),
-            earned_hours: E8s::zero(),
-            earned_storypoints: E8s::zero(),
+            reputation: E8s::zero(),
             employment: None,
         }
     }
@@ -53,11 +51,10 @@ impl Profile {
     }
 
     pub fn mint_rewards(&mut self, hours: E8s, storypoints: E8s) {
-        self.hours_balance += &hours;
-        self.earned_hours += &hours;
+        self.reputation += &hours + &storypoints;
 
+        self.hours_balance += &hours;
         self.storypoints_balance += &storypoints;
-        self.earned_storypoints += &storypoints;
 
         if let Some(employment) = &mut self.employment {
             employment.hours_earned_during_employment += &hours;
@@ -84,11 +81,6 @@ impl Profile {
 
     pub fn is_employed(&self) -> bool {
         self.employment.is_some()
-    }
-
-    // use simplest formula for now
-    pub fn get_reputation(&self) -> E8s {
-        &self.earned_hours + &self.earned_storypoints
     }
 }
 

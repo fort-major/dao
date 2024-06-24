@@ -17,12 +17,12 @@ use shared::{
     },
     e8s::E8s,
     humans::{api::RefundRewardsRequest, client::HumansCanisterClient},
-    Guard, ENV_VARS,
+    Guard, TimestampNs, ENV_VARS,
 };
 
 #[init]
 fn init_hook() {
-    let bank_state = create_bank_state(ENV_VARS.fmj_canister_id, ENV_VARS.icp_canister_id);
+    let bank_state = create_bank_state(ENV_VARS.fmj_canister_id, ENV_VARS.icp_canister_id, time());
 
     install_bank_state(Some(bank_state));
 }
@@ -48,7 +48,7 @@ fn bank__set_exchange_rate(mut req: SetExchangeRateRequest) -> SetExchangeRateRe
         req.validate_and_escape(s, caller(), time())
             .expect("Unable to set exchange rate");
 
-        s.set_exchange_rate(req)
+        s.update_exchange_rate(req, time())
     })
 }
 
@@ -119,8 +119,12 @@ thread_local! {
     static BANK_STATE: RefCell<Option<BankState>> = RefCell::default();
 }
 
-pub fn create_bank_state(fmj_canister_id: Principal, icp_canister_id: Principal) -> BankState {
-    BankState::new(fmj_canister_id, icp_canister_id)
+pub fn create_bank_state(
+    fmj_canister_id: Principal,
+    icp_canister_id: Principal,
+    now: TimestampNs,
+) -> BankState {
+    BankState::new(fmj_canister_id, icp_canister_id, now)
 }
 
 pub fn install_bank_state(new_state: Option<BankState>) -> Option<BankState> {

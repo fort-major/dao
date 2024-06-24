@@ -1,5 +1,5 @@
 type GetExchangeRatesResponse = record {
-  exchange_rates : vec record { SwapFrom; SwapInto; nat };
+  exchange_rates : vec record { SwapFrom; SwapInto; vec record { nat64; nat } };
 };
 type SetExchangeRateRequest = record {
   from : SwapFrom;

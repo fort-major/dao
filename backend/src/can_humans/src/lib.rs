@@ -12,11 +12,10 @@ use shared::{
         api::{
             EditProfileRequest, EditProfileResponse, EmployRequest, EmployResponse,
             GetProfileIdsRequest, GetProfileIdsResponse, GetProfileProofsRequest,
-            GetProfileProofsResponse, GetProfilesRequest, GetProfilesResponse,
-            GetTotalHoursAndStorypointsRequest, GetTotalHoursAndStorypointsResponse,
-            MintRewardsRequest, MintRewardsResponse, RefundRewardsRequest, RefundRewardsResponse,
-            RegisterRequest, RegisterResponse, SpendRewardsRequest, SpendRewardsResponse,
-            UnemployRequest, UnemployResponse,
+            GetProfileProofsResponse, GetProfilesRequest, GetProfilesResponse, GetTotalsRequest,
+            GetTotalsResponse, MintRewardsRequest, MintRewardsResponse, RefundRewardsRequest,
+            RefundRewardsResponse, RegisterRequest, RegisterResponse, SpendRewardsRequest,
+            SpendRewardsResponse, UnemployRequest, UnemployResponse,
         },
         state::HumansState,
     },
@@ -151,25 +150,12 @@ fn humans__get_profile_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsRespon
 
 #[query]
 #[allow(non_snake_case)]
-fn humans__get_team_member_ids(mut req: GetProfileIdsRequest) -> GetProfileIdsResponse {
+fn humans__get_totals(mut req: GetTotalsRequest) -> GetTotalsResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
-            .expect("Unable to get team member ids");
+            .expect("Unable to get totals");
 
-        s.get_team_member_ids(req)
-    })
-}
-
-#[query]
-#[allow(non_snake_case)]
-fn humans__get_total_hours_and_storypoints(
-    mut req: GetTotalHoursAndStorypointsRequest,
-) -> GetTotalHoursAndStorypointsResponse {
-    with_state(|s| {
-        req.validate_and_escape(s, caller(), time())
-            .expect("Unable to get total hours and storypoints");
-
-        s.get_total_hours_and_storypoints(req)
+        s.get_totals(req)
     })
 }
 

@@ -336,9 +336,9 @@ pub struct GetProfileProofsResponse {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct GetTotalHoursAndStorypointsRequest {}
+pub struct GetTotalsRequest {}
 
-impl Guard<HumansState> for GetTotalHoursAndStorypointsRequest {
+impl Guard<HumansState> for GetTotalsRequest {
     fn validate_and_escape(
         &mut self,
         _state: &HumansState,
@@ -350,9 +350,11 @@ impl Guard<HumansState> for GetTotalHoursAndStorypointsRequest {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct GetTotalHoursAndStorypointsResponse {
+pub struct GetTotalsResponse {
     #[garde(skip)]
     pub hours: E8s,
     #[garde(skip)]
     pub storypoints: E8s,
+    #[garde(skip)]
+    pub reputation: E8s,
 }

@@ -1,18 +1,17 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use candid::{CandidType, Deserialize, Nat, Principal};
 
-use crate::{btreemap, e8s::E8s, TimestampNs};
+use crate::{btreemap, e8s::E8s, tasks::types::RewardEntry, TimestampNs};
 
 use super::{
     api::{
         EditProfileRequest, EditProfileResponse, EmployRequest, EmployResponse,
         GetProfileIdsRequest, GetProfileIdsResponse, GetProfileProofsRequest,
-        GetProfileProofsResponse, GetProfilesRequest, GetProfilesResponse,
-        GetTotalHoursAndStorypointsRequest, GetTotalHoursAndStorypointsResponse,
-        MintRewardsRequest, MintRewardsResponse, RefundRewardsRequest, RefundRewardsResponse,
-        RegisterRequest, RegisterResponse, SpendRewardsRequest, SpendRewardsResponse,
-        UnemployRequest, UnemployResponse,
+        GetProfileProofsResponse, GetProfilesRequest, GetProfilesResponse, GetTotalsRequest,
+        GetTotalsResponse, MintRewardsRequest, MintRewardsResponse, RefundRewardsRequest,
+        RefundRewardsResponse, RegisterRequest, RegisterResponse, SpendRewardsRequest,
+        SpendRewardsResponse, UnemployRequest, UnemployResponse,
     },
     types::{Profile, ProfileProof, PROOF_MARKER},
 };
@@ -20,24 +19,38 @@ use super::{
 #[derive(CandidType, Deserialize)]
 pub struct HumansState {
     pub profiles: BTreeMap<Principal, Profile>,
-    pub team_members: BTreeSet<Principal>,
     pub total_hours_minted: E8s,
     pub total_storypoints_minted: E8s,
+    pub reputation_total_supply: E8s,
 }
 
 impl HumansState {
     pub fn new(sasha: Principal, now: TimestampNs) -> Self {
-        let mut sasha_profile = Profile::new(sasha, Some("Sasha Vtyurin".to_string()), None, now);
+        let sasha_profile = Profile::new(sasha, Some("Sasha Vtyurin".to_string()), None, now);
 
-        sasha_profile.employ(E8s(Nat::from(40_0000_0000u64)), now);
-        sasha_profile.mint_rewards(E8s::one(), E8s::one());
-
-        Self {
+        let mut state = Self {
             profiles: btreemap! { sasha => sasha_profile },
-            team_members: vec![sasha].into_iter().collect(),
-            total_hours_minted: E8s::one(),
-            total_storypoints_minted: E8s::one(),
-        }
+            total_hours_minted: E8s::zero(),
+            total_storypoints_minted: E8s::zero(),
+            reputation_total_supply: E8s::zero(),
+        };
+
+        state.employ(
+            EmployRequest {
+                candidate: sasha,
+                hours_a_week_commitment: E8s(Nat::from(40_0000_0000u64)),
+            },
+            now,
+        );
+        state.mint_rewards(MintRewardsRequest {
+            rewards: vec![RewardEntry {
+                solver: sasha,
+                reward_hours: E8s::one(),
+                reward_storypoints: E8s::one(),
+            }],
+        });
+
+        state
     }
 
     pub fn register(
@@ -104,7 +117,6 @@ impl HumansState {
     pub fn employ(&mut self, req: EmployRequest, now: TimestampNs) -> EmployResponse {
         let profile = self.profiles.get_mut(&req.candidate).unwrap();
 
-        self.team_members.insert(req.candidate);
         profile.employ(req.hours_a_week_commitment, now);
 
         EmployResponse {}
@@ -113,7 +125,6 @@ impl HumansState {
     pub fn unemploy(&mut self, req: UnemployRequest) -> UnemployResponse {
         let profile = self.profiles.get_mut(&req.team_member).unwrap();
 
-        self.team_members.remove(&req.team_member);
         profile.unemploy();
 
         UnemployResponse {}
@@ -135,12 +146,6 @@ impl HumansState {
         GetProfileIdsResponse { ids }
     }
 
-    pub fn get_team_member_ids(&self, _req: GetProfileIdsRequest) -> GetProfileIdsResponse {
-        let ids = self.team_members.iter().cloned().collect();
-
-        GetProfileIdsResponse { ids }
-    }
-
     pub fn get_profile_proofs(
         &self,
         _req: GetProfileProofsRequest,
@@ -151,8 +156,8 @@ impl HumansState {
         let proof = ProfileProof {
             id: caller,
             is_team_member: profile.is_employed(),
-            reputation: profile.get_reputation(),
-            reputation_total_supply: self.get_reputation_total_supply(),
+            reputation: profile.reputation.clone(),
+            reputation_total_supply: self.reputation_total_supply.clone(),
         };
 
         GetProfileProofsResponse {
@@ -161,17 +166,11 @@ impl HumansState {
         }
     }
 
-    pub fn get_total_hours_and_storypoints(
-        &self,
-        _req: GetTotalHoursAndStorypointsRequest,
-    ) -> GetTotalHoursAndStorypointsResponse {
-        GetTotalHoursAndStorypointsResponse {
+    pub fn get_totals(&self, _req: GetTotalsRequest) -> GetTotalsResponse {
+        GetTotalsResponse {
             hours: self.total_hours_minted.clone(),
             storypoints: self.total_storypoints_minted.clone(),
+            reputation: self.reputation_total_supply.clone(),
         }
-    }
-
-    fn get_reputation_total_supply(&self) -> E8s {
-        &self.total_hours_minted + &self.total_storypoints_minted
     }
 }

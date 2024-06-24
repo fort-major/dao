@@ -1,6 +1,5 @@
 # TODO
 
-* add exchange rate history
 * add pagination
 
 # Fort Major

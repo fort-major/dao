@@ -2,7 +2,7 @@ use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 use icrc_ledger_types::icrc1::transfer::BlockIndex;
 
-use crate::{e8s::E8s, Guard, ENV_VARS};
+use crate::{e8s::E8s, Guard, TimestampNs, ENV_VARS};
 
 use super::{
     state::BankState,
@@ -94,5 +94,5 @@ impl Guard<BankState> for GetExchangeRatesRequest {
 pub struct GetExchangeRatesResponse {
     // rates are expressed as how much <into> one gets for 1.00 <from>
     #[garde(skip)]
-    pub exchange_rates: Vec<(SwapFrom, SwapInto, E8s)>,
+    pub exchange_rates: Vec<(SwapFrom, SwapInto, Vec<(TimestampNs, E8s)>)>,
 }
