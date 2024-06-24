@@ -37,6 +37,7 @@ export interface IAuthStoreContext {
   assertWithProof: () => never | void;
   profileProof: Accessor<IProfileProof | undefined>;
   profileProofCert: Accessor<Uint8Array | undefined>;
+  editMyProfile: (name?: string, avatarSrc?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<IAuthStoreContext>();
@@ -141,6 +142,23 @@ export function AuthStore(props: IChildren) {
     err(ErrorCode.AUTH, debugStringify(res));
   };
 
+  const editMyProfile: IAuthStoreContext["editMyProfile"] = async (
+    name,
+    avatarSrc
+  ) => {
+    assertAuthorized();
+
+    const n: [string] | [] = name ? [name] : [];
+    const a: [string] | [] = avatarSrc ? [avatarSrc] : [];
+
+    const humansActor = newHumansActor(agent()!);
+
+    await humansActor.humans__edit_profile({
+      new_name_opt: [n],
+      new_avatar_src_opt: [a],
+    });
+  };
+
   const isAuthorized = () => {
     return !!agent();
   };
@@ -182,6 +200,7 @@ export function AuthStore(props: IChildren) {
         assertWithProof,
         profileProof,
         profileProofCert,
+        editMyProfile,
       }}
     >
       {props.children}

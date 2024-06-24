@@ -89,6 +89,10 @@ export async function makeAnonymousAgent(): Promise<Agent> {
   return makeAgent(id);
 }
 
-export function optUnwrap<T>(it: [] | [T]): T | undefined {
+export function optUnwrap<T>(it: [] | [T] | T[]): T | undefined {
   return it[0] ? it[0] : undefined;
+}
+
+export function opt<T>(it: T | undefined): [] | [T] {
+  return it ? [it] : [];
 }

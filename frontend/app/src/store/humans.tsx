@@ -74,9 +74,9 @@ export function HumanStore(props: IChildren) {
     const resp = await humansActor.humans__get_totals({});
 
     setTotals({
-      hours: new E8s(resp.hours),
-      storypoints: new E8s(resp.storypoints),
-      reputation: new E8s(resp.reputation),
+      hours: E8s.new(resp.hours),
+      storypoints: E8s.new(resp.storypoints),
+      reputation: E8s.new(resp.reputation),
     });
   };
 
@@ -131,17 +131,17 @@ export function HumanStore(props: IChildren) {
         employment: e
           ? {
               employed_at: e.employed_at,
-              hours_a_week_commitment: new E8s(e.hours_a_week_commitment),
-              hours_earned_during_employment: new E8s(
+              hours_a_week_commitment: E8s.new(e.hours_a_week_commitment),
+              hours_earned_during_employment: E8s.new(
                 e.hours_earned_during_employment
               ),
             }
           : undefined,
-        hours_balance: new E8s(p.hours_balance),
-        storypoints_balance: new E8s(p.storypoints_balance),
-        earned_hours: new E8s(p.earned_hours),
-        earned_storypoints: new E8s(p.earned_storypoints),
-        reputation: new E8s(p.reputation),
+        hours_balance: E8s.new(p.hours_balance),
+        storypoints_balance: E8s.new(p.storypoints_balance),
+        earned_hours: E8s.new(p.earned_hours),
+        earned_storypoints: E8s.new(p.earned_storypoints),
+        reputation: E8s.new(p.reputation),
       };
 
       setProfiles(id, profile);

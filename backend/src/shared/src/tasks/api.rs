@@ -89,6 +89,8 @@ pub struct EditTaskRequest {
     pub new_storypoints_base_opt: Option<E8s>,
     #[garde(skip)]
     pub new_storypoints_ext_budget_opt: Option<E8s>,
+    #[garde(range(max = 90))]
+    pub new_days_to_solve_opt: Option<u64>,
 }
 
 impl Guard<TasksState> for EditTaskRequest {

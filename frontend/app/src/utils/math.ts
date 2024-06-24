@@ -8,6 +8,10 @@ export class E8s {
     }
   }
 
+  public static new(val: bigint) {
+    return new E8s(val);
+  }
+
   public static fromNumber(x: bigint) {
     return new E8s(x * 1_0000_0000n);
   }

@@ -1,6 +1,6 @@
-import { Accessor, createContext, createSignal, useContext } from "solid-js";
+import { createContext, useContext } from "solid-js";
 import { Store, createStore } from "solid-js/store";
-import { IChildren, TPrincipalStr } from "../utils/types";
+import { IChildren } from "../utils/types";
 import { ErrorCode, err, logErr } from "../utils/error";
 import { Principal } from "@dfinity/principal";
 import { useAuth } from "./auth";
@@ -8,12 +8,9 @@ import { E8s } from "../utils/math";
 import {
   SolutionField,
   SolverConstraint,
-  Task,
   TaskStage,
-  ArchivedTask,
-  ArchivedTaskV1,
 } from "../declarations/tasks/tasks.did";
-import { newTasksActor, optUnwrap } from "../utils/backend";
+import { newTasksActor, opt, optUnwrap } from "../utils/backend";
 import { debugStringify } from "../utils/encoding";
 
 export interface ISolution {
@@ -53,6 +50,29 @@ export interface IArchivedTaskV1 {
   solutions: Array<[Principal, ISolution]>;
 }
 
+export interface ICreateTaskArgs {
+  title: string;
+  description: string;
+  solution_fields: Array<SolutionField>;
+  solver_constraints: Array<SolverConstraint>;
+  days_to_solve: bigint;
+  storypoints_base: E8s;
+  hours_base: E8s;
+  storypoints_ext_budget: E8s;
+}
+
+export interface IEditTaskArgs {
+  id: bigint;
+  new_title?: string;
+  new_description?: string;
+  new_solution_fields?: Array<SolutionField>;
+  new_solver_constraints?: Array<SolverConstraint>;
+  new_hours_base?: E8s;
+  new_storypoints_base?: E8s;
+  new_storypoints_ext_budget?: E8s;
+  new_days_to_solve?: bigint;
+}
+
 type TTaskId = bigint;
 type TTaskIdStr = string;
 type TasksStore = Partial<Record<TTaskIdStr, ITask>>;
@@ -68,6 +88,15 @@ export interface ITasksStoreContext {
   fetchArchivedTaskIds: () => Promise<void>;
   archivedTasks: Store<ArchivedTasksStore>;
   fetchArchivedTasks: (ids?: TTaskId[]) => Promise<void>;
+  createTask: (args: ICreateTaskArgs) => Promise<TTaskId>;
+  editTask: (args: IEditTaskArgs) => Promise<void>;
+  deleteTask: (taskId: TTaskId) => Promise<void>;
+  attachToTask: (taskId: TTaskId) => Promise<void>;
+  solveTask: (
+    taskId: TTaskId,
+    filledInFields?: (string | undefined)[]
+  ) => Promise<void>;
+  finishSolveTask: (taskId: TTaskId) => Promise<void>;
 }
 
 const TasksContext = createContext<ITasksStoreContext>();
@@ -83,7 +112,16 @@ export function useTasks(): ITasksStoreContext {
 }
 
 export function TasksStore(props: IChildren) {
-  const { anonymousAgent, assertReadyToFetch } = useAuth();
+  const {
+    anonymousAgent,
+    assertReadyToFetch,
+    assertAuthorized,
+    assertWithProof,
+    agent,
+    profileProofCert,
+    profileProof,
+    identity,
+  } = useAuth();
 
   const [tasks, setTasks] = createStore<TasksStore>();
   const [taskIds, setTaskIds] = createStore<TaskIdsStore>([]);
@@ -118,17 +156,19 @@ export function TasksStore(props: IChildren) {
 
       const solutions: [Principal, ISolution][] = task.solutions.map(
         ([solver, solution]) => {
-          const evaluation = optUnwrap(solution.evaluation);
-          const hours = optUnwrap(solution.reward_hours);
-          const storypoints = optUnwrap(solution.reward_storypoints);
+          const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
+          const hours = optUnwrap(solution.reward_hours.map(E8s.new));
+          const storypoints = optUnwrap(
+            solution.reward_storypoints.map(E8s.new)
+          );
 
           const sol: ISolution = {
             fields: solution.fields.map(optUnwrap),
             attached_at: solution.attached_at,
             rejected: solution.rejected,
-            evaluation: evaluation ? new E8s(evaluation) : undefined,
-            reward_hours: hours ? new E8s(hours) : undefined,
-            reward_storypoints: storypoints ? new E8s(storypoints) : undefined,
+            evaluation,
+            reward_hours: hours,
+            reward_storypoints: storypoints,
           };
 
           return [solver, sol];
@@ -144,9 +184,9 @@ export function TasksStore(props: IChildren) {
         created_at: task.created_at,
         stage: task.stage,
         solver_constraints: task.solver_constraints,
-        storypoints_base: new E8s(task.storypoints_base),
-        storypoints_ext_budget: new E8s(task.storypoints_ext_budget),
-        hours_base: new E8s(task.hours_base),
+        storypoints_base: E8s.new(task.storypoints_base),
+        storypoints_ext_budget: E8s.new(task.storypoints_ext_budget),
+        hours_base: E8s.new(task.hours_base),
         days_to_solve: task.days_to_solve,
         solvers: task.solvers,
         solutions,
@@ -191,19 +231,19 @@ export function TasksStore(props: IChildren) {
 
         const solutions: [Principal, ISolution][] = taskV1.solutions.map(
           ([solver, solution]) => {
-            const evaluation = optUnwrap(solution.evaluation);
-            const hours = optUnwrap(solution.reward_hours);
-            const storypoints = optUnwrap(solution.reward_storypoints);
+            const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
+            const hours = optUnwrap(solution.reward_hours.map(E8s.new));
+            const storypoints = optUnwrap(
+              solution.reward_storypoints.map(E8s.new)
+            );
 
             const sol: ISolution = {
               fields: solution.fields.map(optUnwrap),
               attached_at: solution.attached_at,
               rejected: solution.rejected,
-              evaluation: evaluation ? new E8s(evaluation) : undefined,
-              reward_hours: hours ? new E8s(hours) : undefined,
-              reward_storypoints: storypoints
-                ? new E8s(storypoints)
-                : undefined,
+              evaluation,
+              reward_hours: hours,
+              reward_storypoints: storypoints,
             };
 
             return [solver, sol];
@@ -233,6 +273,194 @@ export function TasksStore(props: IChildren) {
     }
   };
 
+  const createTask: ITasksStoreContext["createTask"] = async (args) => {
+    assertAuthorized();
+    assertWithProof();
+
+    const proof = profileProof()!;
+
+    if (!proof.is_team_member) {
+      err(ErrorCode.AUTH, "Only team members can create new tasks");
+    }
+
+    const tasksActor = newTasksActor(agent()!);
+    const { id } = await tasksActor.tasks__create_task({
+      title: args.title,
+      description: args.description,
+      solution_fields: args.solution_fields,
+      solver_constraints: args.solver_constraints,
+      days_to_solve: args.days_to_solve,
+      hours_base: args.hours_base.toBigInt(),
+      storypoints_base: args.storypoints_base.toBigInt(),
+      storypoints_ext_budget: args.storypoints_ext_budget.toBigInt(),
+      team_proof: { cert_raw: profileProofCert()!, profile_proof: [] },
+    });
+
+    return id;
+  };
+
+  const editTask: ITasksStoreContext["editTask"] = async (args) => {
+    assertAuthorized();
+
+    const task = tasks[args.id.toString()];
+
+    if (!task) {
+      err(
+        ErrorCode.UNREACHEABLE,
+        `The task ${args.id.toString()} is not fetched yet`
+      );
+    }
+
+    if (!("Edit" in task.stage)) {
+      err(
+        ErrorCode.AUTH,
+        "At this stage the task can only be edited by a voting"
+      );
+    }
+
+    const principal = identity()!.getPrincipal();
+
+    if (task.creator.compareTo(principal) !== "eq") {
+      err(ErrorCode.AUTH, "Only the creator of the task can edit it");
+    }
+
+    const tasksActor = newTasksActor(agent()!);
+    await tasksActor.tasks__edit_task({
+      id: args.id,
+      new_title_opt: opt(args.new_title),
+      new_description_opt: opt(args.new_description),
+      new_solution_fields_opt: opt(args.new_solution_fields),
+      new_solver_constraints_opt: opt(args.new_solver_constraints),
+      new_days_to_solve_opt: opt(args.new_days_to_solve),
+      new_hours_base_opt: opt(args.new_hours_base?.toBigInt()),
+      new_storypoints_base_opt: opt(args.new_storypoints_base?.toBigInt()),
+      new_storypoints_ext_budget_opt: opt(
+        args.new_storypoints_ext_budget?.toBigInt()
+      ),
+    });
+  };
+
+  const deleteTask: ITasksStoreContext["deleteTask"] = async (taskId) => {
+    assertAuthorized();
+
+    const task = tasks[taskId.toString()];
+
+    if (!task) {
+      err(
+        ErrorCode.UNREACHEABLE,
+        `The task ${taskId.toString()} is not fetched yet`
+      );
+    }
+
+    if (!("Edit" in task.stage)) {
+      err(
+        ErrorCode.AUTH,
+        "At this stage the task can only be deleted by a voting"
+      );
+    }
+
+    const principal = identity()!.getPrincipal();
+
+    if (task.creator.compareTo(principal) !== "eq") {
+      err(ErrorCode.AUTH, "Only the creator of the task can delete it");
+    }
+
+    const tasksActor = newTasksActor(agent()!);
+
+    await tasksActor.tasks__delete_task({ id: taskId });
+  };
+
+  const attachToTask: ITasksStoreContext["attachToTask"] = async (taskId) => {
+    assertAuthorized();
+
+    const task = tasks[taskId.toString()];
+
+    if (!task) {
+      err(
+        ErrorCode.UNREACHEABLE,
+        `The task ${taskId.toString()} is not fetched yet`
+      );
+    }
+
+    const principal = identity()!.getPrincipal();
+
+    const detach = !!task.solvers.find(
+      (it) => it.compareTo(principal) === "eq"
+    );
+
+    const tasksActor = newTasksActor(agent()!);
+    await tasksActor.tasks__attach_to_task({ id: taskId, detach });
+  };
+
+  // if undefined - delete the solution
+  const solveTask: ITasksStoreContext["solveTask"] = async (
+    taskId,
+    filledInFields
+  ) => {
+    assertAuthorized();
+    assertWithProof();
+
+    const task = tasks[taskId.toString()];
+
+    if (!task) {
+      err(
+        ErrorCode.UNREACHEABLE,
+        `The task ${taskId.toString()} is not fetched yet`
+      );
+    }
+
+    if (!("Solve" in task.stage)) {
+      err(ErrorCode.UNREACHEABLE, "The task can no longer be solved");
+    }
+
+    if (
+      task.solver_constraints.find((it) => "TeamOnly" in it) &&
+      !profileProof()!.is_team_member
+    ) {
+      err(ErrorCode.AUTH, "This task can only be solved by a team member");
+    }
+
+    const tasksActor = newTasksActor(agent()!);
+    await tasksActor.tasks__solve_task({
+      id: taskId,
+      filled_in_fields_opt: filledInFields ? [filledInFields.map(opt)] : [],
+      proof: [{ cert_raw: profileProofCert()!, profile_proof: [] }],
+    });
+  };
+
+  const finishSolveTask: ITasksStoreContext["finishSolveTask"] = async (
+    taskId
+  ) => {
+    assertAuthorized();
+    assertWithProof();
+
+    const task = tasks[taskId.toString()];
+
+    if (!task) {
+      err(
+        ErrorCode.UNREACHEABLE,
+        `The task ${taskId.toString()} is not fetched yet`
+      );
+    }
+
+    if (!("Solve" in task.stage)) {
+      err(ErrorCode.UNREACHEABLE, "The task can no longer be solved");
+    }
+
+    if (!profileProof()!.is_team_member) {
+      err(
+        ErrorCode.AUTH,
+        "Only team members can transition the task to the evaluation stage"
+      );
+    }
+
+    const tasksActor = newTasksActor(anonymousAgent()!);
+    await tasksActor.tasks__finish_solve_task({
+      id: taskId,
+      proof: { cert_raw: profileProofCert()!, profile_proof: [] },
+    });
+  };
+
   return (
     <TasksContext.Provider
       value={{
@@ -244,6 +472,12 @@ export function TasksStore(props: IChildren) {
         fetchArchivedTaskIds,
         archivedTasks,
         fetchArchivedTasks,
+        createTask,
+        editTask,
+        deleteTask,
+        attachToTask,
+        solveTask,
+        finishSolveTask,
       }}
     >
       {props.children}

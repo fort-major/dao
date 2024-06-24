@@ -69,6 +69,7 @@ impl Task {
         new_hours_base_opt: Option<E8s>,
         new_storypoints_base_opt: Option<E8s>,
         new_storypoints_ext_budget_opt: Option<E8s>,
+        new_days_to_solve_opt: Option<u64>,
     ) {
         if let Some(new_title) = new_title_opt {
             self.title = new_title;
@@ -96,6 +97,10 @@ impl Task {
 
         if let Some(new_storypoints_ext_budget) = new_storypoints_ext_budget_opt {
             self.storypoints_ext_budget = new_storypoints_ext_budget;
+        }
+
+        if let Some(new_days_to_solve) = new_days_to_solve_opt {
+            self.days_to_solve = new_days_to_solve;
         }
     }
 

@@ -1,5 +1,6 @@
 # TODO
 
+* add task history
 * add pagination
 
 # Fort Major

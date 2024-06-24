@@ -68,6 +68,7 @@ impl TasksState {
             req.new_hours_base_opt,
             req.new_storypoints_base_opt,
             req.new_storypoints_ext_budget_opt,
+            req.new_days_to_solve_opt,
         );
 
         EditTaskResponse {}

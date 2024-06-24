@@ -25,6 +25,7 @@ type CreateTaskResponse = record { id : nat64 };
 type DeleteRequest = record { id : nat64 };
 type EditTaskRequest = record {
   id : nat64;
+  new_days_to_solve_opt : opt nat64;
   new_solution_fields_opt : opt vec SolutionField;
   new_storypoints_base_opt : opt nat;
   new_solver_constraints_opt : opt vec SolverConstraint;

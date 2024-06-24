@@ -36,12 +36,12 @@ export type TVotingKind =
 export interface IVoting {
   id: TVotingIdStr;
   creator: Principal;
-  total_votes_per_option: Array<E8s>;
+  totalVotesPerOption: Array<E8s>;
   kind: TVotingKind;
   created_at: TTimestamp;
   stage: VotingStage;
   quorum: E8s;
-  consensus: E8s;
+  consensusNormalized: E8s;
   finish_early: E8s;
   duration_ns: bigint;
 }
@@ -121,7 +121,7 @@ export function VotingsStore(props: IChildren) {
 
         kind = {
           HumansEmploy: {
-            hours_a_week_commitment: new E8s(k.hours_a_week_commitment),
+            hours_a_week_commitment: E8s.new(k.hours_a_week_commitment),
             candidate: k.candidate,
           },
         };
@@ -132,7 +132,7 @@ export function VotingsStore(props: IChildren) {
           BankSetExchangeRate: {
             from: k.from,
             into: k.into,
-            new_rate: new E8s(k.new_rate),
+            new_rate: E8s.new(k.new_rate),
           },
         };
       } else {
@@ -146,12 +146,10 @@ export function VotingsStore(props: IChildren) {
         kind,
         stage: voting.stage,
         duration_ns: voting.duration_ns,
-        total_votes_per_option: voting.total_votes_per_option.map(
-          (it) => new E8s(it)
-        ),
-        quorum: new E8s(voting.quorum),
-        consensus: new E8s(voting.consensus),
-        finish_early: new E8s(voting.finish_early),
+        totalVotesPerOption: voting.total_votes_per_option.map(E8s.new),
+        quorum: E8s.new(voting.quorum),
+        consensusNormalized: E8s.new(voting.consensus_normalized),
+        finish_early: E8s.new(voting.finish_early),
       };
 
       setVotings(id, v);
