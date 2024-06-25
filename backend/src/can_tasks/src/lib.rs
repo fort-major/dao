@@ -1,32 +1,41 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, time::Duration};
 
+use candid::{CandidType, Principal};
 use ic_cdk::{
     api::time,
-    caller, export_candid, init, post_upgrade, pre_upgrade, query,
+    caller, export_candid, init, post_upgrade, pre_upgrade, query, spawn,
     storage::{stable_restore, stable_save},
     trap, update,
 };
+use serde::Deserialize;
 use shared::{
     humans::{api::MintRewardsRequest, client::HumansCanisterClient},
+    task_archive::api::{GetArchivedTasksRequest, GetArchivedTasksResponse},
     tasks::{
         api::{
             AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
             DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
             EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
-            FinishSolveResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
-            GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest, GetTasksResponse,
-            SolveTaskRequest, SolveTaskResponse,
+            FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
+            GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
         },
         state::TasksState,
     },
+    votings::types::ONE_DAY_NS,
     Guard, ENV_VARS,
 };
 
+#[derive(CandidType, Deserialize)]
+pub struct InitRequest {
+    pub task_archive_canister_id: Principal,
+}
+
 #[init]
-fn init_hook() {
-    let tasks_state = create_tasks_state();
+fn init_hook(req: InitRequest) {
+    let tasks_state = create_tasks_state(req.task_archive_canister_id);
 
     install_tasks_state(Some(tasks_state));
+    start_archiving_timer();
 }
 
 #[pre_upgrade]
@@ -41,6 +50,7 @@ fn post_upgrade_hook() {
     let (tasks_state,): (Option<TasksState>,) = stable_restore().expect("Unable to stable restore");
 
     install_tasks_state(tasks_state);
+    start_archiving_timer();
 }
 
 #[update]
@@ -172,17 +182,6 @@ fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
 
 #[query]
 #[allow(non_snake_case)]
-fn tasks__get_archived_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
-    with_state(|s| {
-        req.validate_and_escape(s, caller(), time())
-            .expect("Unable to get task ids");
-
-        s.get_archived_task_ids(req)
-    })
-}
-
-#[query]
-#[allow(non_snake_case)]
 fn tasks__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
@@ -192,12 +191,34 @@ fn tasks__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArchivedTas
     })
 }
 
+#[query]
+fn get_archive_error() -> Option<(u64, String)> {
+    with_state(|s| s.last_archive_error.clone())
+}
+
+fn start_archiving_timer() {
+    ic_cdk_timers::set_timer_interval(Duration::from_nanos(ONE_DAY_NS), || {
+        if let Some((client, req)) = with_state_mut(|s| s.prepare_archive_batch()) {
+            spawn(async move {
+                let resp = client
+                    .task_archive__append_batch(&req)
+                    .await
+                    .map_err(|(c, m)| format!("[{:?}]: {}", c, m));
+
+                if let Err(reason) = resp {
+                    with_state_mut(|s| s.reset_archive_batch(req.tasks, reason, time()));
+                }
+            });
+        }
+    });
+}
+
 thread_local! {
     static TASKS_STATE: RefCell<Option<TasksState>> = RefCell::default();
 }
 
-pub fn create_tasks_state() -> TasksState {
-    TasksState::new()
+pub fn create_tasks_state(task_archive_canister_id: Principal) -> TasksState {
+    TasksState::new(task_archive_canister_id)
 }
 
 pub fn install_tasks_state(new_state: Option<TasksState>) -> Option<TasksState> {

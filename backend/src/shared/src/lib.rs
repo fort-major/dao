@@ -12,7 +12,9 @@ pub mod e8s;
 mod env;
 pub mod humans;
 pub mod icrc1;
+pub mod pagination;
 pub mod proof;
+pub mod task_archive;
 pub mod tasks;
 pub mod votings;
 

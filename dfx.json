@@ -15,6 +15,11 @@
       "package": "tasks",
       "type": "rust"
     },
+    "task_archive": {
+      "candid": "backend/src/can_task_archive/can.did",
+      "package": "task_archive",
+      "type": "rust"
+    },
     "votings": {
       "candid": "backend/src/can_votings/can.did",
       "package": "votings",

@@ -1,17 +1,24 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, LinkedList};
 
 use candid::{CandidType, Principal};
 use serde::Deserialize;
 
-use crate::TimestampNs;
+use crate::{
+    pagination::PageResponse,
+    task_archive::{
+        api::{AppendBatchRequest, GetArchivedTasksRequest, GetArchivedTasksResponse},
+        client::TaskArchiveCanisterClient,
+    },
+    TimestampNs,
+};
 
 use super::{
     api::{
         AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
         DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
         EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
-        FinishSolveResponse, GetArchivedTasksRequest, GetArchivedTasksResponse, GetTaskIdsRequest,
-        GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+        FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
+        GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
     },
     types::{ArchivedTask, RewardEntry, Task, TaskId},
 };
@@ -20,15 +27,19 @@ use super::{
 pub struct TasksState {
     pub task_id_generator: TaskId,
     pub tasks: BTreeMap<TaskId, Task>,
-    pub archive: BTreeMap<TaskId, ArchivedTask>,
+    pub archive: LinkedList<ArchivedTask>,
+    pub task_archive_canister_id: Principal,
+    pub last_archive_error: Option<(u64, String)>,
 }
 
 impl TasksState {
-    pub fn new() -> Self {
+    pub fn new(task_archive_canister_id: Principal) -> Self {
         Self {
             task_id_generator: 0,
             tasks: BTreeMap::new(),
-            archive: BTreeMap::new(),
+            archive: LinkedList::new(),
+            task_archive_canister_id,
+            last_archive_error: None,
         }
     }
 
@@ -126,7 +137,7 @@ impl TasksState {
     pub fn archive_task(&mut self, id: TaskId) {
         let task = self.tasks.remove(&id).unwrap().to_archived();
 
-        self.archive.insert(id, task);
+        self.archive.push_back(task);
     }
 
     pub fn delete_task(&mut self, req: DeleteRequest) -> DeleteResponse {
@@ -151,20 +162,76 @@ impl TasksState {
         GetTasksResponse { tasks }
     }
 
-    pub fn get_archived_task_ids(&self, _: GetTaskIdsRequest) -> GetTaskIdsResponse {
-        let ids = self.archive.keys().copied().collect();
+    pub fn prepare_archive_batch(
+        &mut self,
+    ) -> Option<(TaskArchiveCanisterClient, AppendBatchRequest)> {
+        if self.archive.is_empty() {
+            return None;
+        }
 
-        GetTaskIdsResponse { ids }
+        let mut tasks = Vec::new();
+
+        for _ in 0..100 {
+            if let Some(task) = self.archive.pop_front() {
+                tasks.push(task);
+            } else {
+                break;
+            }
+        }
+
+        let client = TaskArchiveCanisterClient::new(self.task_archive_canister_id);
+        let req = AppendBatchRequest { tasks };
+
+        Some((client, req))
+    }
+
+    pub fn reset_archive_batch(
+        &mut self,
+        batch: Vec<ArchivedTask>,
+        reason: String,
+        now: TimestampNs,
+    ) {
+        for task in batch.into_iter().rev() {
+            self.archive.push_front(task);
+        }
+
+        self.last_archive_error = Some((now, reason));
     }
 
     pub fn get_archived_tasks(&self, req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
-        let tasks = req
-            .ids
-            .iter()
-            .map(|id| self.archive.get(id).cloned())
-            .collect();
+        let (entries, left): (Vec<_>, u32) = if req.pagination.reversed {
+            let mut iter = self.archive.iter().rev().skip(req.pagination.skip as usize);
 
-        GetArchivedTasksResponse { tasks }
+            let entries = iter
+                .by_ref()
+                .take(req.pagination.take as usize)
+                .cloned()
+                .collect();
+
+            let left = iter.count() as u32;
+
+            (entries, left)
+        } else {
+            let mut iter = self.archive.iter().skip(req.pagination.skip as usize);
+
+            let entries = iter
+                .by_ref()
+                .take(req.pagination.take as usize)
+                .cloned()
+                .collect();
+
+            let left = iter.count() as u32;
+
+            (entries, left)
+        };
+
+        GetArchivedTasksResponse {
+            entries,
+            pagination: PageResponse {
+                left,
+                next: Some(self.task_archive_canister_id),
+            },
+        }
     }
 
     fn generate_id(&mut self) -> TaskId {

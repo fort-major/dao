@@ -1,0 +1,52 @@
+type AppendBatchRequest = record { tasks : vec ArchivedTask };
+type ArchivedTask = variant { V0001 : ArchivedTaskV1 };
+type ArchivedTaskV1 = record {
+  id : nat64;
+  solution_fields : vec SolutionField;
+  title : text;
+  creator : principal;
+  solver_constraints : vec SolverConstraint;
+  description : text;
+  created_at : nat64;
+  solutions : vec record { principal; Solution };
+};
+type GetArchivedTasksRequest = record { pagination : PageRequest };
+type GetArchivedTasksResponse = record {
+  pagination : PageResponse;
+  entries : vec ArchivedTask;
+};
+type PageRequest = record { skip : nat32; take : nat32; reversed : bool };
+type PageResponse = record { left : nat32; next : opt principal };
+type SetNextRequest = record { next : opt principal };
+type Solution = record {
+  evaluation : opt nat;
+  attached_at : nat64;
+  reward_hours : opt nat;
+  fields : vec opt text;
+  rejected : bool;
+  reward_storypoints : opt nat;
+};
+type SolutionField = record {
+  kind : SolutionFieldKind;
+  name : text;
+  description : text;
+  required : bool;
+};
+type SolutionFieldKind = variant { Md; Url : record { kind : URLKind } };
+type SolverConstraint = variant { MaxSolutions : nat32; TeamOnly };
+type URLKind = variant {
+  Any;
+  Github;
+  Notion;
+  Figma;
+  DfinityForum;
+  FortMajorSite;
+  Twitter;
+};
+service : () -> {
+  task_archive__append_batch : (AppendBatchRequest) -> (record {});
+  task_archive__get_archived_tasks : (GetArchivedTasksRequest) -> (
+      GetArchivedTasksResponse,
+    ) query;
+  task_archive__set_next : (SetNextRequest) -> (record {});
+}

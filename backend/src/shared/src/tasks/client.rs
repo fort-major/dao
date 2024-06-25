@@ -1,12 +1,14 @@
 use candid::Principal;
 use ic_cdk::{api::call::CallResult, call};
 
+use crate::task_archive::api::{GetArchivedTasksRequest, GetArchivedTasksResponse};
+
 use super::api::{
     AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
     DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
     EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
-    FinishSolveResponse, GetArchivedTasksRequest, GetArchivedTasksResponse, GetTaskIdsRequest,
-    GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+    FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest, GetTasksResponse,
+    SolveTaskRequest, SolveTaskResponse,
 };
 
 pub struct TasksCanisterClient {
@@ -99,16 +101,6 @@ impl TasksCanisterClient {
     #[allow(non_snake_case)]
     pub async fn tasks__get_tasks(&self, req: GetTasksRequest) -> CallResult<GetTasksResponse> {
         call(self.canister_id, "tasks__get_tasks", (req,))
-            .await
-            .map(|(it,)| it)
-    }
-
-    #[allow(non_snake_case)]
-    pub async fn tasks__get_archived_task_ids(
-        &self,
-        req: GetTaskIdsRequest,
-    ) -> CallResult<GetTaskIdsResponse> {
-        call(self.canister_id, "tasks__get_archived_task_ids", (req,))
             .await
             .map(|(it,)| it)
     }

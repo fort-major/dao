@@ -989,6 +989,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "task_archive"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "garde",
+ "ic-cdk",
+ "ic-cdk-timers",
+ "serde",
+ "shared",
+]
+
+[[package]]
 name = "tasks"
 version = "0.1.0"
 dependencies = [

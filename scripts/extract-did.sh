@@ -13,4 +13,5 @@ function generate_did() {
 generate_did "humans"
 generate_did "votings"
 generate_did "tasks"
+generate_did "task_archive"
 generate_did "bank"

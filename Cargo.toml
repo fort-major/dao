@@ -5,6 +5,7 @@ members = [
     "backend/src/can_humans",
     "backend/src/can_tasks",
     "backend/src/can_votings",
+    "backend/src/can_task_archive",
 ]
 resolver = "2"
 

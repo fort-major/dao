@@ -405,29 +405,6 @@ pub struct GetTasksResponse {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct GetArchivedTasksRequest {
-    #[garde(length(min = 1, max = 100))]
-    pub ids: Vec<TaskId>,
-}
-
-impl Guard<TasksState> for GetArchivedTasksRequest {
-    fn validate_and_escape(
-        &mut self,
-        _state: &TasksState,
-        _caller: Principal,
-        _now: crate::TimestampNs,
-    ) -> Result<(), String> {
-        self.validate(&()).map_err(|e| e.to_string())
-    }
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct GetArchivedTasksResponse {
-    #[garde(skip)]
-    pub tasks: Vec<Option<ArchivedTask>>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
 pub struct GetTaskIdsRequest {}
 
 impl Guard<TasksState> for GetTaskIdsRequest {

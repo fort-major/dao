@@ -32,7 +32,8 @@ dfx deploy --network=$network fmj --argument "(variant { Init = record { \
 }})"
 
 dfx deploy --network=$network humans --argument "(record { sasha = principal \"$sasha_principal\" })"
+dfx deploy --network=$network tasks --argument "(record { task_archive_canister_id = principal \"$(dfx canister --network=$network id task_archive)\" })"
 
+dfx deploy --network=$network task_archive --argument "()"
 dfx deploy --network=$network bank --argument "()"
-dfx deploy --network=$network tasks --argument "()"
 dfx deploy --network=$network votings --argument "()"
