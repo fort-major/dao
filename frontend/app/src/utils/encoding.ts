@@ -1,7 +1,9 @@
 import { match } from "assert";
-import { VotingId } from "../declarations/votings/votings.did";
+import { SwapFrom, VotingId } from "../declarations/votings/votings.did";
 import { ErrorCode, err } from "./error";
 import { Principal } from "@dfinity/principal";
+import { IPair, TPairStr } from "../store/bank";
+import { SwapInto } from "../declarations/bank/bank.did";
 
 export { Principal } from "@dfinity/principal";
 
@@ -301,4 +303,26 @@ export function decodeVotingId(idStr: string): VotingId {
     default:
       err(ErrorCode.UNREACHEABLE, "Invalid input string");
   }
+}
+
+export function pairToStr(pair: IPair): TPairStr {
+  return `${pair.from}:::${pair.into}`;
+}
+
+export function strToPair(s: TPairStr): IPair {
+  const [from, into] = s.split(":::");
+
+  return { from, into };
+}
+
+export function wrapPair(from: SwapFrom, into: SwapInto): IPair {
+  return {
+    from: Object.keys(from)[0],
+    into: Object.keys(into)[0],
+  };
+}
+
+export function unwrapPair(pair: IPair): [SwapFrom, SwapInto] {
+  // @ts-expect-error - invalid will be dropped on requests
+  return [{ [pair.from]: null }, { [pair.into]: null }];
 }

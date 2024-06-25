@@ -5,18 +5,29 @@ import { IChildren } from "./utils/types";
 import { Toaster } from "solid-toast";
 import { AuthStore } from "./store/auth";
 import { ErrorBoundary } from "solid-js";
-import { ErrorCode, err } from "./utils/error";
+import { ErrorCode, logErr } from "./utils/error";
 import { debugStringify } from "./utils/encoding";
+import { TasksStore } from "./store/tasks";
+import { VotingsStore } from "./store/votings";
+import { BankStore } from "./store/bank";
 
 const AppRoot = (props: IChildren) => (
   <>
     <ErrorBoundary
       fallback={(e) => {
-        err(ErrorCode.UNKNOWN, `FATAL: ${debugStringify(e)}`);
+        logErr(ErrorCode.UNKNOWN, `FATAL: ${debugStringify(e)}`);
+
+        return undefined;
       }}
     >
       <AuthStore>
-        <HumanStore>{props.children}</HumanStore>
+        <VotingsStore>
+          <HumanStore>
+            <TasksStore>
+              <BankStore>{props.children}</BankStore>
+            </TasksStore>
+          </HumanStore>
+        </VotingsStore>
       </AuthStore>
     </ErrorBoundary>
     <Toaster />

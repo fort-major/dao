@@ -14,8 +14,10 @@ import {
   makeAgent,
   makeAnonymousAgent,
   newHumansActor,
+  optUnwrap,
 } from "../utils/backend";
 import { E8s } from "../utils/math";
+import { ITotals } from "./humans";
 
 export interface IProfileProof {
   id: Principal;
@@ -38,6 +40,8 @@ export interface IAuthStoreContext {
   profileProof: Accessor<IProfileProof | undefined>;
   profileProofCert: Accessor<Uint8Array | undefined>;
   editMyProfile: (name?: string, avatarSrc?: string) => Promise<void>;
+  myBalance: Accessor<ITotals | undefined>;
+  fetchMyBalance: () => Promise<void>;
 }
 
 const AuthContext = createContext<IAuthStoreContext>();
@@ -63,6 +67,7 @@ export function AuthStore(props: IChildren) {
   const [profileProofCert, setProfileProofCert] = createSignal<
     Uint8Array | undefined
   >();
+  const [myBalance, setMyBalance] = createSignal<ITotals | undefined>();
 
   onMount(async () => {
     setAnonymousAgent(await makeAnonymousAgent());
@@ -159,6 +164,27 @@ export function AuthStore(props: IChildren) {
     });
   };
 
+  const fetchMyBalance = async () => {
+    assertWithProof();
+
+    const humansActor = newHumansActor(agent()!);
+
+    const { profiles } = await humansActor.humans__get_profiles({
+      ids: [identity()!.getPrincipal()],
+    });
+    const myProfile = optUnwrap(profiles[0]);
+
+    if (!myProfile) {
+      err(ErrorCode.UNREACHEABLE, "Can't happen...");
+    }
+
+    setMyBalance({
+      hours: E8s.new(myProfile.hours_balance),
+      storypoints: E8s.new(myProfile.storypoints_balance),
+      reputation: E8s.new(myProfile.reputation),
+    });
+  };
+
   const isAuthorized = () => {
     return !!agent();
   };
@@ -201,6 +227,8 @@ export function AuthStore(props: IChildren) {
         profileProof,
         profileProofCert,
         editMyProfile,
+        myBalance,
+        fetchMyBalance,
       }}
     >
       {props.children}
