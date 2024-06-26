@@ -10,6 +10,8 @@ function generate_did() {
   candid-extractor "./target/wasm32-unknown-unknown/release/$canister.wasm" > "$canister_root/can.did"
 }
 
+cargo fix --all --allow-dirty
+
 generate_did "humans"
 generate_did "votings"
 generate_did "tasks"

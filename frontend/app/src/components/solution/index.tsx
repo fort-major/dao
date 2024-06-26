@@ -49,7 +49,9 @@ export function Solution(props: ISolutionProps) {
         <Show when={props.solution.evaluation}>
           <p>Approved</p>
           <p>
-            {props.solution.evaluation!.mul(E8s.fromNumber(5n)).toPrecision(2)}{" "}
+            {props.solution
+              .evaluation!.mul(E8s.fromBigIntBase(5n))
+              .toPrecision(2)}{" "}
             stars
           </p>
         </Show>

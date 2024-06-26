@@ -44,7 +44,7 @@ export function HumansPage() {
     const rep = p.earned_hours
       .add(p.earned_storypoints)
       .div(totalHours.add(totalStorypoints))
-      .mul(E8s.fromNumber(100n));
+      .mul(E8s.fromBigIntBase(100n));
 
     let commitmentStr = "N/A";
 
@@ -55,7 +55,7 @@ export function HumansPage() {
 
       if (weeksSinceEmployed >= 1) {
         const hours_a_week = p.employment.hours_earned_during_employment.div(
-          E8s.fromNumber(weeksSinceEmployed)
+          E8s.fromBigIntBase(weeksSinceEmployed)
         );
         const commitment = hours_a_week.div(
           p.employment.hours_a_week_commitment

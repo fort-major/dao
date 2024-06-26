@@ -99,7 +99,7 @@ fn votings__get_votings(mut req: GetVotingsRequest) -> GetVotingsResponse {
         req.validate_and_escape(s, caller(), time())
             .expect("Unable to get votings");
 
-        s.get_votings(req)
+        s.get_votings(req, caller())
     })
 }
 

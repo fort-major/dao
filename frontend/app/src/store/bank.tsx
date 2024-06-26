@@ -81,7 +81,7 @@ export function BankStore(props: IChildren) {
     const { qty, asset, block_idx } = await bankActor.bank__swap_rewards({
       from,
       into,
-      qty: amount.toBigInt(),
+      qty: amount.toBigIntRaw(),
     });
 
     const r: ISwapResponse = {

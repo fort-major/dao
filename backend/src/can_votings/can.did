@@ -5,8 +5,8 @@ type CallToExecute = record {
 };
 type CastVoteRequest = record {
   id : VotingId;
+  normalized_approval_level : opt nat;
   option_idx : nat32;
-  approval_level : opt nat;
   proof : Proof;
 };
 type CastVoteResponse = record { decision_made : bool };
@@ -24,6 +24,10 @@ type StartVotingRequest = record { kind : VotingKind; proof : Proof };
 type StartVotingResponse = record { id : VotingId };
 type SwapFrom = variant { Hour; Storypoint };
 type SwapInto = variant { FMJ; ICP };
+type Vote = record {
+  normalized_approval_level : opt nat;
+  total_voter_reputation : nat;
+};
 type VotingEvent = variant { V0001 : VotingEventV1 };
 type VotingEventV1 = variant {
   VotingExecuting : record {
@@ -46,7 +50,6 @@ type VotingEventV1 = variant {
 type VotingExt = record {
   id : VotingId;
   creator : principal;
-  total_votes_per_option : vec nat;
   finish_early : nat;
   kind : VotingKind;
   consensus_normalized : nat;
@@ -54,6 +57,7 @@ type VotingExt = record {
   stage : VotingStage;
   quorum : nat;
   duration_ns : nat64;
+  votes_per_option : vec record { nat; opt Vote };
 };
 type VotingId = variant {
   HumansEmploy : principal;

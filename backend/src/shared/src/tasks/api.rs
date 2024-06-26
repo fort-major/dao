@@ -8,7 +8,7 @@ use crate::{e8s::E8s, escape_script_tag, proof::Proof, Guard, ENV_VARS};
 
 use super::{
     state::TasksState,
-    types::{ArchivedTask, SolutionField, SolverConstraint, Task, TaskId, TaskStage},
+    types::{SolutionField, SolverConstraint, Task, TaskId, TaskStage},
 };
 
 #[derive(CandidType, Deserialize, Validate)]

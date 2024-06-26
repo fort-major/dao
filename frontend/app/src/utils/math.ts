@@ -12,10 +12,6 @@ export class E8s {
     return new E8s(val);
   }
 
-  public static fromNumber(x: bigint) {
-    return new E8s(x * 1_0000_0000n);
-  }
-
   public eq(b: E8s): boolean {
     return this.val == b.val;
   }
@@ -128,7 +124,23 @@ export class E8s {
     return this.val === 0n;
   }
 
-  public toBigInt() {
+  public toBigIntRaw() {
     return this.val;
+  }
+
+  public static fromBigIntBase(x: bigint) {
+    return new E8s(x * 1_0000_0000n);
+  }
+
+  public toBigIntBase() {
+    return this.val / 1_0000_0000n;
+  }
+
+  public static fromPercentNum(p: number) {
+    return new E8s((BigInt(Math.floor(p)) * 1_0000_0000n) / 100n);
+  }
+
+  public toPercentNum() {
+    return Number((this.val * 100n) / 1_0000_0000n);
   }
 }

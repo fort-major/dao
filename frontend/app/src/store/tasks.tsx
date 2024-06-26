@@ -290,9 +290,9 @@ export function TasksStore(props: IChildren) {
       solution_fields: args.solution_fields,
       solver_constraints: args.solver_constraints,
       days_to_solve: args.days_to_solve,
-      hours_base: args.hours_base.toBigInt(),
-      storypoints_base: args.storypoints_base.toBigInt(),
-      storypoints_ext_budget: args.storypoints_ext_budget.toBigInt(),
+      hours_base: args.hours_base.toBigIntRaw(),
+      storypoints_base: args.storypoints_base.toBigIntRaw(),
+      storypoints_ext_budget: args.storypoints_ext_budget.toBigIntRaw(),
       team_proof: { cert_raw: profileProofCert()!, profile_proof: [] },
     });
 
@@ -332,10 +332,10 @@ export function TasksStore(props: IChildren) {
       new_solution_fields_opt: opt(args.new_solution_fields),
       new_solver_constraints_opt: opt(args.new_solver_constraints),
       new_days_to_solve_opt: opt(args.new_days_to_solve),
-      new_hours_base_opt: opt(args.new_hours_base?.toBigInt()),
-      new_storypoints_base_opt: opt(args.new_storypoints_base?.toBigInt()),
+      new_hours_base_opt: opt(args.new_hours_base?.toBigIntRaw()),
+      new_storypoints_base_opt: opt(args.new_storypoints_base?.toBigIntRaw()),
       new_storypoints_ext_budget_opt: opt(
-        args.new_storypoints_ext_budget?.toBigInt()
+        args.new_storypoints_ext_budget?.toBigIntRaw()
       ),
     });
   };

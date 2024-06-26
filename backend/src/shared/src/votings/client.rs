@@ -2,8 +2,8 @@ use candid::Principal;
 use ic_cdk::{api::call::CallResult, call};
 
 use super::api::{
-    CastVoteRequest, CastVoteResponse, GetVotingsRequest, GetVotingsResponse, StartVotingRequest,
-    StartVotingResponse,
+    CastVoteRequest, CastVoteResponse, GetVotingEventsRequest, GetVotingEventsResponse,
+    GetVotingsRequest, GetVotingsResponse, StartVotingRequest, StartVotingResponse,
 };
 
 pub struct VotingsCanisterClient {
@@ -38,6 +38,16 @@ impl VotingsCanisterClient {
         req: GetVotingsRequest,
     ) -> CallResult<GetVotingsResponse> {
         call(self.canister_id, "votings__get_votings", (req,))
+            .await
+            .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
+    pub async fn votings__get_events(
+        &self,
+        req: GetVotingEventsRequest,
+    ) -> CallResult<GetVotingEventsResponse> {
+        call(self.canister_id, "votings__get_events", (req,))
             .await
             .map(|(it,)| it)
     }

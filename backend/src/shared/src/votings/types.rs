@@ -24,13 +24,13 @@ pub const ONE_HOUR_NS: u64 = 1_000_000_000 * 60 * 60;
 pub const ONE_DAY_NS: u64 = ONE_HOUR_NS * 24;
 pub const ONE_WEEK_NS: u64 = ONE_DAY_NS * 7;
 
-#[derive(CandidType, Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(CandidType, Deserialize, Validate, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum VotingId {
-    FinishEditTask(TaskId),
-    EvaluateTask(TaskId),
-    BankSetExchangeRate((SwapFrom, SwapInto)),
-    HumansEmploy(Principal),
-    HumansUnemploy(Principal),
+    FinishEditTask(#[garde(skip)] TaskId),
+    EvaluateTask(#[garde(skip)] TaskId),
+    BankSetExchangeRate(#[garde(skip)] (SwapFrom, SwapInto)),
+    HumansEmploy(#[garde(skip)] Principal),
+    HumansUnemploy(#[garde(skip)] Principal),
 }
 
 #[derive(CandidType, Deserialize, Clone)]
@@ -114,12 +114,12 @@ impl Voting {
     pub fn cast_vote(
         &mut self,
         option_idx: u32,
-        approval_level: Option<E8s>,
+        normalized_approval_level: Option<E8s>,
         voter_reputation: E8s,
         caller: Principal,
     ) -> Result<Option<CallToExecute>, VotingEvent> {
         let vote = Vote {
-            approval_level,
+            normalized_approval_level,
             total_voter_reputation: voter_reputation,
         };
 
@@ -172,12 +172,12 @@ impl Voting {
         }
     }
 
-    pub fn as_ext(&self) -> VotingExt {
-        let total_votes_per_option = self
+    pub fn as_ext(&self, caller: Principal) -> VotingExt {
+        let votes_per_option = self
             .base
             .votes_per_option
             .iter()
-            .map(|votes| votes.total_voted.clone())
+            .map(|votes| (votes.total_voted.clone(), votes.votes.get(&caller).cloned()))
             .collect();
 
         VotingExt {
@@ -188,7 +188,7 @@ impl Voting {
             quorum: self.base.quorum.clone(),
             consensus_normalized: self.base.consensus_normalized.clone(),
             finish_early: self.base.finish_early.clone(),
-            total_votes_per_option,
+            votes_per_option,
             kind: self.kind.clone(),
             stage: self.stage.clone(),
         }
@@ -456,8 +456,18 @@ impl VotingBase {
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Vote {
     // None means "Reject"
-    pub approval_level: Option<E8s>,
+    pub normalized_approval_level: Option<E8s>,
     pub total_voter_reputation: E8s,
+}
+
+impl Vote {
+    pub fn approval_level(&self) -> Option<E8s> {
+        if let Some(a) = &self.normalized_approval_level {
+            Some(&self.total_voter_reputation * a)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(CandidType, Deserialize, Clone)]
@@ -499,7 +509,7 @@ pub struct VotingExt {
     pub quorum: E8s,
     pub consensus_normalized: E8s,
     pub finish_early: E8s,
-    pub total_votes_per_option: Vec<E8s>,
+    pub votes_per_option: Vec<(E8s, Option<Vote>)>,
     pub kind: VotingKind,
     pub stage: VotingStage,
 }
@@ -555,7 +565,7 @@ impl OptionVotes {
         if let Some(prev_vote) = self.votes.get(&caller) {
             self.total_voted -= &prev_vote.total_voter_reputation;
 
-            if let Some(approval) = &prev_vote.approval_level {
+            if let Some(approval) = &prev_vote.approval_level() {
                 self.approve -= approval;
             } else {
                 self.reject -= &prev_vote.total_voter_reputation;
@@ -566,7 +576,7 @@ impl OptionVotes {
     pub fn cast_vote(&mut self, caller: Principal, vote: Vote) {
         self.total_voted += &vote.total_voter_reputation;
 
-        if let Some(approval) = &vote.approval_level {
+        if let Some(approval) = &vote.approval_level() {
             self.approve += approval;
         } else {
             self.reject += &vote.total_voter_reputation;

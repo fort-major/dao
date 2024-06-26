@@ -76,7 +76,7 @@ impl VotingsState {
 
         let result = voting.cast_vote(
             req.option_idx,
-            req.approval_level,
+            req.normalized_approval_level,
             req.proof
                 .profile_proof
                 .expect("Profile proof not computed")
@@ -125,11 +125,11 @@ impl VotingsState {
         self.votings.remove(&id);
     }
 
-    pub fn get_votings(&self, req: GetVotingsRequest) -> GetVotingsResponse {
+    pub fn get_votings(&self, req: GetVotingsRequest, caller: Principal) -> GetVotingsResponse {
         let votings = req
             .ids
             .iter()
-            .map(|id| self.votings.get(&id).map(|it| it.as_ext()))
+            .map(|id| self.votings.get(&id).map(|it| it.as_ext(caller)))
             .collect();
 
         GetVotingsResponse { votings }

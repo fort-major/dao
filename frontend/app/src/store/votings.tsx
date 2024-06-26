@@ -12,8 +12,10 @@ import {
   VotingKind,
   VotingStage,
 } from "../declarations/votings/votings.did";
-import { newVotingsActor, optUnwrap } from "../utils/backend";
+import { newVotingsActor, opt, optUnwrap } from "../utils/backend";
 import { decodeVotingId, encodeVotingId } from "../utils/encoding";
+
+export type TVotingIdStr = string;
 
 export type TVotingKind =
   | {
@@ -33,10 +35,15 @@ export type TVotingKind =
       };
     };
 
+export interface IVote {
+  normalized_approval_level?: E8s;
+  total_voter_reputation: E8s;
+}
+
 export interface IVoting {
   id: TVotingIdStr;
   creator: Principal;
-  totalVotesPerOption: Array<E8s>;
+  votesPerOption: Array<[E8s, IVote | undefined]>;
   kind: TVotingKind;
   created_at: TTimestamp;
   stage: VotingStage;
@@ -46,7 +53,6 @@ export interface IVoting {
   duration_ns: bigint;
 }
 
-type TVotingIdStr = string;
 // explicit null means that the voting does not exist
 type VotingsStore = Record<TVotingIdStr, IVoting | null>;
 
@@ -139,6 +145,25 @@ export function VotingsStore(props: IChildren) {
         kind = voting.kind;
       }
 
+      const votesPerOption: Array<[E8s, IVote | undefined]> =
+        voting.votes_per_option.map(([total, myVote]) => {
+          const v = optUnwrap(myVote);
+
+          if (v) {
+            return [
+              E8s.new(total),
+              {
+                normalized_approval_level: optUnwrap(
+                  v.normalized_approval_level.map(E8s.new)
+                ),
+                total_voter_reputation: E8s.new(v.total_voter_reputation),
+              },
+            ];
+          } else {
+            return [E8s.new(total), undefined];
+          }
+        });
+
       const v: IVoting = {
         id,
         creator: voting.creator,
@@ -146,7 +171,7 @@ export function VotingsStore(props: IChildren) {
         kind,
         stage: voting.stage,
         duration_ns: voting.duration_ns,
-        totalVotesPerOption: voting.total_votes_per_option.map(E8s.new),
+        votesPerOption,
         quorum: E8s.new(voting.quorum),
         consensusNormalized: E8s.new(voting.consensus_normalized),
         finish_early: E8s.new(voting.finish_early),
@@ -176,15 +201,11 @@ export function VotingsStore(props: IChildren) {
       err(ErrorCode.AUTH, "You need at least some reputation to cast a vote");
     }
 
-    const approvalLevel: [bigint] | [] = normalizedApprovalLevel
-      ? [normalizedApprovalLevel.mul(proof.reputation).toBigInt()]
-      : [];
-
     const votingsActor = newVotingsActor(agent()!);
 
     const { decision_made } = await votingsActor.votings__cast_vote({
       id: decodeVotingId(id),
-      approval_level: approvalLevel,
+      normalized_approval_level: opt(normalizedApprovalLevel?.toBigIntRaw()),
       option_idx: optionIdx,
       proof: { cert_raw: profileProofCert()!, profile_proof: [] },
     });
@@ -199,7 +220,7 @@ export function VotingsStore(props: IChildren) {
       return startVoting({
         HumansEmploy: {
           candidate,
-          hours_a_week_commitment: hoursAWeekCommitment.toBigInt(),
+          hours_a_week_commitment: hoursAWeekCommitment.toBigIntRaw(),
         },
       });
     };
@@ -232,7 +253,7 @@ export function VotingsStore(props: IChildren) {
       );
 
       return startVoting({
-        BankSetExchangeRate: { from, into, new_rate: newRate.toBigInt() },
+        BankSetExchangeRate: { from, into, new_rate: newRate.toBigIntRaw() },
       });
     };
 

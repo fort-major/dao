@@ -19,9 +19,9 @@ pub struct AppendBatchRequest {
 impl Guard<TaskArchiveState> for AppendBatchRequest {
     fn validate_and_escape(
         &mut self,
-        state: &TaskArchiveState,
+        _state: &TaskArchiveState,
         caller: candid::Principal,
-        now: crate::TimestampNs,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
@@ -45,9 +45,9 @@ pub struct GetArchivedTasksRequest {
 impl Guard<TaskArchiveState> for GetArchivedTasksRequest {
     fn validate_and_escape(
         &mut self,
-        state: &TaskArchiveState,
-        caller: candid::Principal,
-        now: crate::TimestampNs,
+        _state: &TaskArchiveState,
+        _caller: candid::Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -56,9 +56,9 @@ impl Guard<TaskArchiveState> for GetArchivedTasksRequest {
 impl Guard<TasksState> for GetArchivedTasksRequest {
     fn validate_and_escape(
         &mut self,
-        state: &TasksState,
-        caller: Principal,
-        now: crate::TimestampNs,
+        _state: &TasksState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -81,9 +81,9 @@ pub struct SetNextRequest {
 impl Guard<TaskArchiveState> for SetNextRequest {
     fn validate_and_escape(
         &mut self,
-        state: &TaskArchiveState,
+        _state: &TaskArchiveState,
         caller: Principal,
-        now: crate::TimestampNs,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 

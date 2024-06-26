@@ -1,4 +1,4 @@
-import { For, Show, createEffect } from "solid-js";
+import { For, Match, Show, Switch, createEffect } from "solid-js";
 import { useAuth } from "../../store/auth";
 import { useHumans } from "../../store/humans";
 import { IArchivedTaskV1, ITask } from "../../store/tasks";
@@ -6,6 +6,8 @@ import { Md } from "../md";
 import { timestampToStr } from "../../utils/encoding";
 import { ProfileMini } from "../profile/profile";
 import { Solution } from "../solution";
+import { Btn } from "../btn";
+import { VotingId } from "../../declarations/votings/votings.did";
 
 export interface ITaskProps {
   task?: Partial<ITask> & IArchivedTaskV1;
@@ -16,6 +18,13 @@ export function Task(props: ITaskProps) {
 
   const { isReadyToFetch } = useAuth();
   const { profiles, fetchProfiles } = useHumans();
+
+  const finishEditVotingId: () => VotingId = () => ({
+    FinishEditTask: props.task!.id,
+  });
+  const evaluateVotingId: () => VotingId = () => ({
+    EvaluateTask: props.task!.id,
+  });
 
   const creator = () => profiles[props.task!.creator.toText()];
   const solverCandidates = () =>
@@ -43,6 +52,9 @@ export function Task(props: ITaskProps) {
         props.task!.creator,
       ]);
     }
+
+    if (stage() == "Edit") {
+    }
   });
 
   return (
@@ -55,9 +67,13 @@ export function Task(props: ITaskProps) {
       <Md content={props.task.description} />
       <p>{timestampToStr(props.task.created_at)}</p>
       <ProfileMini profile={creator()} />
-      <Show when={stage() === "Edit"}>
-        <p>{props.task.days_to_solve!.toString()} days to solve</p>
-      </Show>
+      <Switch>
+        <Match when={stage() === "Edit"}>
+          <p>{props.task.days_to_solve!.toString()} days to solve</p>
+          <Btn text="" />
+        </Match>
+        <Match when={stage() === ""}></Match>
+      </Switch>
       <Show
         when={
           props.task.hours_base?.toBool() ||
@@ -85,6 +101,7 @@ export function Task(props: ITaskProps) {
           </p>
         </Show>
       </Show>
+      <Show when={}></Show>
       <div>
         <h5>Working on it:</h5>
         <For each={solverCandidates()}>

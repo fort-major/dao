@@ -62,7 +62,7 @@ pub struct CastVoteRequest {
     #[garde(skip)]
     pub option_idx: u32,
     #[garde(skip)]
-    pub approval_level: Option<E8s>,
+    pub normalized_approval_level: Option<E8s>,
 }
 
 impl Guard<VotingsState> for CastVoteRequest {
@@ -75,7 +75,7 @@ impl Guard<VotingsState> for CastVoteRequest {
         self.validate(&()).map_err(|e| e.to_string())?;
         self.proof.assert_valid_for(caller, now)?;
 
-        if let Some(approval) = &self.approval_level {
+        if let Some(approval) = &self.normalized_approval_level {
             if approval
                 > &self
                     .proof
