@@ -50,13 +50,19 @@ type GetTasksResponse = record { tasks : vec opt Task };
 type InitRequest = record { task_archive_canister_id : principal };
 type PageRequest = record { skip : nat32; take : nat32; reversed : bool };
 type PageResponse = record { left : nat32; next : opt principal };
-type ProfileProof = record {
+type ProfileProof = record { id : principal; is_team_member : bool };
+type Proof = record {
+  profile_proofs_cert_raw : blob;
+  profile_proof : opt ProfileProof;
+  reputation_proof : opt ReputationProof;
+  reputation_proof_cert_raw : blob;
+};
+type RepBalanceEntry = record { updated_at : nat64; balance : nat };
+type ReputationProof = record {
   id : principal;
-  reputation : nat;
-  is_team_member : bool;
+  reputation : RepBalanceEntry;
   reputation_total_supply : nat;
 };
-type Proof = record { profile_proof : opt ProfileProof; cert_raw : blob };
 type Solution = record {
   evaluation : opt nat;
   attached_at : nat64;
@@ -110,6 +116,9 @@ type URLKind = variant {
 };
 service : (InitRequest) -> {
   get_archive_error : () -> (opt record { nat64; text }) query;
+  task_archive__get_archived_tasks : (GetArchivedTasksRequest) -> (
+      GetArchivedTasksResponse,
+    ) query;
   tasks__attach_to_task : (AttachToTaskRequest) -> (record {});
   tasks__create_task : (CreateTaskRequest) -> (CreateTaskResponse);
   tasks__delete_task : (DeleteRequest) -> (record {});
@@ -117,9 +126,6 @@ service : (InitRequest) -> {
   tasks__evaluate_task : (EvaluateRequest) -> (record {});
   tasks__finish_edit_task : (DeleteRequest) -> (record {});
   tasks__finish_solve_task : (FinishSolveRequest) -> (record {});
-  tasks__get_archived_tasks : (GetArchivedTasksRequest) -> (
-      GetArchivedTasksResponse,
-    ) query;
   tasks__get_task_ids : (record {}) -> (GetTaskIdsResponse) query;
   tasks__get_tasks : (GetTasksRequest) -> (GetTasksResponse) query;
   tasks__solve_task : (SolveTaskRequest) -> (record {});

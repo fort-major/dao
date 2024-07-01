@@ -291,6 +291,12 @@ pub struct RewardEntry {
     pub reward_storypoints: E8s,
 }
 
+impl RewardEntry {
+    pub fn as_reputation_mint_entry(&self) -> (Principal, E8s) {
+        (self.solver, &self.reward_hours + &self.reward_storypoints)
+    }
+}
+
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Solution {
     pub fields: Vec<Option<String>>,

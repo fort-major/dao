@@ -75,19 +75,6 @@ impl Guard<VotingsState> for CastVoteRequest {
         self.validate(&()).map_err(|e| e.to_string())?;
         self.proof.assert_valid_for(caller, now)?;
 
-        if let Some(approval) = &self.normalized_approval_level {
-            if approval
-                > &self
-                    .proof
-                    .profile_proof
-                    .as_ref()
-                    .expect("UNREACHEABLE")
-                    .reputation
-            {
-                return Err(format!("Not enough reputation to cast that vote"));
-            }
-        }
-
         let voting = state
             .votings
             .get(&self.id)

@@ -3,7 +3,7 @@ use garde::Validate;
 
 use crate::{e8s::E8s, TimestampNs};
 
-pub const PROOF_MARKER: &str = "FMJ HUMANS CANISTER GET PROFILE PROOFS RESPONSE";
+pub const PROFILE_PROOFS_MARKER: &str = "FMJ HUMANS CANISTER GET PROFILE PROOFS RESPONSE";
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Profile {
@@ -13,7 +13,6 @@ pub struct Profile {
     pub registered_at: TimestampNs,
     pub hours_balance: E8s,
     pub storypoints_balance: E8s,
-    pub reputation: E8s,
     pub earned_hours: E8s,
     pub earned_storypoints: E8s,
     pub employment: Option<Employment>,
@@ -33,7 +32,6 @@ impl Profile {
             registered_at: now,
             hours_balance: E8s::zero(),
             storypoints_balance: E8s::zero(),
-            reputation: E8s::zero(),
             earned_hours: E8s::zero(),
             earned_storypoints: E8s::zero(),
             employment: None,
@@ -55,7 +53,6 @@ impl Profile {
     }
 
     pub fn mint_rewards(&mut self, hours: E8s, storypoints: E8s) {
-        self.reputation += &hours + &storypoints;
         self.earned_hours += &hours;
         self.earned_storypoints += &storypoints;
 
@@ -113,8 +110,4 @@ pub struct ProfileProof {
     pub id: Principal,
     #[garde(skip)]
     pub is_team_member: bool,
-    #[garde(skip)]
-    pub reputation: E8s,
-    #[garde(skip)]
-    pub reputation_total_supply: E8s,
 }

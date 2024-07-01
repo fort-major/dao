@@ -13,6 +13,7 @@ ic-cdk-timers = { workspace = true }
 ic-certificate-verification = { workspace = true }
 ic-certification = { workspace = true }
 ic-cbor = { workspace = true }
+ic-stable-structures = { workspace = true }
 garde = { workspace = true }
 icrc-ledger-types = { workspace = true }
 html-escape = { workspace = true }
@@ -21,6 +22,7 @@ async-trait = { workspace = true }
 lazy_static = { workspace = true }
 leb128 = { workspace = true }
 derivative = { workspace = true }
+num-bigint = { workspace = true }
 
 [build-dependencies]
 dotenv = "0.15"

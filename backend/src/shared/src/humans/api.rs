@@ -355,6 +355,4 @@ pub struct GetTotalsResponse {
     pub hours: E8s,
     #[garde(skip)]
     pub storypoints: E8s,
-    #[garde(skip)]
-    pub reputation: E8s,
 }

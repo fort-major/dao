@@ -96,9 +96,11 @@ export function VotingsStore(props: IChildren) {
     assertReadyToFetch,
     profileProofCert,
     profileProof,
+    reputationProof,
+    reputationProofCert,
     agent,
     assertAuthorized,
-    assertWithProof,
+    assertWithProofs,
   } = useAuth();
 
   const [votings, setVotings] = createStore<VotingsStore>();
@@ -187,7 +189,7 @@ export function VotingsStore(props: IChildren) {
     normalizedApprovalLevel
   ) => {
     assertAuthorized();
-    assertWithProof();
+    assertWithProofs();
 
     const voting = votings[id];
 
@@ -195,9 +197,9 @@ export function VotingsStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, `Voting ${id} does not exist`);
     }
 
-    const proof = profileProof()!;
+    const repProof = reputationProof()!;
 
-    if (proof.reputation.isZero()) {
+    if (repProof.reputation.balance.isZero()) {
       err(ErrorCode.AUTH, "You need at least some reputation to cast a vote");
     }
 
@@ -207,7 +209,12 @@ export function VotingsStore(props: IChildren) {
       id: decodeVotingId(id),
       normalized_approval_level: opt(normalizedApprovalLevel?.toBigIntRaw()),
       option_idx: optionIdx,
-      proof: { cert_raw: profileProofCert()!, profile_proof: [] },
+      proof: {
+        profile_proofs_cert_raw: profileProofCert()!,
+        profile_proof: [],
+        reputation_proof_cert_raw: reputationProofCert()!,
+        reputation_proof: [],
+      },
     });
 
     return decision_made;
@@ -262,8 +269,10 @@ export function VotingsStore(props: IChildren) {
     const { id } = await votingsActor.votings__start_voting({
       kind,
       proof: {
-        cert_raw: profileProofCert()!,
+        profile_proofs_cert_raw: profileProofCert()!,
         profile_proof: [],
+        reputation_proof_cert_raw: reputationProofCert()!,
+        reputation_proof: [],
       },
     });
 
@@ -272,7 +281,7 @@ export function VotingsStore(props: IChildren) {
 
   const assertVotingCanBeCreated = (votingId: TVotingIdStr) => {
     assertAuthorized();
-    assertWithProof();
+    assertWithProofs();
 
     const voting = votings[votingId];
 

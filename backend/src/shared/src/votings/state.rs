@@ -39,8 +39,8 @@ impl VotingsState {
     ) -> (StartVotingResponse, VotingTimer) {
         let voting = Voting::new(
             req.proof
-                .profile_proof
-                .expect("Profile proof not computed")
+                .reputation_proof
+                .expect("The proof is not computed")
                 .reputation_total_supply,
             req.kind,
             caller,
@@ -78,9 +78,10 @@ impl VotingsState {
             req.option_idx,
             req.normalized_approval_level,
             req.proof
-                .profile_proof
-                .expect("Profile proof not computed")
-                .reputation,
+                .reputation_proof
+                .expect("The proof is not computed")
+                .reputation
+                .balance,
             caller,
         );
 

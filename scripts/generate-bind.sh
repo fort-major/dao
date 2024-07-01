@@ -8,4 +8,5 @@ rm ./frontend/app/src/declarations/humans/humans.did
 rm ./frontend/app/src/declarations/tasks/tasks.did
 rm ./frontend/app/src/declarations/task_archive/task_archive.did
 rm ./frontend/app/src/declarations/votings/votings.did
+rm ./frontend/app/src/declarations/reputation/reputation.did
 rm -rf ./src

@@ -22,9 +22,18 @@ import {
   idlFactory as TasksIdlFactory,
 } from "../declarations/tasks/tasks.did";
 import {
+  _SERVICE as TaskArchiveActor,
+  idlFactory as TaskArchiveIdlFactory,
+} from "../declarations/task_archive/task_archive.did";
+import {
   _SERVICE as VotingsActor,
   idlFactory as VotingsIdlFactory,
 } from "../declarations/votings/votings.did";
+import {
+  _SERVICE as ReputationActor,
+  idlFactory as ReputationIdlFactory,
+} from "../declarations/reputation/reputation.did";
+import { Principal } from "@dfinity/principal";
 
 export function newBankActor(agent: Agent): BankActor {
   return Actor.createActor(BankIdlFactory, {
@@ -61,9 +70,28 @@ export function newTasksActor(agent: Agent): TasksActor {
   });
 }
 
+export function newTaskArchiveActor(
+  agent: Agent,
+  canisterId: Principal = Principal.fromText(
+    import.meta.env.VITE_TASKS_CANISTER_ID
+  )
+): TaskArchiveActor {
+  return Actor.createActor(TasksIdlFactory, {
+    canisterId,
+    agent,
+  });
+}
+
 export function newVotingsActor(agent: Agent): VotingsActor {
   return Actor.createActor(VotingsIdlFactory, {
     canisterId: import.meta.env.VITE_VOTINGS_CANISTER_ID,
+    agent,
+  });
+}
+
+export function newReputationActor(agent: Agent): ReputationActor {
+  return Actor.createActor(ReputationIdlFactory, {
+    canisterId: import.meta.env.VITE_REPUTATION_CANISTER_ID,
     agent,
   });
 }

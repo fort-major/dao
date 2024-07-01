@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 
-use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::{
     api::time,
     caller, export_candid, init, post_upgrade, pre_upgrade, query,
@@ -19,17 +18,12 @@ use shared::{
         },
         state::HumansState,
     },
-    Guard, TimestampNs,
+    Guard,
 };
 
-#[derive(CandidType, Deserialize)]
-pub struct InitRequest {
-    pub sasha: Principal,
-}
-
 #[init]
-fn init_hook(req: InitRequest) {
-    let humans_state = create_humans_state(req.sasha, time());
+fn init_hook() {
+    let humans_state = create_humans_state();
 
     install_humans_state(Some(humans_state));
 }
@@ -170,12 +164,17 @@ fn humans__get_profile_proofs(mut req: GetProfileProofsRequest) -> GetProfilePro
     })
 }
 
+#[update]
+fn humans__init_once() {
+    with_state_mut(|s| s.init(caller(), time()));
+}
+
 thread_local! {
     static HUMANS_STATE: RefCell<Option<HumansState>> = RefCell::default();
 }
 
-pub fn create_humans_state(sasha: Principal, now: TimestampNs) -> HumansState {
-    HumansState::new(sasha, now)
+pub fn create_humans_state() -> HumansState {
+    HumansState::default()
 }
 
 pub fn install_humans_state(new_state: Option<HumansState>) -> Option<HumansState> {

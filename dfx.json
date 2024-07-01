@@ -25,6 +25,11 @@
       "package": "votings",
       "type": "rust"
     },
+    "reputation": {
+      "candid": "backend/src/can_reputation/can.did",
+      "package": "reputation",
+      "type": "rust"
+    },
     "fmj": {
       "candid": "backend/src/can_fmj/can.did",
       "wasm": "backend/src/can_fmj/fmj.wasm",

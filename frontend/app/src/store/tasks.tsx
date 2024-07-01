@@ -1,4 +1,4 @@
-import { createContext, useContext } from "solid-js";
+import { createContext, createSignal, useContext } from "solid-js";
 import { Store, createStore } from "solid-js/store";
 import { IChildren } from "../utils/types";
 import { ErrorCode, err, logErr } from "../utils/error";
@@ -10,7 +10,12 @@ import {
   SolverConstraint,
   TaskStage,
 } from "../declarations/tasks/tasks.did";
-import { newTasksActor, opt, optUnwrap } from "../utils/backend";
+import {
+  newTaskArchiveActor,
+  newTasksActor,
+  opt,
+  optUnwrap,
+} from "../utils/backend";
 import { debugStringify } from "../utils/encoding";
 
 export interface ISolution {
@@ -84,10 +89,8 @@ export interface ITasksStoreContext {
   fetchTaskIds: () => Promise<void>;
   tasks: Store<TasksStore>;
   fetchTasks: (ids?: TTaskId[]) => Promise<void>;
-  archivedTaskIds: Store<TaskIdsStore>;
-  fetchArchivedTaskIds: () => Promise<void>;
   archivedTasks: Store<ArchivedTasksStore>;
-  fetchArchivedTasks: (ids?: TTaskId[]) => Promise<void>;
+  fetchArchivedTasks: () => Promise<boolean>;
   createTask: (args: ICreateTaskArgs) => Promise<TTaskId>;
   editTask: (args: IEditTaskArgs) => Promise<void>;
   deleteTask: (taskId: TTaskId) => Promise<void>;
@@ -116,9 +119,10 @@ export function TasksStore(props: IChildren) {
     anonymousAgent,
     assertReadyToFetch,
     assertAuthorized,
-    assertWithProof,
+    assertWithProofs: assertWithProof,
     agent,
     profileProofCert,
+    reputationProofCert,
     profileProof,
     identity,
   } = useAuth();
@@ -126,7 +130,9 @@ export function TasksStore(props: IChildren) {
   const [tasks, setTasks] = createStore<TasksStore>();
   const [taskIds, setTaskIds] = createStore<TaskIdsStore>([]);
   const [archivedTasks, setArchivedTasks] = createStore<ArchivedTasksStore>();
-  const [archivedTaskIds, setArchivedTaskIds] = createStore<TaskIdsStore>([]);
+  const [taskArchiveActor, setTaskArchiveActor] = createSignal(
+    newTaskArchiveActor(anonymousAgent()!)
+  );
 
   const fetchTaskIds: ITasksStoreContext["fetchTaskIds"] = async () => {
     assertReadyToFetch();
@@ -196,82 +202,83 @@ export function TasksStore(props: IChildren) {
     }
   };
 
-  const fetchArchivedTaskIds: ITasksStoreContext["fetchArchivedTaskIds"] =
+  const fetchArchivedTasks: ITasksStoreContext["fetchArchivedTasks"] =
     async () => {
       assertReadyToFetch();
 
-      const tasksActor = newTasksActor(anonymousAgent()!);
-      const { ids } = await tasksActor.tasks__get_archived_task_ids({});
+      const tasksActor = taskArchiveActor();
 
-      setArchivedTaskIds(ids);
-    };
+      const { entries, pagination } =
+        await tasksActor.task_archive__get_archived_tasks({
+          pagination: {
+            reversed: false,
+            skip: Object.keys(archivedTasks).length,
+            take: 20,
+          },
+        });
 
-  const fetchArchivedTasks: ITasksStoreContext["fetchArchivedTasks"] = async (
-    ids
-  ) => {
-    assertReadyToFetch();
-
-    if (!ids) {
-      ids = archivedTaskIds;
-    }
-
-    const tasksActor = newTasksActor(anonymousAgent()!);
-    const { tasks } = await tasksActor.tasks__get_archived_tasks({ ids });
-
-    for (let i = 0; i < tasks.length; i++) {
-      const task = optUnwrap(tasks[i]);
-
-      if (!task) {
-        logErr(ErrorCode.UNREACHEABLE, `Archived task ${ids[i]} not found`);
-        continue;
+      let result = true;
+      if (pagination.left === 0) {
+        if (pagination.next.length === 1) {
+          setTaskArchiveActor(
+            newTaskArchiveActor(anonymousAgent()!, pagination.next[0])
+          );
+        } else {
+          result = false;
+        }
       }
 
-      if ("V0001" in task) {
-        const taskV1 = task.V0001;
+      for (let i = 0; i < entries.length; i++) {
+        const task = entries[i];
 
-        const solutions: [Principal, ISolution][] = taskV1.solutions.map(
-          ([solver, solution]) => {
-            const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
-            const hours = optUnwrap(solution.reward_hours.map(E8s.new));
-            const storypoints = optUnwrap(
-              solution.reward_storypoints.map(E8s.new)
-            );
+        if ("V0001" in task) {
+          const taskV1 = task.V0001;
 
-            const sol: ISolution = {
-              fields: solution.fields.map(optUnwrap),
-              attached_at: solution.attached_at,
-              rejected: solution.rejected,
-              evaluation,
-              reward_hours: hours,
-              reward_storypoints: storypoints,
-            };
+          const solutions: [Principal, ISolution][] = taskV1.solutions.map(
+            ([solver, solution]) => {
+              const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
+              const hours = optUnwrap(solution.reward_hours.map(E8s.new));
+              const storypoints = optUnwrap(
+                solution.reward_storypoints.map(E8s.new)
+              );
 
-            return [solver, sol];
-          }
+              const sol: ISolution = {
+                fields: solution.fields.map(optUnwrap),
+                attached_at: solution.attached_at,
+                rejected: solution.rejected,
+                evaluation,
+                reward_hours: hours,
+                reward_storypoints: storypoints,
+              };
+
+              return [solver, sol];
+            }
+          );
+
+          const itask: IArchivedTaskV1 = {
+            id: taskV1.id,
+            title: taskV1.title,
+            description: taskV1.description,
+            created_at: taskV1.created_at,
+            creator: taskV1.creator,
+            solver_constraints: taskV1.solver_constraints,
+            solution_fields: taskV1.solution_fields,
+            solutions,
+          };
+
+          setArchivedTasks(itask.id.toString(), itask);
+
+          continue;
+        }
+
+        logErr(
+          ErrorCode.UNKNOWN,
+          `Unknown archived task version received: ${debugStringify(task)}`
         );
-
-        const itask: IArchivedTaskV1 = {
-          id: taskV1.id,
-          title: taskV1.title,
-          description: taskV1.description,
-          created_at: taskV1.created_at,
-          creator: taskV1.creator,
-          solver_constraints: taskV1.solver_constraints,
-          solution_fields: taskV1.solution_fields,
-          solutions,
-        };
-
-        setArchivedTasks(itask.id.toString(), itask);
-
-        continue;
       }
 
-      logErr(
-        ErrorCode.UNKNOWN,
-        `Unknown archived task version received: ${debugStringify(task)}`
-      );
-    }
-  };
+      return result;
+    };
 
   const createTask: ITasksStoreContext["createTask"] = async (args) => {
     assertAuthorized();
@@ -293,7 +300,12 @@ export function TasksStore(props: IChildren) {
       hours_base: args.hours_base.toBigIntRaw(),
       storypoints_base: args.storypoints_base.toBigIntRaw(),
       storypoints_ext_budget: args.storypoints_ext_budget.toBigIntRaw(),
-      team_proof: { cert_raw: profileProofCert()!, profile_proof: [] },
+      team_proof: {
+        profile_proofs_cert_raw: profileProofCert()!,
+        profile_proof: [],
+        reputation_proof_cert_raw: reputationProofCert()!,
+        reputation_proof: [],
+      },
     });
 
     return id;
@@ -424,7 +436,14 @@ export function TasksStore(props: IChildren) {
     await tasksActor.tasks__solve_task({
       id: taskId,
       filled_in_fields_opt: filledInFields ? [filledInFields.map(opt)] : [],
-      proof: [{ cert_raw: profileProofCert()!, profile_proof: [] }],
+      proof: [
+        {
+          profile_proofs_cert_raw: profileProofCert()!,
+          profile_proof: [],
+          reputation_proof_cert_raw: reputationProofCert()!,
+          reputation_proof: [],
+        },
+      ],
     });
   };
 
@@ -457,7 +476,12 @@ export function TasksStore(props: IChildren) {
     const tasksActor = newTasksActor(anonymousAgent()!);
     await tasksActor.tasks__finish_solve_task({
       id: taskId,
-      proof: { cert_raw: profileProofCert()!, profile_proof: [] },
+      proof: {
+        profile_proofs_cert_raw: profileProofCert()!,
+        profile_proof: [],
+        reputation_proof_cert_raw: reputationProofCert()!,
+        reputation_proof: [],
+      },
     });
   };
 
@@ -468,8 +492,6 @@ export function TasksStore(props: IChildren) {
         fetchTasks,
         taskIds,
         fetchTaskIds,
-        archivedTaskIds,
-        fetchArchivedTaskIds,
         archivedTasks,
         fetchArchivedTasks,
         createTask,

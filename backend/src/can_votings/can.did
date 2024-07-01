@@ -13,13 +13,19 @@ type CastVoteResponse = record { decision_made : bool };
 type GetVotingEventsResponse = record { events : vec VotingEvent };
 type GetVotingsRequest = record { ids : vec VotingId };
 type GetVotingsResponse = record { votings : vec opt VotingExt };
-type ProfileProof = record {
+type ProfileProof = record { id : principal; is_team_member : bool };
+type Proof = record {
+  profile_proofs_cert_raw : blob;
+  profile_proof : opt ProfileProof;
+  reputation_proof : opt ReputationProof;
+  reputation_proof_cert_raw : blob;
+};
+type RepBalanceEntry = record { updated_at : nat64; balance : nat };
+type ReputationProof = record {
   id : principal;
-  reputation : nat;
-  is_team_member : bool;
+  reputation : RepBalanceEntry;
   reputation_total_supply : nat;
 };
-type Proof = record { profile_proof : opt ProfileProof; cert_raw : blob };
 type StartVotingRequest = record { kind : VotingKind; proof : Proof };
 type StartVotingResponse = record { id : VotingId };
 type SwapFrom = variant { Hour; Storypoint };

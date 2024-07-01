@@ -4,6 +4,8 @@ use std::{
 };
 
 use candid::{CandidType, Nat};
+use ic_stable_structures::{storable::Bound, Storable};
+use num_bigint::BigUint;
 use serde::Deserialize;
 
 /// Fixed-point (8 digits) decimals with primitive math (+-*/) implemented correctly
@@ -69,6 +71,12 @@ impl E8s {
 
     pub fn one() -> Self {
         Self(Nat::from(1_0000_0000u64))
+    }
+
+    pub fn sqrt(&self) -> Self {
+        let whole = self.0.clone() / Nat::from(1_0000_0000u64);
+
+        Self(Nat(whole.0.sqrt()) * Nat::from(1_0000_0000u64))
     }
 }
 
@@ -258,4 +266,34 @@ impl DivAssign for E8s {
     fn div_assign(&mut self, rhs: Self) {
         self.div_assign(&rhs)
     }
+}
+
+impl Storable for E8s {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        let mut buf = Vec::new();
+
+        let balance_buf = self.0 .0.to_bytes_le();
+
+        if balance_buf.len() > 32 {
+            unreachable!("Can't encode numbers that big");
+        }
+
+        buf.push(balance_buf.len() as u8);
+        buf.extend_from_slice(&balance_buf);
+
+        return std::borrow::Cow::Owned(buf);
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        let balance_len = bytes[0] as usize;
+        let mut balance_buf = vec![0u8; balance_len];
+        balance_buf.copy_from_slice(&bytes[1..]);
+
+        Self(Nat(BigUint::from_bytes_le(&balance_buf)))
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 33, // 32 bytes balance, 1 byte balance len
+        is_fixed_size: true,
+    };
 }

@@ -10,6 +10,7 @@ use ic_cdk::{
 use serde::Deserialize;
 use shared::{
     humans::{api::MintRewardsRequest, client::HumansCanisterClient},
+    reputation::{api::MintRepRequest, client::ReputationCanisterClient},
     task_archive::api::{GetArchivedTasksRequest, GetArchivedTasksResponse},
     tasks::{
         api::{
@@ -131,6 +132,14 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
         s.evaluate_task(req)
     });
 
+    let reputation_canister = ReputationCanisterClient::new(ENV_VARS.reputation_canister_id);
+    let mint_rep_req = MintRepRequest {
+        entries: rewards
+            .iter()
+            .map(|it| it.as_reputation_mint_entry())
+            .collect(),
+    };
+
     let humans_canister = HumansCanisterClient::new(ENV_VARS.humans_canister_id);
     let mint_rewards_req = MintRewardsRequest { rewards };
 
@@ -138,6 +147,14 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
     if let Err((code, msg)) = humans_canister.humans__mint_rewards(mint_rewards_req).await {
         trap(&format!(
             "FATAL!!! Unable to mint rewards: [{:?}] {}",
+            code, msg
+        ));
+    }
+
+    // TODO: add rescheduling
+    if let Err((code, msg)) = reputation_canister.reputation__mint(mint_rep_req).await {
+        trap(&format!(
+            "FATAL!!! Unable to mint reputation: [{:?}] {}",
             code, msg
         ));
     }
@@ -182,7 +199,7 @@ fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
 
 #[query]
 #[allow(non_snake_case)]
-fn tasks__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
+fn task_archive__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
             .expect("Unable to get tasks");

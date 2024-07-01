@@ -14,6 +14,7 @@ cargo fix --all --allow-dirty
 
 generate_did "humans"
 generate_did "votings"
+generate_did "reputation"
 generate_did "tasks"
 generate_did "task_archive"
 generate_did "bank"

@@ -6,10 +6,12 @@ members = [
     "backend/src/can_tasks",
     "backend/src/can_votings",
     "backend/src/can_task_archive",
+    "backend/src/can_reputation",
 ]
 resolver = "2"
 
 [workspace.dependencies]
+ic-stable-structures = "0.6"
 candid = "0.10"
 serde = "1.0"
 ic-cdk = "0.13"
@@ -25,3 +27,4 @@ async-trait = "0.1"
 lazy_static = "1.4"
 leb128 = "0.2"
 derivative = "2.2.0"
+num-bigint = "0.4"

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use candid::{CandidType, Deserialize, Nat, Principal};
 
-use crate::{btreemap, e8s::E8s, tasks::types::RewardEntry, TimestampNs};
+use crate::{e8s::E8s, TimestampNs};
 
 use super::{
     api::{
@@ -13,46 +13,18 @@ use super::{
         RefundRewardsResponse, RegisterRequest, RegisterResponse, SpendRewardsRequest,
         SpendRewardsResponse, UnemployRequest, UnemployResponse,
     },
-    types::{Profile, ProfileProof, PROOF_MARKER},
+    types::{Profile, ProfileProof, PROFILE_PROOFS_MARKER},
 };
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Default)]
 pub struct HumansState {
     pub profiles: BTreeMap<Principal, Profile>,
     pub total_hours_minted: E8s,
     pub total_storypoints_minted: E8s,
-    pub reputation_total_supply: E8s,
+    pub inited: bool,
 }
 
 impl HumansState {
-    pub fn new(sasha: Principal, now: TimestampNs) -> Self {
-        let sasha_profile = Profile::new(sasha, Some("Sasha Vtyurin".to_string()), None, now);
-
-        let mut state = Self {
-            profiles: btreemap! { sasha => sasha_profile },
-            total_hours_minted: E8s::zero(),
-            total_storypoints_minted: E8s::zero(),
-            reputation_total_supply: E8s::zero(),
-        };
-
-        state.employ(
-            EmployRequest {
-                candidate: sasha,
-                hours_a_week_commitment: E8s(Nat::from(40_0000_0000u64)),
-            },
-            now,
-        );
-        state.mint_rewards(MintRewardsRequest {
-            rewards: vec![RewardEntry {
-                solver: sasha,
-                reward_hours: E8s::one(),
-                reward_storypoints: E8s::one(),
-            }],
-        });
-
-        state
-    }
-
     pub fn register(
         &mut self,
         req: RegisterRequest,
@@ -156,12 +128,10 @@ impl HumansState {
         let proof = ProfileProof {
             id: caller,
             is_team_member: profile.is_employed(),
-            reputation: profile.reputation.clone(),
-            reputation_total_supply: self.reputation_total_supply.clone(),
         };
 
         GetProfileProofsResponse {
-            marker: PROOF_MARKER.to_string(),
+            marker: PROFILE_PROOFS_MARKER.to_string(),
             proof,
         }
     }
@@ -170,7 +140,31 @@ impl HumansState {
         GetTotalsResponse {
             hours: self.total_hours_minted.clone(),
             storypoints: self.total_storypoints_minted.clone(),
-            reputation: self.reputation_total_supply.clone(),
         }
+    }
+
+    pub fn init(&mut self, caller: Principal, now: TimestampNs) {
+        if self.inited {
+            panic!("Can't init twice");
+        }
+
+        self.inited = true;
+
+        self.register(
+            RegisterRequest {
+                name: Some("Fort Major Creator".to_string()),
+                avatar_src: None,
+            },
+            caller,
+            now,
+        );
+
+        self.employ(
+            EmployRequest {
+                candidate: caller,
+                hours_a_week_commitment: E8s(Nat::from(40_0000_0000u64)),
+            },
+            now,
+        );
     }
 }

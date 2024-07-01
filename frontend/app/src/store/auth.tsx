@@ -5,7 +5,7 @@ import {
   onMount,
   useContext,
 } from "solid-js";
-import { IChildren } from "../utils/types";
+import { IChildren, TTimestamp } from "../utils/types";
 import { ErrorCode, err, logInfo } from "../utils/error";
 import { Identity, Agent } from "@dfinity/agent";
 import { MsqClient, MsqIdentity } from "@fort-major/msq-client";
@@ -14,6 +14,7 @@ import {
   makeAgent,
   makeAnonymousAgent,
   newHumansActor,
+  newReputationActor,
   optUnwrap,
 } from "../utils/backend";
 import { E8s } from "../utils/math";
@@ -21,8 +22,12 @@ import { ITotals } from "./humans";
 
 export interface IProfileProof {
   id: Principal;
-  reputation: E8s;
   is_team_member: boolean;
+}
+
+export interface IReputationProof {
+  id: Principal;
+  reputation: { balance: E8s; updated_at: TTimestamp };
   reputation_total_supply: E8s;
 }
 
@@ -36,9 +41,11 @@ export interface IAuthStoreContext {
   isReadyToFetch: Accessor<boolean>;
   assertReadyToFetch: () => never | void;
   assertAuthorized: () => never | void;
-  assertWithProof: () => never | void;
+  assertWithProofs: () => never | void;
   profileProof: Accessor<IProfileProof | undefined>;
   profileProofCert: Accessor<Uint8Array | undefined>;
+  reputationProof: Accessor<IReputationProof | undefined>;
+  reputationProofCert: Accessor<Uint8Array | undefined>;
   editMyProfile: (name?: string, avatarSrc?: string) => Promise<void>;
   myBalance: Accessor<ITotals | undefined>;
   fetchMyBalance: () => Promise<void>;
@@ -67,6 +74,12 @@ export function AuthStore(props: IChildren) {
   const [profileProofCert, setProfileProofCert] = createSignal<
     Uint8Array | undefined
   >();
+  const [reputationProof, setReputationProof] = createSignal<
+    IReputationProof | undefined
+  >();
+  const [reputationProofCert, setReputationProofCert] = createSignal<
+    Uint8Array | undefined
+  >();
   const [myBalance, setMyBalance] = createSignal<ITotals | undefined>();
 
   onMount(async () => {
@@ -92,6 +105,24 @@ export function AuthStore(props: IChildren) {
       let a = await makeAgent(id as unknown as Identity);
 
       const humansActor = newHumansActor(a);
+      const reputationActor = newReputationActor(a);
+
+      // set initiator-only one-time init function
+      (window as any).init_once = () => {
+        return Promise.all([
+          humansActor.humans__init_once(),
+          reputationActor.reputation__init_once(),
+        ]);
+      };
+
+      const pRep = reputationActor.reputation__get_reputation_proof.withOptions(
+        {
+          onRawCertificatePolled(cert) {
+            setReputationProofCert(new Uint8Array(cert));
+          },
+        }
+      )({});
+
       const { profiles } = await humansActor.humans__get_profiles({
         ids: [id.getPrincipal()],
       });
@@ -115,23 +146,35 @@ export function AuthStore(props: IChildren) {
 
       logInfo("Login successful");
 
-      const { proof } =
-        await humansActor.humans__get_profile_proofs.withOptions({
-          onRawCertificatePolled(cert) {
-            setProfileProofCert(new Uint8Array(cert));
-          },
-        })({});
+      const pProf = humansActor.humans__get_profile_proofs.withOptions({
+        onRawCertificatePolled(cert) {
+          setProfileProofCert(new Uint8Array(cert));
+        },
+      })({});
 
-      const proofExt: IProfileProof = {
-        id: proof.id,
-        is_team_member: proof.is_team_member,
-        reputation: new E8s(proof.reputation),
-        reputation_total_supply: new E8s(proof.reputation_total_supply),
+      const [{ proof: reputationProof }, { proof: profileProof }] =
+        await Promise.all([pRep, pProf]);
+
+      const profileProofExt: IProfileProof = {
+        id: profileProof.id,
+        is_team_member: profileProof.is_team_member,
       };
 
-      logInfo("Profile proof fetched successfully");
+      const reputationProofExt: IReputationProof = {
+        id: reputationProof.id,
+        reputation: {
+          balance: E8s.new(reputationProof.reputation.balance),
+          updated_at: reputationProof.reputation.updated_at,
+        },
+        reputation_total_supply: E8s.new(
+          reputationProof.reputation_total_supply
+        ),
+      };
 
-      setProfileProof(proofExt);
+      logInfo("Proofs fetched successfully");
+
+      setProfileProof(profileProofExt);
+      setReputationProof(reputationProofExt);
 
       return true;
     }
@@ -165,7 +208,7 @@ export function AuthStore(props: IChildren) {
   };
 
   const fetchMyBalance = async () => {
-    assertWithProof();
+    assertWithProofs();
 
     const humansActor = newHumansActor(agent()!);
 
@@ -205,9 +248,14 @@ export function AuthStore(props: IChildren) {
     }
   };
 
-  const assertWithProof = () => {
-    if (!profileProof() || !profileProofCert()) {
-      err(ErrorCode.UNREACHEABLE, "Profile proof is not fetched");
+  const assertWithProofs = () => {
+    if (
+      !profileProof() ||
+      !profileProofCert() ||
+      !reputationProof() ||
+      !reputationProofCert()
+    ) {
+      err(ErrorCode.UNREACHEABLE, "Proofs are not fetched");
     }
   };
 
@@ -223,9 +271,11 @@ export function AuthStore(props: IChildren) {
         isReadyToFetch,
         assertReadyToFetch,
         assertAuthorized,
-        assertWithProof,
+        assertWithProofs: assertWithProofs,
         profileProof,
         profileProofCert,
+        reputationProof,
+        reputationProofCert,
         editMyProfile,
         myBalance,
         fetchMyBalance,
