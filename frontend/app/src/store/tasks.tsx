@@ -25,15 +25,15 @@ export interface ISolution {
 export interface ITask {
   id: TTaskId;
   title: string;
+  description: string;
+  stage: TaskStage;
+  created_at: bigint;
   creator: Principal;
   storypoints_base: E8s;
   days_to_solve: bigint;
   hours_base: E8s;
-  description: string;
-  created_at: bigint;
-  stage: TaskStage;
-  solvers: Array<Principal>;
   storypoints_ext_budget: E8s;
+  solvers: Array<Principal>;
   solution_fields: Array<SolutionField>;
   solver_constraints: Array<SolverConstraint>;
   solutions: Array<[Principal, ISolution]>;
