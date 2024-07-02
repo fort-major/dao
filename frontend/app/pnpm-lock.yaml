@@ -44,6 +44,9 @@ dependencies:
   solid-markdown:
     specifier: ^2.0.13
     version: 2.0.13(solid-js@1.8.17)
+  solid-textarea-autosize:
+    specifier: ^0.0.5
+    version: 0.0.5(solid-js@1.8.17)
   solid-toast:
     specifier: ^0.5.0
     version: 0.5.0(solid-js@1.8.17)
@@ -7427,6 +7430,14 @@ packages:
       '@babel/types': 7.23.6
       solid-js: 1.8.17
     dev: true
+
+  /solid-textarea-autosize@0.0.5(solid-js@1.8.17):
+    resolution: {integrity: sha512-le/X+VLr4G3PEE/gZuKBDNqh5e9OoNiIYIN0fSebAuOABxJIY/Eh/9rjDEMB8DbPdeD/wHIVk4Wd9zBvFFIt1A==}
+    peerDependencies:
+      solid-js: '>=1.0.0'
+    dependencies:
+      solid-js: 1.8.17
+    dev: false
 
   /solid-toast@0.5.0(solid-js@1.8.17):
     resolution: {integrity: sha512-t770JakjyS2P9b8Qa1zMLOD51KYKWXbTAyJePVUoYex5c5FH5S/HtUBUbZAWFcqRCKmAE8KhyIiCvDZA8bOnxQ==}

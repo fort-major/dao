@@ -2,6 +2,7 @@ const tailwindMdBase = require("@geoffcodesthings/tailwind-md-base");
 const defaultTheme = require("tailwindcss/resolveConfig")(
   require("tailwindcss/defaultConfig")
 ).theme;
+const { COLORS } = require("./src/utils/colors");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -41,6 +42,9 @@ module.exports = {
         primary: "DM Sans",
         title: "Unique",
       },
+      fontSize: {
+        md: "1rem",
+      },
       width: {
         128: "32rem",
         256: "64rem",
@@ -49,27 +53,27 @@ module.exports = {
         wrapperClass: "md-content",
 
         h1: {
-          fontSize: defaultTheme.fontSize["2xl"],
+          fontSize: "2rem",
         },
 
         h2: {
-          fontSize: defaultTheme.fontSize["xl"],
+          fontSize: "1.8rem",
         },
 
         h3: {
-          fontSize: defaultTheme.fontSize["lg"],
+          fontSize: "1.5rem",
         },
 
         h4: {
-          fontSize: defaultTheme.fontSize.base,
+          fontSize: "1.2rem",
         },
 
         h5: {
-          fontSize: defaultTheme.fontSize.base,
+          fontSize: "1rem",
         },
 
         h6: {
-          fontSize: defaultTheme.fontSize.base,
+          fontSize: "0.8rem",
         },
 
         ul: {
@@ -77,17 +81,33 @@ module.exports = {
         },
 
         ol: {
-          listStyleType: "none",
           listStylePosition: "inside",
         },
 
-        "ol > li": {
-          display: "block",
+        strong: {
+          fontWeight: "bold",
         },
 
-        "ol > li > p": {
-          listStyleType: "decimal",
-          display: "list-item",
+        em: {
+          textDecoration: "underline",
+        },
+
+        "p > code": {
+          backgroundColor: COLORS.gray[190],
+          borderRadius: "0.2rem",
+          fontWeight: 600,
+          color: COLORS.black,
+        },
+        "pre > code": {
+          backgroundColor: "transparent",
+          padding: 0,
+          fontWeight: 500,
+          color: COLORS.black,
+        },
+        pre: {
+          backgroundColor: COLORS.gray[190],
+          borderRadius: "0.2rem",
+          padding: "1px .5rem",
         },
       },
     },

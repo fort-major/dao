@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
-    "baseUrl": "node_modules",
+    "baseUrl": "./",
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "node",
@@ -11,7 +11,12 @@
     "jsxImportSource": "solid-js",
     "types": ["node", "vite/client"],
     "paths": {
-        "@dfinity/agent": ["@fort-major/agent-js-fork"]
+        "@dfinity/agent": ["./node_modules/@fort-major/agent-js-fork"],
+        "@components/*": ["./src/components/*"],
+        "@utils/*": ["./src/utils/*"],
+        "@store/*": ["./src/store/*"],
+        "@pages/*": ["./src/pages/*"],
+        "@/*": ["./src/*"],
     }
   }
 }
