@@ -221,10 +221,12 @@ export function AuthStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, "Can't happen...");
     }
 
+    const repProof = reputationProof()!;
+
     setMyBalance({
       hours: E8s.new(myProfile.hours_balance),
       storypoints: E8s.new(myProfile.storypoints_balance),
-      reputation: E8s.new(myProfile.reputation),
+      reputation: repProof.reputation.balance,
     });
   };
 

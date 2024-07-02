@@ -9,7 +9,7 @@ use shared::reputation::api::{
     MintRepResponse,
 };
 use shared::reputation::state::ReputationState;
-use shared::votings::types::ONE_WEEK_NS;
+use shared::votings::types::ONE_MONTH_NS;
 use shared::Guard;
 use std::cell::RefCell;
 use std::time::Duration;
@@ -71,12 +71,12 @@ fn reputation__init_once() {
 
 #[init]
 fn init_hook() {
-    set_timer(Duration::from_nanos(ONE_WEEK_NS), run_decay_round);
+    set_timer(Duration::from_nanos(ONE_MONTH_NS), run_decay_round);
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    set_timer(Duration::from_nanos(ONE_WEEK_NS), run_decay_round);
+    set_timer(Duration::from_nanos(ONE_MONTH_NS), run_decay_round);
 }
 
 fn run_decay_round() {
@@ -88,7 +88,7 @@ fn run_decay_round() {
         set_timer(Duration::from_millis(0), run_decay_round);
     } else {
         // reschedule next week, if the decay is complete
-        set_timer(Duration::from_nanos(ONE_WEEK_NS), run_decay_round);
+        set_timer(Duration::from_nanos(ONE_MONTH_NS), run_decay_round);
     }
 }
 

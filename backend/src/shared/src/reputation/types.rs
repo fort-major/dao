@@ -32,17 +32,22 @@ impl RepBalanceEntry {
         return now - self.updated_at >= ONE_WEEK_NS;
     }
 
-    // returns true if the entry should be deleted (max decay reached)
+    // returns true if the entry should be deleted (the balance decayed completely)
     pub fn decay(&mut self) -> (bool, E8s) {
-        if self.balance <= E8s::one() {
-            return (true, self.balance.clone());
+        let mut total_decay_amount = E8s::zero();
+
+        for _ in 0..4 {
+            let decay_amount = self.balance.sqrt();
+            total_decay_amount += &decay_amount;
+
+            self.balance -= &decay_amount;
+
+            if self.balance == E8s::zero() {
+                return (true, total_decay_amount);
+            }
         }
 
-        let decay_amount = self.balance.sqrt();
-
-        self.balance -= &decay_amount;
-
-        return (false, decay_amount);
+        return (false, total_decay_amount);
     }
 }
 
