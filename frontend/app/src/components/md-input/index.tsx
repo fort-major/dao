@@ -294,7 +294,7 @@ export function MdInput(props: IMdInputProps) {
   };
 
   return (
-    <div class="flex flex-col shadow-md">
+    <div class="flex flex-col shadow-sm">
       <MdTools
         onPreview={handleOnPreview}
         onBold={handleOnBold}

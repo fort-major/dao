@@ -1,3 +1,4 @@
+import { TextInput } from "@components/text-input";
 import { VotingInput } from "@components/voting-input";
 import { VotingProgressBar } from "@components/voting-progress-bar";
 import { VotingStatus } from "@components/voting-status";
@@ -13,20 +14,7 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <VotingWidget
-          id="1"
-          optionIdx={0}
-          createdAt={n}
-          durationNs={ONE_MIN_NS * 2n}
-          totalSupply={E8s.fromBigIntBase(1000n)}
-          totalVoted={E8s.fromBigIntBase(150n)}
-          quorum={E8s.fromBigIntBase(200n)}
-          finishEarly={E8s.fromBigIntBase(800n)}
-          myRep={E8s.fromBigIntBase(40n)}
-          myVote={E8s.f0_4()}
-          stage={{ InProgress: null }}
-          kind="evaluation"
-        />
+        <TextInput validations={[{ url: "Github" }]} />
       </section>
     </main>
   );
