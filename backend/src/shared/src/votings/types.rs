@@ -49,7 +49,7 @@ impl Voting {
                 ONE_WEEK_NS,
                 &total_supply * E8s::f0_25(),
                 E8s::f0_5(),
-                total_supply * E8s::f0_75(),
+                &total_supply * E8s::f0_75(),
                 1,
             ),
             VotingKind::EvaluateTask {
@@ -59,7 +59,7 @@ impl Voting {
                 ONE_WEEK_NS,
                 &total_supply * E8s::f0_2(),
                 E8s::f0_5(),
-                total_supply * E8s::f0_67(),
+                &total_supply * E8s::f0_67(),
                 solutions.len() as u32,
             ),
             VotingKind::BankSetExchangeRate {
@@ -70,7 +70,7 @@ impl Voting {
                 ONE_WEEK_NS,
                 &total_supply * E8s::f0_33(),
                 E8s::f0_67(),
-                total_supply * E8s::f0_67(),
+                &total_supply * E8s::f0_67(),
                 1,
             ),
             VotingKind::HumansEmploy {
@@ -80,14 +80,14 @@ impl Voting {
                 ONE_WEEK_NS,
                 &total_supply * E8s::f0_5(),
                 E8s::f0_75(),
-                total_supply * E8s::f0_75(),
+                &total_supply * E8s::f0_75(),
                 1,
             ),
             VotingKind::HumansUnemploy { team_member: _ } => (
                 ONE_WEEK_NS * 2,
                 &total_supply * E8s::f0_5(),
                 E8s::f0_75(),
-                total_supply * E8s::f0_75(),
+                &total_supply * E8s::f0_75(),
                 1,
             ),
         };
@@ -96,6 +96,7 @@ impl Voting {
 
         let base = VotingBase::new(
             duration_ns,
+            total_supply,
             quorum,
             consensus_normalized,
             finish_early,
@@ -186,6 +187,7 @@ impl Voting {
             creator: self.base.creator,
             created_at: self.base.created_at,
             duration_ns: self.base.duration_ns,
+            total_supply: self.base.total_supply.clone(),
             quorum: self.base.quorum.clone(),
             consensus_normalized: self.base.consensus_normalized.clone(),
             finish_early: self.base.finish_early.clone(),
@@ -367,6 +369,7 @@ pub struct VotingBase {
     pub creator: Principal,
     pub created_at: TimestampNs,
     pub duration_ns: DurationNs,
+    pub total_supply: E8s,
     pub quorum: E8s,
     pub consensus_normalized: E8s,
     pub finish_early: E8s,
@@ -376,6 +379,7 @@ pub struct VotingBase {
 impl VotingBase {
     pub fn new(
         duration_ns: DurationNs,
+        total_supply: E8s,
         quorum: E8s,
         consensus_normalized: E8s,
         finish_early: E8s,
@@ -387,6 +391,7 @@ impl VotingBase {
             creator: caller,
             created_at: now,
             duration_ns,
+            total_supply,
             quorum,
             consensus_normalized,
             finish_early,
@@ -507,6 +512,7 @@ pub struct VotingExt {
     pub creator: Principal,
     pub created_at: TimestampNs,
     pub duration_ns: DurationNs,
+    pub total_supply: E8s,
     pub quorum: E8s,
     pub consensus_normalized: E8s,
     pub finish_early: E8s,

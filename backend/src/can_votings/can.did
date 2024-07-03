@@ -64,6 +64,7 @@ type VotingExt = record {
   quorum : nat;
   duration_ns : nat64;
   votes_per_option : vec record { nat; opt Vote };
+  total_supply : nat;
 };
 type VotingId = variant {
   HumansEmploy : principal;

@@ -21,5 +21,6 @@ export const COLORS = {
   darkBlue: "#5057FF",
   pink: "#FF41FF",
   orange: "#FF7425",
+  yellow: "#FFCA43",
   errorRed: "#FC2D2D",
 };

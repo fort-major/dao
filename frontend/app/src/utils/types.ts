@@ -18,4 +18,8 @@ export type TE8s = bigint;
 export type TTimestamp = bigint;
 export type TMarkdown = string;
 
-export const ONE_WEEK_NS = 1_000_000_000n * 60n * 60n * 24n * 7n;
+export const ONE_SEC_NS = 1_000_000_000n;
+export const ONE_MIN_NS = ONE_SEC_NS * 60n;
+export const ONE_HOUR_NS = ONE_MIN_NS * 60n;
+export const ONE_DAY_NS = ONE_HOUR_NS * 24n;
+export const ONE_WEEK_NS = ONE_DAY_NS * 7n;

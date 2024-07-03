@@ -47,6 +47,7 @@ export interface IVoting {
   kind: TVotingKind;
   created_at: TTimestamp;
   stage: VotingStage;
+  total_supply: E8s;
   quorum: E8s;
   consensusNormalized: E8s;
   finish_early: E8s;
@@ -174,6 +175,7 @@ export function VotingsStore(props: IChildren) {
         stage: voting.stage,
         duration_ns: voting.duration_ns,
         votesPerOption,
+        total_supply: E8s.new(voting.total_supply),
         quorum: E8s.new(voting.quorum),
         consensusNormalized: E8s.new(voting.consensus_normalized),
         finish_early: E8s.new(voting.finish_early),
