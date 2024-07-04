@@ -1,3 +1,4 @@
+import { ValidationError } from "@components/validation-error";
 import { eventHandler } from "@utils/security";
 import { Show, createSignal, onMount } from "solid-js";
 
@@ -52,13 +53,8 @@ export function TextInput(props: ITextInputProps) {
         placeholder={props.placeholder ?? "Type here"}
         value={value()}
         onChange={handleChange}
-        onInput={handleChange}
       />
-      <Show when={error()}>
-        <span class="flex px-2 font-primary font-thin text-xs text-errorRed">
-          {error()}
-        </span>
-      </Show>
+      <ValidationError error={error()} />
     </div>
   );
 }

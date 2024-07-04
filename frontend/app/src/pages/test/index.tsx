@@ -1,3 +1,5 @@
+import { QtyInput } from "@components/qty-input";
+import { Select } from "@components/select";
 import { TextInput } from "@components/text-input";
 import { VotingInput } from "@components/voting-input";
 import { VotingProgressBar } from "@components/voting-progress-bar";
@@ -14,7 +16,10 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <TextInput validations={[{ url: "Github" }]} />
+        <QtyInput
+          symbol="FMJ"
+          validations={[{ min: E8s.f0_1() }, { max: E8s.f0_2() }]}
+        />
       </section>
     </main>
   );

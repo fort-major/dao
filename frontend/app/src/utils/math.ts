@@ -1,4 +1,4 @@
-import { tokensToStr } from "./encoding";
+import { strToTokens, tokensToStr } from "./encoding";
 import { ErrorCode, err } from "./error";
 
 export class E8s {
@@ -110,6 +110,10 @@ export class E8s {
 
   public toString() {
     return tokensToStr(this.val, 8);
+  }
+
+  public static fromString(s: string): E8s {
+    return E8s.new(strToTokens(s, 8));
   }
 
   public toPrecision(digits: number) {
