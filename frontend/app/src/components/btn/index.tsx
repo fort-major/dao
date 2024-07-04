@@ -5,6 +5,7 @@ import { EIconKind, Icon } from "../icon";
 export interface IBtnProps {
   text?: string;
   icon?: EIconKind;
+  iconColor?: string;
   disabled?: boolean;
   onClick?: () => void;
 }
@@ -20,7 +21,7 @@ export function Btn(props: IBtnProps) {
     >
       <p class="font-primary font-medium text-md select-none">{props.text}</p>
       <Show when={props.icon}>
-        <Icon kind={props.icon!} />
+        <Icon kind={props.icon!} color={props.iconColor} />
       </Show>
     </button>
   );

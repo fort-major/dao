@@ -111,11 +111,12 @@ export function tokensToStr(
   qty: bigint,
   decimals: number,
   floor: number | undefined = undefined,
-  insertQuotes: boolean = false
+  insertQuotes: boolean = false,
+  allowEmptyTail: boolean = false
 ): string {
   // 0.0 -> 0
   if (qty === BigInt(0)) {
-    return "0";
+    return allowEmptyTail ? "0.0" : "0";
   }
 
   // todo: Math.pow() to bitshift
@@ -136,7 +137,7 @@ export function tokensToStr(
 
   // 1,000.0 -> 1,000
   if (tail === BigInt(0)) {
-    return headFormatted;
+    return allowEmptyTail ? headFormatted + ".0" : headFormatted;
   }
 
   // 1'000.10 -> 1'000.00000010

@@ -116,8 +116,8 @@ export class E8s {
     return E8s.new(strToTokens(s, 8));
   }
 
-  public toPrecision(digits: number) {
-    return tokensToStr(this.val, 8, digits);
+  public toPrecision(digits: number, allowEmptyTail: boolean = false) {
+    return tokensToStr(this.val, 8, digits, false, allowEmptyTail);
   }
 
   public toBool() {
