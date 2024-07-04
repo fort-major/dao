@@ -8,7 +8,7 @@ use crate::{e8s::E8s, TimestampNs};
 use super::{
     api::{
         GetBalanceRequest, GetBalanceResponse, GetRepProofRequest, GetRepProofResponse,
-        MintRepRequest, MintRepResponse,
+        GetTotalSupplyRequest, GetTotalSupplyResponse, MintRepRequest, MintRepResponse,
     },
     types::{RepBalanceEntry, ReputationProof, REPUTATION_PROOF_MARKER},
 };
@@ -129,6 +129,12 @@ impl ReputationState {
 
         GetBalanceResponse {
             balances: entries.collect(),
+        }
+    }
+
+    pub fn get_total_supply(&self, _req: GetTotalSupplyRequest) -> GetTotalSupplyResponse {
+        GetTotalSupplyResponse {
+            total_supply: self.total_supply.get().clone(),
         }
     }
 

@@ -1,13 +1,12 @@
 import { Btn } from "@components/btn";
-import { E8sWidget } from "@components/e8s-widget";
+import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { EIconKind, Icon } from "@components/icon";
 import { QtyInput } from "@components/qty-input";
-import { useAuth } from "@store/auth";
 import { TPairStr } from "@store/bank";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
 import { encodeVotingId, strToPair, unwrapPair } from "@utils/encoding";
-import { err, ErrorCode, logInfo } from "@utils/error";
+import { logInfo } from "@utils/error";
 import { E8s } from "@utils/math";
 import { createMemo, createSignal, Match, Show, Switch } from "solid-js";
 
@@ -73,12 +72,9 @@ export function ExchangeRate(props: IExchangeRateProps) {
       <Switch>
         <Match when={!edited()}>
           <div class="flex items-center gap-1">
-            <E8sWidget
-              value={E8s.one()}
-              kind={pair().from as "Storypoints" | "Hours"}
-            />
+            <E8sWidget value={E8s.one()} kind={pair().from as EE8sKind} />
             <p>=</p>
-            <E8sWidget value={props.rate} kind={pair().into as "FMJ" | "ICP"} />
+            <E8sWidget value={props.rate} kind={pair().into as EE8sKind} />
           </div>
           <Show when={props.editable && !proposing()}>
             <Icon
@@ -91,15 +87,12 @@ export function ExchangeRate(props: IExchangeRateProps) {
         </Match>
         <Match when={edited()}>
           <div class="flex items-center gap-1">
-            <E8sWidget
-              value={E8s.one()}
-              kind={pair().from as "Storypoints" | "Hours"}
-            />
+            <E8sWidget value={E8s.one()} kind={pair().from as EE8sKind} />
             <p>=</p>
             <QtyInput
               defaultValue={props.rate}
               onChange={handleEdit}
-              symbol={pair().into}
+              symbol={pair().into as EE8sKind}
             />
             <Btn
               icon={EIconKind.CheckRect}

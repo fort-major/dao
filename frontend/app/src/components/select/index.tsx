@@ -5,12 +5,13 @@ import { createSignal, For, Show } from "solid-js";
 
 export interface ISelectProps {
   values: string[];
+  defaultValue?: string;
   onChange?: (v: string) => void;
 }
 
 export function Select(props: ISelectProps) {
   const [expanded, setExpanded] = createSignal(false);
-  const [value, setValue] = createSignal(props.values[0]);
+  const [value, setValue] = createSignal(props.defaultValue ?? props.values[0]);
 
   const handleValueClick = eventHandler(() => {
     setExpanded((e) => !e);

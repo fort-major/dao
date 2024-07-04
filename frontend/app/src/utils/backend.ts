@@ -13,6 +13,7 @@ import {
   _SERVICE as FmjActor,
   idlFactory as FmjIdlFactory,
 } from "../declarations/fmj/fmj.did";
+export type { _SERVICE as FmjActor } from "../declarations/fmj/fmj.did";
 import {
   _SERVICE as HumansActor,
   idlFactory as HumansIdlFactory,
@@ -76,7 +77,7 @@ export function newTaskArchiveActor(
     import.meta.env.VITE_TASKS_CANISTER_ID
   )
 ): TaskArchiveActor {
-  return Actor.createActor(TasksIdlFactory, {
+  return Actor.createActor(TaskArchiveIdlFactory, {
     canisterId,
     agent,
   });

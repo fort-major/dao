@@ -3,15 +3,22 @@ import { Store, createStore } from "solid-js/store";
 import { IChildren, TTimestamp } from "../utils/types";
 import { ErrorCode, err } from "../utils/error";
 import { useAuth } from "./auth";
-import { newBankActor } from "../utils/backend";
+import {
+  FmjActor,
+  newBankActor,
+  newFmjActor,
+  newIcpActor,
+} from "../utils/backend";
 import { E8s } from "../utils/math";
 import {
   Principal,
+  debugStringify,
   pairToStr,
   strToPair,
   unwrapPair,
   wrapPair,
 } from "../utils/encoding";
+import { nowNs } from "@components/countdown";
 
 export interface IPair {
   from: string;
@@ -32,6 +39,11 @@ export interface IBankStoreContext {
   exchangeRates: Store<ExchangeRatesStore>;
   fetchExchangeRates: () => Promise<void>;
   swapRewards: (pairStr: TPairStr, amount: E8s) => Promise<ISwapResponse>;
+  transfer: (
+    token: "ICP" | "FMJ",
+    amount: E8s,
+    to: Principal
+  ) => Promise<bigint>;
 }
 
 const BankContext = createContext<IBankStoreContext>();
@@ -93,12 +105,40 @@ export function BankStore(props: IChildren) {
     return r;
   };
 
+  const transfer: IBankStoreContext["transfer"] = async (token, qty, to) => {
+    assertAuthorized();
+
+    let actor: FmjActor;
+
+    if (token === "ICP") {
+      actor = newIcpActor(agent()!);
+    } else {
+      actor = newFmjActor(agent()!);
+    }
+
+    const result = await actor.icrc1_transfer({
+      to: { owner: to, subaccount: [] },
+      amount: qty.toBigIntRaw(),
+      fee: [],
+      memo: [],
+      from_subaccount: [],
+      created_at_time: [nowNs()],
+    });
+
+    if ("Err" in result) {
+      err(ErrorCode.ICRC1, debugStringify(result.Err));
+    }
+
+    return result.Ok;
+  };
+
   return (
     <BankContext.Provider
       value={{
         exchangeRates,
         fetchExchangeRates,
         swapRewards,
+        transfer,
       }}
     >
       {props.children}

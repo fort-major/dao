@@ -9,20 +9,20 @@ import { useAuth } from "../../store/auth";
 export function HumansPage() {
   const { fetchProfileIds, fetchProfiles, profiles, totals, fetchTotals } =
     useHumans();
-  const { profileProof, isReadyToFetch } = useAuth();
+  const { profileProof, reputationProof, isReadyToFetch } = useAuth();
 
   const hasReputation = () => {
-    const proof = profileProof();
+    const proof = reputationProof();
 
     if (!proof) return false;
 
-    return proof.reputation.gt(E8s.zero());
+    return proof.reputation.balance.gt(E8s.zero());
   };
 
   createEffect(async () => {
     if (!isReadyToFetch()) return;
 
-    if (totals()[0].eq(E8s.one())) {
+    if (totals().reputation.eq(E8s.one())) {
       fetchTotals();
     }
 

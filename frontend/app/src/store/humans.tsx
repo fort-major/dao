@@ -4,8 +4,20 @@ import { IChildren, TPrincipalStr } from "../utils/types";
 import { ErrorCode, err, logErr } from "../utils/error";
 import { Principal } from "@dfinity/principal";
 import { useAuth } from "./auth";
-import { newHumansActor, optUnwrap } from "../utils/backend";
+import {
+  newHumansActor,
+  newReputationActor,
+  optUnwrap,
+} from "../utils/backend";
 import { E8s } from "../utils/math";
+import {
+  GetProfilesResponse,
+  GetTotalsResponse,
+} from "@/declarations/humans/humans.did";
+import {
+  GetBalanceResponse,
+  GetTotalSupplyResponse,
+} from "@/declarations/reputation/reputation.did";
 
 export interface IEmployment {
   hours_a_week_commitment: E8s;
@@ -71,12 +83,21 @@ export function HumanStore(props: IChildren) {
     assertReadyToFetch();
 
     const humansActor = newHumansActor(anonymousAgent()!);
-    const resp = await humansActor.humans__get_totals({});
+    const reputationActor = newReputationActor(anonymousAgent()!);
+
+    const p = [
+      humansActor.humans__get_totals({}),
+      reputationActor.reputation__get_total_supply({}),
+    ];
+
+    const [{ hours, storypoints }, { total_supply }] = (await Promise.all(
+      p
+    )) as [GetTotalsResponse, GetTotalSupplyResponse];
 
     setTotals({
-      hours: E8s.new(resp.hours),
-      storypoints: E8s.new(resp.storypoints),
-      reputation: E8s.new(resp.reputation),
+      hours: E8s.new(hours),
+      storypoints: E8s.new(storypoints),
+      reputation: E8s.new(total_supply),
     });
   };
 
@@ -106,7 +127,19 @@ export function HumanStore(props: IChildren) {
     );
 
     const humansActor = newHumansActor(anonymousAgent()!);
-    const { profiles } = await humansActor.humans__get_profiles({ ids });
+    const reputationActor = newReputationActor(anonymousAgent()!);
+
+    const p = [
+      humansActor.humans__get_profiles({ ids }),
+      reputationActor.reputation__get_balance({
+        accounts: ids,
+      }),
+    ];
+
+    const [{ profiles }, { balances }] = (await Promise.all(p)) as [
+      GetProfilesResponse,
+      GetBalanceResponse
+    ];
 
     for (let i = 0; i < profiles.length; i++) {
       const p = profiles[i][0];
@@ -141,7 +174,7 @@ export function HumanStore(props: IChildren) {
         storypoints_balance: E8s.new(p.storypoints_balance),
         earned_hours: E8s.new(p.earned_hours),
         earned_storypoints: E8s.new(p.earned_storypoints),
-        reputation: E8s.new(p.reputation),
+        reputation: E8s.new(balances[i].balance),
       };
 
       setProfiles(id, profile);

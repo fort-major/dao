@@ -1,6 +1,7 @@
 type GetBalanceRequest = record { accounts : vec principal };
 type GetBalanceResponse = record { balances : vec RepBalanceEntry };
 type GetRepProofResponse = record { marker : text; proof : ReputationProof };
+type GetTotalSupplyResponse = record { total_supply : nat };
 type MintRepRequest = record { entries : vec record { principal; nat } };
 type RepBalanceEntry = record { updated_at : nat64; balance : nat };
 type ReputationProof = record {
@@ -11,6 +12,7 @@ type ReputationProof = record {
 service : () -> {
   reputation__get_balance : (GetBalanceRequest) -> (GetBalanceResponse) query;
   reputation__get_reputation_proof : (record {}) -> (GetRepProofResponse);
+  reputation__get_total_supply : (record {}) -> (GetTotalSupplyResponse) query;
   reputation__init_once : () -> ();
   reputation__mint : (MintRepRequest) -> (record {});
 }

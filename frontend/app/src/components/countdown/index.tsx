@@ -20,7 +20,7 @@ export interface ICountdownProps {
   elapsedText: string;
 }
 
-function nowNs() {
+export function nowNs() {
   return BigInt(Date.now()) * 1000000n;
 }
 

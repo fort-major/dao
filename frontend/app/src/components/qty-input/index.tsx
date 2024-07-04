@@ -1,14 +1,16 @@
+import { EE8sKind } from "@components/e8s-widget";
 import { ValidationError } from "@components/validation-error";
 import { E8s } from "@utils/math";
 import { eventHandler } from "@utils/security";
-import { createSignal, Show } from "solid-js";
+import { createSignal, onMount, Setter, Show } from "solid-js";
 
 export type TQtyInputValidation = { min: E8s } | { max: E8s };
 
 export interface IQtyInputProps {
-  symbol: string;
+  symbol: EE8sKind;
   defaultValue?: E8s;
   validations?: TQtyInputValidation[];
+  setter?: { set?: (v: string) => void };
   onChange?: (v: E8s | undefined) => void;
 }
 
@@ -16,35 +18,44 @@ export function QtyInput(props: IQtyInputProps) {
   const [value, setValue] = createSignal(props.defaultValue);
   const [error, setError] = createSignal<string | undefined>();
 
+  onMount(() => {
+    if (props.setter) {
+      props.setter.set = processChange;
+    }
+  });
+
   const handleChange = eventHandler(
     (e: Event & { target: HTMLInputElement }) => {
       const v = e.target.value;
+    }
+  );
 
-      if (v === "") {
-        setValue(undefined);
+  const processChange = (v: string) => {
+    if (v === "") {
+      setValue(undefined);
+      setError(undefined);
+      props.onChange?.(undefined);
+      return;
+    }
+
+    try {
+      const ve = E8s.fromString(v);
+      const er = isValid(ve, props.validations);
+
+      if (er) {
+        setError(er);
         props.onChange?.(undefined);
         return;
       }
 
-      try {
-        const ve = E8s.fromString(v);
-        const er = isValid(ve, props.validations);
-
-        if (er) {
-          setError(er);
-          props.onChange?.(undefined);
-          return;
-        }
-
-        setError(undefined);
-        setValue(ve);
-        props.onChange?.(ve);
-      } catch (_) {
-        setError("Invalid number");
-        props.onChange?.(undefined);
-      }
+      setError(undefined);
+      setValue(ve);
+      props.onChange?.(ve);
+    } catch (_) {
+      setError("Invalid number");
+      props.onChange?.(undefined);
     }
-  );
+  };
 
   return (
     <div class="flex flex-col gap-1 min-w-52">

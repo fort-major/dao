@@ -2,8 +2,8 @@ use candid::Principal;
 use ic_cdk::{api::call::CallResult, call};
 
 use super::api::{
-    GetBalanceRequest, GetBalanceResponse, GetRepProofRequest, GetRepProofResponse, MintRepRequest,
-    MintRepResponse,
+    GetBalanceRequest, GetBalanceResponse, GetRepProofRequest, GetRepProofResponse,
+    GetTotalSupplyRequest, GetTotalSupplyResponse, MintRepRequest, MintRepResponse,
 };
 
 pub struct ReputationCanisterClient {
@@ -31,6 +31,16 @@ impl ReputationCanisterClient {
         req: GetBalanceRequest,
     ) -> CallResult<GetBalanceResponse> {
         call(self.canister_id, "reputation__get_balance", (req,))
+            .await
+            .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
+    pub async fn reputation__get_total_supply(
+        &self,
+        req: GetTotalSupplyRequest,
+    ) -> CallResult<GetTotalSupplyResponse> {
+        call(self.canister_id, "reputation__get_total_supply", (req,))
             .await
             .map(|(it,)| it)
     }

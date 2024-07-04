@@ -165,6 +165,7 @@ fn humans__get_profile_proofs(mut req: GetProfileProofsRequest) -> GetProfilePro
 }
 
 #[update]
+#[allow(non_snake_case)]
 fn humans__init_once() {
     with_state_mut(|s| s.init(caller(), time()));
 }

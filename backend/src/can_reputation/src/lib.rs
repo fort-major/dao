@@ -5,8 +5,8 @@ use ic_stable_structures::memory_manager::{MemoryId, MemoryManager};
 use ic_stable_structures::{Cell, DefaultMemoryImpl, StableBTreeMap};
 use shared::e8s::E8s;
 use shared::reputation::api::{
-    GetBalanceRequest, GetBalanceResponse, GetRepProofRequest, GetRepProofResponse, MintRepRequest,
-    MintRepResponse,
+    GetBalanceRequest, GetBalanceResponse, GetRepProofRequest, GetRepProofResponse,
+    GetTotalSupplyRequest, GetTotalSupplyResponse, MintRepRequest, MintRepResponse,
 };
 use shared::reputation::state::ReputationState;
 use shared::votings::types::ONE_MONTH_NS;
@@ -49,6 +49,17 @@ fn reputation__get_balance(mut req: GetBalanceRequest) -> GetBalanceResponse {
             .expect("Unable to get rep");
 
         s.get_balances(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn reputation__get_total_supply(mut req: GetTotalSupplyRequest) -> GetTotalSupplyResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get total rep supply");
+
+        s.get_total_supply(req)
     })
 }
 

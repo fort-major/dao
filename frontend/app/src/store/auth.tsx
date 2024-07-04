@@ -13,12 +13,23 @@ import { Principal, debugStringify } from "../utils/encoding";
 import {
   makeAgent,
   makeAnonymousAgent,
+  newFmjActor,
   newHumansActor,
+  newIcpActor,
   newReputationActor,
   optUnwrap,
 } from "../utils/backend";
 import { E8s } from "../utils/math";
 import { ITotals } from "./humans";
+import { GetProfilesResponse } from "@/declarations/humans/humans.did";
+import { TransferResult } from "@/declarations/fmj/fmj.did";
+
+export interface IMyBalance {
+  Hours: E8s;
+  Storypoints: E8s;
+  FMJ: E8s;
+  ICP: E8s;
+}
 
 export interface IProfileProof {
   id: Principal;
@@ -47,7 +58,7 @@ export interface IAuthStoreContext {
   reputationProof: Accessor<IReputationProof | undefined>;
   reputationProofCert: Accessor<Uint8Array | undefined>;
   editMyProfile: (name?: string, avatarSrc?: string) => Promise<void>;
-  myBalance: Accessor<ITotals | undefined>;
+  myBalance: Accessor<IMyBalance | undefined>;
   fetchMyBalance: () => Promise<void>;
 }
 
@@ -80,7 +91,7 @@ export function AuthStore(props: IChildren) {
   const [reputationProofCert, setReputationProofCert] = createSignal<
     Uint8Array | undefined
   >();
-  const [myBalance, setMyBalance] = createSignal<ITotals | undefined>();
+  const [myBalance, setMyBalance] = createSignal<IMyBalance | undefined>();
 
   onMount(async () => {
     setAnonymousAgent(await makeAnonymousAgent());
@@ -211,22 +222,34 @@ export function AuthStore(props: IChildren) {
     assertWithProofs();
 
     const humansActor = newHumansActor(agent()!);
+    const icpActor = newIcpActor(agent()!);
+    const fmjActor = newFmjActor(agent()!);
 
-    const { profiles } = await humansActor.humans__get_profiles({
-      ids: [identity()!.getPrincipal()],
-    });
+    const myPrincipal = identity()!.getPrincipal();
+
+    const p = [
+      humansActor.humans__get_profiles({ ids: [myPrincipal] }),
+      icpActor.icrc1_balance_of({ owner: myPrincipal, subaccount: [] }),
+      fmjActor.icrc1_balance_of({ owner: myPrincipal, subaccount: [] }),
+    ];
+
+    const [{ profiles }, icpBalance, fmjBalance] = (await Promise.all(p)) as [
+      GetProfilesResponse,
+      bigint,
+      bigint
+    ];
+
     const myProfile = optUnwrap(profiles[0]);
 
     if (!myProfile) {
       err(ErrorCode.UNREACHEABLE, "Can't happen...");
     }
 
-    const repProof = reputationProof()!;
-
     setMyBalance({
-      hours: E8s.new(myProfile.hours_balance),
-      storypoints: E8s.new(myProfile.storypoints_balance),
-      reputation: repProof.reputation.balance,
+      Hours: E8s.new(myProfile.hours_balance),
+      Storypoints: E8s.new(myProfile.storypoints_balance),
+      ICP: E8s.new(icpBalance),
+      FMJ: E8s.new(fmjBalance),
     });
   };
 

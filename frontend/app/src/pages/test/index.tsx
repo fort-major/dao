@@ -1,8 +1,10 @@
-import { E8sWidget } from "@components/e8s-widget";
+import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { ExchangeRate } from "@components/exchange-rate";
+import { FromInput } from "@components/from-input";
 import { QtyInput } from "@components/qty-input";
 import { Select } from "@components/select";
 import { TextInput } from "@components/text-input";
+import { TransferSwapForm } from "@components/transfer-swap-form";
 import { VotingInput } from "@components/voting-input";
 import { VotingProgressBar } from "@components/voting-progress-bar";
 import { VotingStatus } from "@components/voting-status";
@@ -19,11 +21,7 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <ExchangeRate
-          editable
-          pair={pairToStr({ from: "Storypoints", into: "ICP" })}
-          rate={E8s.f0_1()}
-        />
+        <TransferSwapForm />
       </section>
     </main>
   );

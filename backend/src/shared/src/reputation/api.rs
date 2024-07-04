@@ -53,6 +53,26 @@ pub struct GetBalanceResponse {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
+pub struct GetTotalSupplyRequest {}
+
+impl Guard<ReputationState> for GetTotalSupplyRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &ReputationState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetTotalSupplyResponse {
+    #[garde(skip)]
+    pub total_supply: E8s,
+}
+
+#[derive(CandidType, Deserialize, Validate)]
 pub struct GetRepProofRequest {}
 
 impl Guard<ReputationState> for GetRepProofRequest {

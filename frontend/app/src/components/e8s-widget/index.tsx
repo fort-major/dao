@@ -2,18 +2,25 @@ import { EIconKind, Icon } from "@components/icon";
 import { MetricWidget } from "@components/metric-widget";
 import { E8s } from "@utils/math";
 
+export enum EE8sKind {
+  FMJ = "FMJ",
+  ICP = "ICP",
+  Storypoints = "Storypoints",
+  Hours = "Hours",
+}
+
 export interface IE8sWidgetProps {
   value: E8s;
-  kind: "FMJ" | "ICP" | "Storypoints" | "Hours";
+  kind: EE8sKind;
 }
 
 export function E8sWidget(props: IE8sWidgetProps) {
   const iconKind = () =>
-    props.kind === "FMJ"
+    props.kind === EE8sKind.FMJ
       ? EIconKind.FMJ
-      : props.kind === "ICP"
+      : props.kind === EE8sKind.ICP
       ? EIconKind.ICP
-      : props.kind === "Storypoints"
+      : props.kind === EE8sKind.Storypoints
       ? EIconKind.Storypoints
       : EIconKind.Hours;
 

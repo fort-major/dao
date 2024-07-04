@@ -1,4 +1,5 @@
 import { ValidationError } from "@components/validation-error";
+import { Principal } from "@dfinity/principal";
 import { eventHandler } from "@utils/security";
 import { Show, createSignal, onMount } from "solid-js";
 
@@ -13,7 +14,8 @@ export type TTextInputValidation =
         | "DfinityForum"
         | "FortMajorSite"
         | "Twitter";
-    };
+    }
+  | { principal: null };
 
 export interface ITextInputProps {
   defaultValue?: string;
@@ -45,10 +47,10 @@ export function TextInput(props: ITextInputProps) {
   );
 
   return (
-    <div class="flex flex-col">
+    <div class="flex flex-col flex-1">
       <input
         type="text"
-        class="flex p-2 font-primary focus:outline-none text-sm leading-6  shadow-sm"
+        class="flex p-2 font-primary focus:outline-none text-sm leading-6 flex-1 shadow-sm"
         classList={{ italic: value() === "", "shadow-errorRed": !!error() }}
         placeholder={props.placeholder ?? "Type here"}
         value={value()}
@@ -114,6 +116,14 @@ function isValid(
         }
       } catch (_) {
         return "Not a url";
+      }
+    }
+
+    if ("principal" in validation) {
+      try {
+        Principal.fromText(s);
+      } catch (_) {
+        return "Not a Principal ID";
       }
     }
   }
