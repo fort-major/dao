@@ -22,7 +22,7 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <PriceChart pair={pairToStr({ from: "Hours", into: "ICP" })} />
+        <TransferSwapForm />
       </section>
     </main>
   );

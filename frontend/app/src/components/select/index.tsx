@@ -28,7 +28,7 @@ export function Select(props: ISelectProps) {
   );
 
   return (
-    <div class="flex flex-col min-w-36 p-2 text-black shadow-sm">
+    <div class="flex flex-col min-w-36 p-2 text-black shadow-sm relative">
       <div
         class="flex items-center justify-between cursor-pointer"
         onClick={handleValueClick}
@@ -40,16 +40,18 @@ export function Select(props: ISelectProps) {
         />
       </div>
       <Show when={expanded()}>
-        <For each={props.values}>
-          {(p) => (
-            <div
-              class="select-none hover:bg-gray-190 cursor-pointer"
-              onClick={handleOptionClick}
-            >
-              {p}
-            </div>
-          )}
-        </For>
+        <div class="flex flex-col gap-1 absolute z-10 bg-white w-full top-full left-0 shadow-sm">
+          <For each={props.values}>
+            {(p) => (
+              <div
+                class="select-none hover:bg-gray-190 cursor-pointer p-2"
+                onClick={handleOptionClick}
+              >
+                {p}
+              </div>
+            )}
+          </For>
+        </div>
       </Show>
     </div>
   );
