@@ -11,7 +11,8 @@ export enum EE8sKind {
 }
 
 export interface IE8sWidgetProps extends IClass {
-  value: E8s;
+  minValue: E8s;
+  maxValue?: E8s;
   kind: EE8sKind;
 }
 
@@ -25,13 +26,21 @@ export function E8sWidget(props: IE8sWidgetProps) {
       ? EIconKind.Storypoints
       : EIconKind.Hours;
 
+  const value = () => {
+    if (props.maxValue) {
+      return `from ${props.minValue.toPrecision(
+        4,
+        true
+      )} to ${props.maxValue.toPrecision(4, true)}`;
+    } else {
+      return props.minValue.toPrecision(4, true);
+    }
+  };
+
   return (
     <div class={`flex items-center gap-1 ${props.class ? props.class : ""}`}>
       <Icon kind={iconKind()} />
-      <MetricWidget
-        primary={props.value.toPrecision(4, true)}
-        secondary={props.kind}
-      />
+      <MetricWidget primary={value()} secondary={props.kind} />
     </div>
   );
 }

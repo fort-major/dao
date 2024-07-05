@@ -44,7 +44,7 @@ export function FromInput(props: IFromInputProps) {
           onChange={handleHandleKindChange}
         />
         <span class="flex px-2">
-          <E8sWidget value={props.balance} kind={props.kind} />
+          <E8sWidget minValue={props.balance} kind={props.kind} />
         </span>
       </div>
       <div class="flex flex-col gap-2 justify-between">

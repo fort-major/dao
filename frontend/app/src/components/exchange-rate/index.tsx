@@ -72,9 +72,9 @@ export function ExchangeRate(props: IExchangeRateProps) {
       <Switch>
         <Match when={!edited()}>
           <div class="flex items-center gap-1">
-            <E8sWidget value={E8s.one()} kind={pair().from as EE8sKind} />
+            <E8sWidget minValue={E8s.one()} kind={pair().from as EE8sKind} />
             <p>=</p>
-            <E8sWidget value={props.rate} kind={pair().into as EE8sKind} />
+            <E8sWidget minValue={props.rate} kind={pair().into as EE8sKind} />
           </div>
           <Show when={props.editable && !proposing()}>
             <Icon
@@ -87,7 +87,7 @@ export function ExchangeRate(props: IExchangeRateProps) {
         </Match>
         <Match when={edited()}>
           <div class="flex items-center gap-1">
-            <E8sWidget value={E8s.one()} kind={pair().from as EE8sKind} />
+            <E8sWidget minValue={E8s.one()} kind={pair().from as EE8sKind} />
             <p>=</p>
             <QtyInput
               defaultValue={props.rate}

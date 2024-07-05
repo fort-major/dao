@@ -120,7 +120,7 @@ export function TasksStore(props: IChildren) {
     anonymousAgent,
     assertReadyToFetch,
     assertAuthorized,
-    assertWithProofs: assertWithProof,
+    assertWithProofs,
     agent,
     profileProofCert,
     reputationProofCert,
@@ -234,7 +234,7 @@ export function TasksStore(props: IChildren) {
 
   const createTask: ITasksStoreContext["createTask"] = async (args) => {
     assertAuthorized();
-    assertWithProof();
+    assertWithProofs();
 
     const proof = profileProof()!;
 
@@ -362,7 +362,7 @@ export function TasksStore(props: IChildren) {
     filledInFields
   ) => {
     assertAuthorized();
-    assertWithProof();
+    assertWithProofs();
 
     const task = tasks[taskId.toString()];
 
@@ -403,7 +403,7 @@ export function TasksStore(props: IChildren) {
     taskId
   ) => {
     assertAuthorized();
-    assertWithProof();
+    assertWithProofs();
 
     const task = tasks[taskId.toString()];
 

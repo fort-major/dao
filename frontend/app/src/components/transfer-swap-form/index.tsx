@@ -149,7 +149,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
                 onChange={handleTransferRecipientChange}
                 validations={[{ principal: null }]}
               />
-              <E8sWidget value={amountToTransfer()} kind={from()} />
+              <E8sWidget minValue={amountToTransfer()} kind={from()} />
             </div>
             <Btn
               text="Transfer"
@@ -167,7 +167,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
                 defaultValue={EE8sKind.FMJ}
                 onChange={handleSelectInto}
               />
-              <E8sWidget value={intoAmount()} kind={into()} />
+              <E8sWidget minValue={intoAmount()} kind={into()} />
             </div>
             <div class="flex justify-between items-center">
               <ExchangeRate

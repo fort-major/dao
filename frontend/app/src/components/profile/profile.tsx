@@ -5,10 +5,9 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  onMount,
 } from "solid-js";
 import { IClass, ONE_WEEK_NS } from "../../utils/types";
-import { Avatar, AvatarSkeleton } from "../avatar";
+import { Avatar } from "../avatar";
 import { Principal } from "@dfinity/principal";
 import { useHumans } from "../../store/humans";
 import { COLORS } from "@utils/colors";
@@ -17,7 +16,6 @@ import { MetricWidget } from "@components/metric-widget";
 import {
   debugStringify,
   timestampToDMStr,
-  timestampToStr,
   timestampToYearStr,
 } from "@utils/encoding";
 import { nowNs } from "@components/countdown";
@@ -30,7 +28,7 @@ import { useVotings } from "@store/votings";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 
 export interface IProfileProps extends IClass {
-  id: Principal;
+  id?: Principal;
   me?: boolean;
 }
 
@@ -44,8 +42,8 @@ export function ProfileFull(props: IProfileProps) {
   const [edited, setEdited] = createSignal(false);
   const [disabled, setDisabled] = createSignal(false);
 
-  const profile = () => profiles[props.id.toText()];
-  const rep = () => reputation[props.id.toText()];
+  const profile = () => (props.id ? profiles[props.id.toText()] : undefined);
+  const rep = () => (props.id ? reputation[props.id.toText()] : undefined);
 
   const evr = createMemo(() => {
     const p = profile();
@@ -67,8 +65,11 @@ export function ProfileFull(props: IProfileProps) {
     return p.employment.hours_earned_during_employment.div(expectedEarnedHours);
   });
 
-  onMount(() => {
-    if (!profile()) fetchProfiles([props.id]);
+  createEffect(() => {
+    if (!profile() && props.id) fetchProfiles([props.id]);
+  });
+
+  createEffect(() => {
     if (!totals()) fetchTotals();
     if (!myBalance()) fetchMyBalance();
   });
@@ -92,14 +93,14 @@ export function ProfileFull(props: IProfileProps) {
     setEdited(false);
     setNewName(undefined);
 
-    await fetchProfiles([props.id]);
+    await fetchProfiles([props.id!]);
 
     setDisabled(false);
   };
 
   const handleProposeAdmit = async () => {
     const res = prompt(
-      `Are you sure you want to start a voting to make user ${props.id.toText()} our teammate? If yes, provide their commitment in hours (for example, 40).`
+      `Are you sure you want to start a voting to make user ${props.id!.toText()} our teammate? If yes, provide their commitment in hours (for example, 40).`
     );
 
     if (!res) return;
@@ -113,7 +114,7 @@ export function ProfileFull(props: IProfileProps) {
       }
 
       setDisabled(true);
-      await createHumansEmployVoting(props.id, commitment);
+      await createHumansEmployVoting(props.id!, commitment);
       setDisabled(false);
 
       alert(
@@ -126,13 +127,13 @@ export function ProfileFull(props: IProfileProps) {
 
   const handleProposeExpel = async () => {
     const agreed = confirm(
-      `Are you sure you want to start a voting to expel your teammate ${props.id.toText()} from the team?`
+      `Are you sure you want to start a voting to expel your teammate ${props.id!.toText()} from the team?`
     );
 
     if (!agreed) return;
 
     setDisabled(true);
-    await createHumansUnemployVoting(props.id);
+    await createHumansUnemployVoting(props.id!);
     setDisabled(false);
 
     alert(
@@ -145,15 +146,13 @@ export function ProfileFull(props: IProfileProps) {
   return (
     <div class="flex flex-col gap-5 p-2" classList={{ "shadow-sm": !props.me }}>
       <div class="flex flex-col self-center items-center gap-2">
-        <Show when={profile()?.avatar_src} fallback={<AvatarSkeleton big />}>
-          <Avatar
-            big
-            borderColor={
-              profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]
-            }
-            url={profile()!.avatar_src}
-          />
-        </Show>
+        <Avatar
+          size="lg"
+          borderColor={
+            profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]
+          }
+          url={profile()!.avatar_src}
+        />
         <p class="flex gap-1 items-center text-center font-primary text-xs font-bold">
           <Show when={profile()?.name} fallback={"Anonymous"}>
             <Switch>
@@ -288,25 +287,25 @@ export function ProfileFull(props: IProfileProps) {
           <Match when={props.me}>
             <div class={metricClass}>
               <E8sWidget
-                value={myBalance() ? myBalance()!.Hours : E8s.zero()}
+                minValue={myBalance() ? myBalance()!.Hours : E8s.zero()}
                 kind={EE8sKind.Hours}
               />
             </div>
             <div class={metricClass}>
               <E8sWidget
-                value={myBalance() ? myBalance()!.Storypoints : E8s.zero()}
+                minValue={myBalance() ? myBalance()!.Storypoints : E8s.zero()}
                 kind={EE8sKind.Storypoints}
               />
             </div>
             <div class={metricClass}>
               <E8sWidget
-                value={myBalance() ? myBalance()!.FMJ : E8s.zero()}
+                minValue={myBalance() ? myBalance()!.FMJ : E8s.zero()}
                 kind={EE8sKind.FMJ}
               />
             </div>
             <div class={metricClass}>
               <E8sWidget
-                value={myBalance() ? myBalance()!.ICP : E8s.zero()}
+                minValue={myBalance() ? myBalance()!.ICP : E8s.zero()}
                 kind={EE8sKind.ICP}
               />
             </div>
@@ -320,22 +319,18 @@ export function ProfileFull(props: IProfileProps) {
 export function ProfileMini(props: IProfileProps) {
   const { profiles, fetchProfiles } = useHumans();
 
-  const profile = () => profiles[props.id.toText()];
+  const profile = () => (props.id ? profiles[props.id.toText()] : undefined);
 
-  onMount(() => {
-    if (!profile()) fetchProfiles([props.id]);
+  createEffect(() => {
+    if (!profile() && props.id) fetchProfiles([props.id]);
   });
 
   return (
     <div class="flex flex-row items-center gap-2">
-      <Show when={profile()?.avatar_src} fallback={<AvatarSkeleton />}>
-        <Avatar
-          borderColor={
-            profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]
-          }
-          url={profile()!.avatar_src}
-        />
-      </Show>
+      <Avatar
+        borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
+        url={profile()!.avatar_src}
+      />
       <div class="flex flex-col gap-1">
         <p class="font-primary text-xs font-bold">
           <Show when={profile()?.name} fallback={"Anonymous"}>
@@ -348,6 +343,26 @@ export function ProfileMini(props: IProfileProps) {
           </Show>
         </p>
       </div>
+    </div>
+  );
+}
+
+export function ProfileMicro(props: IProfileProps) {
+  const { profiles, fetchProfiles } = useHumans();
+
+  const profile = () => (props.id ? profiles[props.id.toText()] : undefined);
+
+  createEffect(() => {
+    if (!profile() && props.id) fetchProfiles([props.id]);
+  });
+
+  return (
+    <div class="flex flex-row items-center gap-2">
+      <Avatar
+        borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
+        url={profile()?.avatar_src}
+        size="sm"
+      />
     </div>
   );
 }

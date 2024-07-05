@@ -24,6 +24,45 @@ export function nowNs() {
   return BigInt(Date.now()) * 1000000n;
 }
 
+export function nsLeft(sinceNs: bigint, tillDurationNs: bigint, now?: bigint) {
+  const dif = now ? now - sinceNs : nowNs() - sinceNs;
+
+  if (dif < tillDurationNs) {
+    return tillDurationNs - dif;
+  } else {
+    return 0n;
+  }
+}
+
+export function daysLeft(
+  sinceNs: bigint,
+  tillDurationNs: bigint,
+  now?: bigint
+) {
+  return nsLeft(sinceNs, tillDurationNs, now) / ONE_DAY_NS;
+}
+export function hoursLeft(
+  sinceNs: bigint,
+  tillDurationNs: bigint,
+  now?: bigint
+) {
+  return (nsLeft(sinceNs, tillDurationNs, now) / ONE_HOUR_NS) % 24n;
+}
+export function minsLeft(
+  sinceNs: bigint,
+  tillDurationNs: bigint,
+  now?: bigint
+) {
+  return (nsLeft(sinceNs, tillDurationNs, now) / ONE_MIN_NS) % 60n;
+}
+export function secsLeft(
+  sinceNs: bigint,
+  tillDurationNs: bigint,
+  now?: bigint
+) {
+  return (nsLeft(sinceNs, tillDurationNs, now) / ONE_SEC_NS) % 60n;
+}
+
 export function Countdown(props: ICountdownProps) {
   const [now, setNow] = createSignal(nowNs());
   const [int, setInt] = createSignal<NodeJS.Timeout | undefined>(undefined);
@@ -36,20 +75,18 @@ export function Countdown(props: ICountdownProps) {
     clearInterval(int());
   });
 
-  const nsLeft = createMemo(() => {
-    const dif = now() - props.timestampNs;
-
-    if (dif < props.durationNs) {
-      return props.durationNs - dif;
-    } else {
-      return 0n;
-    }
-  });
-
-  const days = () => nsLeft() / ONE_DAY_NS;
-  const hours = () => (nsLeft() / ONE_HOUR_NS) % 24n;
-  const mins = () => (nsLeft() / ONE_MIN_NS) % 60n;
-  const secs = () => (nsLeft() / ONE_SEC_NS) % 60n;
+  const days = createMemo(() =>
+    daysLeft(props.timestampNs, props.durationNs, now())
+  );
+  const hours = createMemo(() =>
+    hoursLeft(props.timestampNs, props.durationNs, now())
+  );
+  const mins = createMemo(() =>
+    minsLeft(props.timestampNs, props.durationNs, now())
+  );
+  const secs = createMemo(() =>
+    secsLeft(props.timestampNs, props.durationNs, now())
+  );
 
   return (
     <div class="flex gap-1 text-gray-150 font-mono font-thin text-sm leading-3 top-[1px] relative">
