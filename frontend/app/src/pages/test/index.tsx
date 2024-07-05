@@ -5,6 +5,7 @@ import { PriceChart } from "@components/price-chart";
 import { ProfileFull, ProfileMini } from "@components/profile/profile";
 import { QtyInput } from "@components/qty-input";
 import { Select } from "@components/select";
+import { Task } from "@components/task";
 import { TextInput } from "@components/text-input";
 import { TransferSwapForm } from "@components/transfer-swap-form";
 import { VotingInput } from "@components/voting-input";
@@ -23,7 +24,7 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <ProfileFull me id={Principal.anonymous()} />
+        <Task id={0n} />
       </section>
     </main>
   );

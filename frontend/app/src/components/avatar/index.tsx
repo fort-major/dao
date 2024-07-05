@@ -28,7 +28,7 @@ export function Avatar(props: IAvatarProps) {
       </Match>
       <Match when={!props.url}>
         <div
-          class={`${sizeClass()} ${cl()} rounded-full borderbg-gray-150 text-white font-sans font-extrabold animate-pulse flex items-center justify-center`}
+          class={`${sizeClass()} ${cl()} rounded-full border bg-gray-150 text-white font-sans font-extrabold animate-pulse flex items-center justify-center`}
         >
           ?
         </div>

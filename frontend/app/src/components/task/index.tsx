@@ -238,12 +238,12 @@ export function Task(props: ITaskProps) {
 
   return (
     <div class="flex flex-col gap-5">
-      <div class="flex gap-1 items-center">
-        <div class="flex gap-1 items-baseline">
+      <div class="flex flex-grow gap-1 items-center">
+        <div class="flex flex-grow gap-1 items-baseline">
           <p class="font-primary font-medium text-xs text-gray-150">
             {props.id.toString()}
           </p>
-          <h3 class="font-primary font-medium text-4xl text-black">
+          <h3 class="flex-grow font-primary font-medium text-4xl text-black">
             {task() ? task()!.title : "Loading..."}
           </h3>
           <div class="flex flex-col items-center py-2">
@@ -258,8 +258,8 @@ export function Task(props: ITaskProps) {
         <MdPreview content={task() ? task()!.description : "Loading..."} />
       </div>
       <div class="flex flex-col gap-2">
-        <div class="flex gap-5">
-          <div class="flex gap-1">
+        <div class="flex flex-grow gap-5">
+          <div class="flex flex-grow flex-col gap-1">
             <div class="flex items-center justify-between">
               <Title text="Created By" />
               <Title
@@ -268,17 +268,25 @@ export function Task(props: ITaskProps) {
             </div>
             <ProfileMini id={task()?.creator} />
           </div>
-          <div class="flex gap-2">
+          <div class="flex flex-grow flex-col gap-2">
             <div class="flex items-center justify-between">
               <Title text="Working On It" />
             </div>
             <div class="flex flex-wrap gap-1 items-center">
-              <For each={task()?.solvers ?? []}>
+              <For
+                fallback={
+                  <p class="font-primary text-xs text-gray-140 italic">
+                    Be the first one
+                  </p>
+                }
+                each={task()?.solvers ? task()!.solvers! : []}
+              >
                 {(id) => <ProfileMicro id={id} />}
               </For>
             </div>
-            <div class="flex items-end">
+            <div class="flex flex-grow justify-end">
               <BooleanInput
+                labels={["Won't Do", "Count Me It"]}
                 defaultValue={countMeInValue()}
                 disabled={disabled()}
                 onChange={handleCountMeIn}
@@ -286,8 +294,8 @@ export function Task(props: ITaskProps) {
             </div>
           </div>
         </div>
-        <div class="flex gap-2">
-          <div class="flex flex-col gap-1">
+        <div class="flex flex-grow gap-2">
+          <div class="flex flex-grow flex-col gap-1">
             <Title text="Rewards" />
             <E8sWidget
               kind={EE8sKind.Hours}
@@ -303,7 +311,7 @@ export function Task(props: ITaskProps) {
               maxValue={task()?.storypoints_ext_budget}
             />
           </div>
-          <div class="flex flex-col gap-1 justify-end items-end">
+          <div class="flex flex-grow flex-col gap-1 justify-end items-end">
             {stageLabel()}
             {button()}
           </div>

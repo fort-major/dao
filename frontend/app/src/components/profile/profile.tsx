@@ -151,7 +151,7 @@ export function ProfileFull(props: IProfileProps) {
           borderColor={
             profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]
           }
-          url={profile()!.avatar_src}
+          url={profile()?.avatar_src}
         />
         <p class="flex gap-1 items-center text-center font-primary text-xs font-bold">
           <Show when={profile()?.name} fallback={"Anonymous"}>
@@ -329,7 +329,7 @@ export function ProfileMini(props: IProfileProps) {
     <div class="flex flex-row items-center gap-2">
       <Avatar
         borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
-        url={profile()!.avatar_src}
+        url={profile()?.avatar_src}
       />
       <div class="flex flex-col gap-1">
         <p class="font-primary text-xs font-bold">
