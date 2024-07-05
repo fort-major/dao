@@ -14,6 +14,7 @@ import {
 } from "../declarations/votings/votings.did";
 import { newVotingsActor, opt, optUnwrap } from "../utils/backend";
 import { decodeVotingId, encodeVotingId } from "../utils/encoding";
+import { debouncedBatchFetch } from "@utils/common";
 
 export type TVotingIdStr = string;
 
@@ -111,78 +112,7 @@ export function VotingsStore(props: IChildren) {
   ) => {
     assertReadyToFetch();
 
-    const votingsActor = newVotingsActor(anonymousAgent()!);
-    const { votings } = await votingsActor.votings__get_votings({ ids });
-
-    for (let i = 0; i < votings.length; i++) {
-      const voting = optUnwrap(votings[i]);
-      const id = encodeVotingId(ids[i]);
-
-      if (!voting) {
-        setVotings(id, null);
-        continue;
-      }
-
-      let kind: TVotingKind;
-
-      if ("HumansEmploy" in voting.kind) {
-        const k = voting.kind.HumansEmploy;
-
-        kind = {
-          HumansEmploy: {
-            hours_a_week_commitment: E8s.new(k.hours_a_week_commitment),
-            candidate: k.candidate,
-          },
-        };
-      } else if ("BankSetExchangeRate" in voting.kind) {
-        const k = voting.kind.BankSetExchangeRate;
-
-        kind = {
-          BankSetExchangeRate: {
-            from: k.from,
-            into: k.into,
-            new_rate: E8s.new(k.new_rate),
-          },
-        };
-      } else {
-        kind = voting.kind;
-      }
-
-      const votesPerOption: Array<[E8s, IVote | undefined]> =
-        voting.votes_per_option.map(([total, myVote]) => {
-          const v = optUnwrap(myVote);
-
-          if (v) {
-            return [
-              E8s.new(total),
-              {
-                normalized_approval_level: optUnwrap(
-                  v.normalized_approval_level.map(E8s.new)
-                ),
-                total_voter_reputation: E8s.new(v.total_voter_reputation),
-              },
-            ];
-          } else {
-            return [E8s.new(total), undefined];
-          }
-        });
-
-      const v: IVoting = {
-        id,
-        creator: voting.creator,
-        created_at: voting.created_at,
-        kind,
-        stage: voting.stage,
-        duration_ns: voting.duration_ns,
-        votesPerOption,
-        total_supply: E8s.new(voting.total_supply),
-        quorum: E8s.new(voting.quorum),
-        consensusNormalized: E8s.new(voting.consensus_normalized),
-        finish_early: E8s.new(voting.finish_early),
-      };
-
-      setVotings(id, v);
-    }
+    votingsGetVotings({ ids });
   };
 
   const castVote: IVotingsStoreContext["castVote"] = async (
@@ -297,6 +227,85 @@ export function VotingsStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, `Only team members can create votings`);
     }
   };
+
+  const votingsGetVotings = debouncedBatchFetch(
+    (req: { ids: VotingId[] }) => {
+      const votingsActor = newVotingsActor(anonymousAgent()!);
+      return votingsActor.votings__get_votings(req);
+    },
+    ({ entries: votings }, { ids }) => {
+      for (let i = 0; i < votings.length; i++) {
+        const voting = optUnwrap(votings[i]);
+        const id = encodeVotingId(ids[i]);
+
+        if (!voting) {
+          setVotings(id, null);
+          continue;
+        }
+
+        let kind: TVotingKind;
+
+        if ("HumansEmploy" in voting.kind) {
+          const k = voting.kind.HumansEmploy;
+
+          kind = {
+            HumansEmploy: {
+              hours_a_week_commitment: E8s.new(k.hours_a_week_commitment),
+              candidate: k.candidate,
+            },
+          };
+        } else if ("BankSetExchangeRate" in voting.kind) {
+          const k = voting.kind.BankSetExchangeRate;
+
+          kind = {
+            BankSetExchangeRate: {
+              from: k.from,
+              into: k.into,
+              new_rate: E8s.new(k.new_rate),
+            },
+          };
+        } else {
+          kind = voting.kind;
+        }
+
+        const votesPerOption: Array<[E8s, IVote | undefined]> =
+          voting.votes_per_option.map(([total, myVote]) => {
+            const v = optUnwrap(myVote);
+
+            if (v) {
+              return [
+                E8s.new(total),
+                {
+                  normalized_approval_level: optUnwrap(
+                    v.normalized_approval_level.map(E8s.new)
+                  ),
+                  total_voter_reputation: E8s.new(v.total_voter_reputation),
+                },
+              ];
+            } else {
+              return [E8s.new(total), undefined];
+            }
+          });
+
+        const v: IVoting = {
+          id,
+          creator: voting.creator,
+          created_at: voting.created_at,
+          kind,
+          stage: voting.stage,
+          duration_ns: voting.duration_ns,
+          votesPerOption,
+          total_supply: E8s.new(voting.total_supply),
+          quorum: E8s.new(voting.quorum),
+          consensusNormalized: E8s.new(voting.consensus_normalized),
+          finish_early: E8s.new(voting.finish_early),
+        };
+
+        setVotings(id, v);
+      }
+    },
+    (reason) => err(ErrorCode.NETWORK, `Unable to fetch votings: ${reason}`)
+  );
 
   return (
     <VotingsContext.Provider

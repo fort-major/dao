@@ -2,40 +2,38 @@ import { Show } from "solid-js";
 import { IClass } from "../../utils/types";
 import { Avatar, AvatarSkeleton } from "../avatar";
 import { Principal } from "@dfinity/principal";
-import { IProfile } from "../../store/humans";
+import { IProfile, useHumans } from "../../store/humans";
+import { COLORS } from "@utils/colors";
 
 export interface IProfileProps extends IClass {
-  profile?: IProfile;
+  id: Principal;
 }
 
 export function ProfileMini(props: IProfileProps) {
-  return (
-    <Show when={props.profile} fallback={<ProfileSkeleton />}>
-      <div class="flex flex-row items-center gap-2">
-        <Avatar url={props.profile!.avatar_src} />
-        <div class="flex flex-col">
-          <p class="font-sans text-md">
-            <Show when={props.profile!.name} fallback={"Anonymous"}>
-              {props.profile!.name!}
-            </Show>
-          </p>
-          <p class="font-sans text-sm text-gray-300 text-ellipsis">
-            {props.profile!.id.toText()}
-          </p>
-        </div>
-      </div>
-    </Show>
-  );
-}
+  const { profiles } = useHumans();
 
-export function ProfileSkeleton() {
+  const profile = () => profiles[props.id.toText()];
+
   return (
-    <div class="flex flex-row items-center gap-2 w-36">
-      <AvatarSkeleton />
-      <div class="flex flex-col">
-        <p class="font-sans text-md">Anonymous</p>
-        <p class="font-sans text-sm text-gray-300 text-ellipsis">
-          {Principal.anonymous().toHex()}
+    <div class="flex flex-row items-center gap-2">
+      <Show when={profile()?.avatar_src} fallback={<AvatarSkeleton />}>
+        <Avatar
+          borderColor={
+            profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]
+          }
+          url={profile()!.avatar_src}
+        />
+      </Show>
+      <div class="flex flex-col gap-1">
+        <p class="font-primary text-xs font-bold">
+          <Show when={profile()?.name} fallback={"Anonymous"}>
+            {profile()!.name!}
+          </Show>
+        </p>
+        <p class="font-primary font-normal text-xs text-gray-150 text-ellipsis">
+          <Show when={profile()?.id} fallback={Principal.anonymous().toText()}>
+            {profile()!.id.toText()}
+          </Show>
         </p>
       </div>
     </div>

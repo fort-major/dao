@@ -118,7 +118,7 @@ impl Guard<VotingsState> for GetVotingsRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetVotingsResponse {
     #[garde(skip)]
-    pub votings: Vec<Option<VotingExt>>,
+    pub entries: Vec<Option<VotingExt>>,
 }
 
 #[derive(CandidType, Deserialize, Validate)]

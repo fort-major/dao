@@ -6,6 +6,7 @@ export enum ErrorCode {
   UNREACHEABLE = "UNREACHEABLE",
   UNKNOWN = "UNKNOWN",
   ICRC1 = "ICRC1",
+  NETWORK = "NETWORK",
 }
 
 export function err(code: ErrorCode, msg?: string): never {

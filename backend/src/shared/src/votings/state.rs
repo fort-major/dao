@@ -133,7 +133,7 @@ impl VotingsState {
             .map(|id| self.votings.get(&id).map(|it| it.as_ext(caller)))
             .collect();
 
-        GetVotingsResponse { votings }
+        GetVotingsResponse { entries: votings }
     }
 
     pub fn save_event(&mut self, event: VotingEvent) {

@@ -109,7 +109,7 @@ impl HumansState {
             .map(|id| self.profiles.get(id).cloned())
             .collect();
 
-        GetProfilesResponse { profiles }
+        GetProfilesResponse { entries: profiles }
     }
 
     pub fn get_profile_ids(&self, _req: GetProfileIdsRequest) -> GetProfileIdsResponse {

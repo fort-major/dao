@@ -46,7 +46,7 @@ type GetArchivedTasksResponse = record {
 };
 type GetTaskIdsResponse = record { ids : vec nat64 };
 type GetTasksRequest = record { ids : vec nat64 };
-type GetTasksResponse = record { tasks : vec opt Task };
+type GetTasksResponse = record { entries : vec opt Task };
 type InitRequest = record { task_archive_canister_id : principal };
 type PageRequest = record { skip : nat32; take : nat32; reversed : bool };
 type PageResponse = record { left : nat32; next : opt principal };

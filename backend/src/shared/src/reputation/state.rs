@@ -123,12 +123,12 @@ impl ReputationState {
 
     pub fn get_balances(&self, req: GetBalanceRequest) -> GetBalanceResponse {
         let entries = req
-            .accounts
+            .ids
             .into_iter()
             .map(|id| self.balances.get(&id).unwrap_or_default());
 
         GetBalanceResponse {
-            balances: entries.collect(),
+            entries: entries.collect(),
         }
     }
 

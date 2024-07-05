@@ -401,7 +401,7 @@ impl Guard<TasksState> for GetTasksRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetTasksResponse {
     #[garde(skip)]
-    pub tasks: Vec<Option<Task>>,
+    pub entries: Vec<Option<Task>>,
 }
 
 #[derive(CandidType, Deserialize, Validate)]

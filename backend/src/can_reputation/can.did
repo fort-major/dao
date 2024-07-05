@@ -1,5 +1,5 @@
-type GetBalanceRequest = record { accounts : vec principal };
-type GetBalanceResponse = record { balances : vec RepBalanceEntry };
+type GetBalanceRequest = record { ids : vec principal };
+type GetBalanceResponse = record { entries : vec RepBalanceEntry };
 type GetRepProofResponse = record { marker : text; proof : ReputationProof };
 type GetTotalSupplyResponse = record { total_supply : nat };
 type MintRepRequest = record { entries : vec record { principal; nat } };

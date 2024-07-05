@@ -17,6 +17,7 @@ import {
   optUnwrap,
 } from "../utils/backend";
 import { debugStringify } from "../utils/encoding";
+import { debouncedBatchFetch } from "@utils/common";
 
 export interface ISolution {
   evaluation?: E8s;
@@ -150,56 +151,7 @@ export function TasksStore(props: IChildren) {
       ids = taskIds;
     }
 
-    const tasksActor = newTasksActor(anonymousAgent()!);
-    const { tasks } = await tasksActor.tasks__get_tasks({ ids });
-
-    for (let i = 0; i < tasks.length; i++) {
-      const task = optUnwrap(tasks[i]);
-
-      if (!task) {
-        err(ErrorCode.UNREACHEABLE, `Task ${ids[i]} not found`);
-      }
-
-      const solutions: [Principal, ISolution][] = task.solutions.map(
-        ([solver, solution]) => {
-          const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
-          const hours = optUnwrap(solution.reward_hours.map(E8s.new));
-          const storypoints = optUnwrap(
-            solution.reward_storypoints.map(E8s.new)
-          );
-
-          const sol: ISolution = {
-            fields: solution.fields.map(optUnwrap),
-            attached_at: solution.attached_at,
-            rejected: solution.rejected,
-            evaluation,
-            reward_hours: hours,
-            reward_storypoints: storypoints,
-          };
-
-          return [solver, sol];
-        }
-      );
-
-      const itask: ITask = {
-        id: task.id,
-        solution_fields: task.solution_fields,
-        title: task.title,
-        description: task.description,
-        creator: task.creator,
-        created_at: task.created_at,
-        stage: task.stage,
-        solver_constraints: task.solver_constraints,
-        storypoints_base: E8s.new(task.storypoints_base),
-        storypoints_ext_budget: E8s.new(task.storypoints_ext_budget),
-        hours_base: E8s.new(task.hours_base),
-        days_to_solve: task.days_to_solve,
-        solvers: task.solvers,
-        solutions,
-      };
-
-      setTasks(itask.id.toString(), itask);
-    }
+    tasksGetTasks({ ids });
   };
 
   const fetchArchivedTasks: ITasksStoreContext["fetchArchivedTasks"] =
@@ -484,6 +436,63 @@ export function TasksStore(props: IChildren) {
       },
     });
   };
+
+  const tasksGetTasks = debouncedBatchFetch(
+    (req: { ids: TTaskId[] }) => {
+      const tasksActor = newTasksActor(anonymousAgent()!);
+      return tasksActor.tasks__get_tasks(req);
+    },
+    ({ entries: tasks }, { ids }) => {
+      for (let i = 0; i < tasks.length; i++) {
+        const task = optUnwrap(tasks[i]);
+
+        if (!task) {
+          err(ErrorCode.UNREACHEABLE, `Task ${ids[i]} not found`);
+        }
+
+        const solutions: [Principal, ISolution][] = task.solutions.map(
+          ([solver, solution]) => {
+            const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
+            const hours = optUnwrap(solution.reward_hours.map(E8s.new));
+            const storypoints = optUnwrap(
+              solution.reward_storypoints.map(E8s.new)
+            );
+
+            const sol: ISolution = {
+              fields: solution.fields.map(optUnwrap),
+              attached_at: solution.attached_at,
+              rejected: solution.rejected,
+              evaluation,
+              reward_hours: hours,
+              reward_storypoints: storypoints,
+            };
+
+            return [solver, sol];
+          }
+        );
+
+        const itask: ITask = {
+          id: task.id,
+          solution_fields: task.solution_fields,
+          title: task.title,
+          description: task.description,
+          creator: task.creator,
+          created_at: task.created_at,
+          stage: task.stage,
+          solver_constraints: task.solver_constraints,
+          storypoints_base: E8s.new(task.storypoints_base),
+          storypoints_ext_budget: E8s.new(task.storypoints_ext_budget),
+          hours_base: E8s.new(task.hours_base),
+          days_to_solve: task.days_to_solve,
+          solvers: task.solvers,
+          solutions,
+        };
+
+        setTasks(itask.id.toString(), itask);
+      }
+    },
+    (reason) => err(ErrorCode.NETWORK, `Unable to fetch tasks: ${reason}`)
+  );
 
   return (
     <TasksContext.Provider

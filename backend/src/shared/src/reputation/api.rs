@@ -2,7 +2,7 @@ use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, Guard};
+use crate::{e8s::E8s, Guard, ENV_VARS};
 
 use super::{
     state::ReputationState,
@@ -19,10 +19,16 @@ impl Guard<ReputationState> for MintRepRequest {
     fn validate_and_escape(
         &mut self,
         _state: &ReputationState,
-        _caller: Principal,
+        caller: Principal,
         _now: crate::TimestampNs,
     ) -> Result<(), String> {
-        self.validate(&()).map_err(|e| e.to_string())
+        self.validate(&()).map_err(|e| e.to_string())?;
+
+        if caller != ENV_VARS.tasks_canister_id {
+            return Err(format!("Access denied"));
+        }
+
+        Ok(())
     }
 }
 
@@ -32,7 +38,7 @@ pub struct MintRepResponse {}
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetBalanceRequest {
     #[garde(length(min = 1))]
-    pub accounts: Vec<Principal>,
+    pub ids: Vec<Principal>,
 }
 
 impl Guard<ReputationState> for GetBalanceRequest {
@@ -49,7 +55,7 @@ impl Guard<ReputationState> for GetBalanceRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetBalanceResponse {
     #[garde(skip)]
-    pub balances: Vec<RepBalanceEntry>,
+    pub entries: Vec<RepBalanceEntry>,
 }
 
 #[derive(CandidType, Deserialize, Validate)]

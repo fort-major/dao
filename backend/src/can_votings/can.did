@@ -12,7 +12,7 @@ type CastVoteRequest = record {
 type CastVoteResponse = record { decision_made : bool };
 type GetVotingEventsResponse = record { events : vec VotingEvent };
 type GetVotingsRequest = record { ids : vec VotingId };
-type GetVotingsResponse = record { votings : vec opt VotingExt };
+type GetVotingsResponse = record { entries : vec opt VotingExt };
 type ProfileProof = record { id : principal; is_team_member : bool };
 type Proof = record {
   profile_proofs_cert_raw : blob;

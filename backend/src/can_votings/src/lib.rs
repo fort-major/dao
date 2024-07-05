@@ -175,7 +175,7 @@ async fn validate_voting_related_entity(kind: &mut VotingKind) -> Result<(), Str
                 .map_err(|(c, m)| format!("Unable to fetch tasks - [{:?}]: {}", c, m))?;
 
             let task = response
-                .tasks
+                .entries
                 .get(0)
                 .ok_or(format!("Task {} not found", task_id))?
                 .as_ref()
@@ -195,7 +195,7 @@ async fn validate_voting_related_entity(kind: &mut VotingKind) -> Result<(), Str
                 .map_err(|(c, m)| format!("Unable to fetch tasks - [{:?}]: {}", c, m))?;
 
             let task = response
-                .tasks
+                .entries
                 .get(0)
                 .ok_or(format!("Task {} not found", task_id))?
                 .as_ref()

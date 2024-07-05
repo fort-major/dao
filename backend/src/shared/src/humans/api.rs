@@ -284,7 +284,7 @@ impl Guard<HumansState> for GetProfilesRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetProfilesResponse {
     #[garde(length(min = 1))]
-    pub profiles: Vec<Option<Profile>>,
+    pub entries: Vec<Option<Profile>>,
 }
 
 #[derive(CandidType, Deserialize, Validate)]

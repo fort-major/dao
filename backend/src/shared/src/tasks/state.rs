@@ -159,7 +159,7 @@ impl TasksState {
             .map(|id| self.tasks.get(id).cloned())
             .collect();
 
-        GetTasksResponse { tasks }
+        GetTasksResponse { entries: tasks }
     }
 
     pub fn prepare_archive_batch(
