@@ -1,6 +1,5 @@
 import { createSignal, onCleanup } from "solid-js";
-import { deepStrictEqual } from "assert";
-import { ErrorCode, err } from "./error";
+import deepEqual from "deep-equal";
 
 export const debounce = (cb: (...args: any[]) => void, timeoutMs: number) => {
   const [int, setInt] = createSignal<NodeJS.Timeout | undefined>();
@@ -50,7 +49,7 @@ export const debouncedBatchFetch = <ID, T, RESP extends Resp<T>>(
 
 export function pushAllDedup<T>(dest: T[], src: T[]): void {
   for (let item of src) {
-    const dup = dest.find((it) => deepStrictEqual(it, item));
+    const dup = dest.find((it) => deepEqual(it, item));
 
     if (!dup) {
       dest.push(item);

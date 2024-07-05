@@ -2,7 +2,7 @@ import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { ExchangeRate } from "@components/exchange-rate";
 import { FromInput } from "@components/from-input";
 import { PriceChart } from "@components/price-chart";
-import { ProfileMini } from "@components/profile/profile";
+import { ProfileFull, ProfileMini } from "@components/profile/profile";
 import { QtyInput } from "@components/qty-input";
 import { Select } from "@components/select";
 import { TextInput } from "@components/text-input";
@@ -23,7 +23,7 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <ProfileMini />
+        <ProfileFull me id={Principal.anonymous()} />
       </section>
     </main>
   );

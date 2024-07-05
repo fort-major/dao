@@ -257,6 +257,27 @@ export function timestampToStr(timestamp: number | bigint) {
   return `${day} ${month} ${year}, ${hours}:${minutes}`;
 }
 
+export function timestampToDMStr(timestamp: number | bigint) {
+  const timestampMs =
+    typeof timestamp === "bigint" ? Number(timestamp / 1000000n) : timestamp;
+
+  const date = new Date(timestampMs);
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = MONTHS[date.getMonth()];
+
+  return `${day} ${month}`;
+}
+
+export function timestampToYearStr(timestamp: number | bigint) {
+  const timestampMs =
+    typeof timestamp === "bigint" ? Number(timestamp / 1000000n) : timestamp;
+
+  const date = new Date(timestampMs);
+  const year = date.getFullYear().toString();
+
+  return `${year}`;
+}
+
 const VOTING_ID_STR_DELIMITER = ":::";
 
 export function encodeVotingId(id: VotingId): string {

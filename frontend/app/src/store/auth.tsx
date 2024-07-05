@@ -134,7 +134,7 @@ export function AuthStore(props: IChildren) {
         }
       )({});
 
-      const { profiles } = await humansActor.humans__get_profiles({
+      const { entries: profiles } = await humansActor.humans__get_profiles({
         ids: [id.getPrincipal()],
       });
 
@@ -233,11 +233,9 @@ export function AuthStore(props: IChildren) {
       fmjActor.icrc1_balance_of({ owner: myPrincipal, subaccount: [] }),
     ];
 
-    const [{ profiles }, icpBalance, fmjBalance] = (await Promise.all(p)) as [
-      GetProfilesResponse,
-      bigint,
-      bigint
-    ];
+    const [{ entries: profiles }, icpBalance, fmjBalance] = (await Promise.all(
+      p
+    )) as [GetProfilesResponse, bigint, bigint];
 
     const myProfile = optUnwrap(profiles[0]);
 

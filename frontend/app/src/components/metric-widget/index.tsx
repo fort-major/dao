@@ -1,8 +1,11 @@
+import { EIconKind, Icon } from "@components/icon";
+import { COLORS } from "@utils/colors";
 import { Show } from "solid-js";
 
 export interface IMetricWidgetProps {
   primary: string;
   secondary?: string;
+  onEdit?: (value: string) => void;
 }
 
 export function MetricWidget(props: IMetricWidgetProps) {
@@ -11,6 +14,9 @@ export function MetricWidget(props: IMetricWidgetProps) {
       <p class="text-sm text-black font-medium">{props.primary}</p>
       <Show when={props.secondary}>
         <span class="text-xs text-gray-150 font-normal">{props.secondary}</span>
+      </Show>
+      <Show when={props.onEdit}>
+        <Icon kind={EIconKind.Edit} size={14} color={COLORS.gray[150]} />
       </Show>
     </div>
   );
