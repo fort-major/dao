@@ -1,6 +1,7 @@
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { ExchangeRate } from "@components/exchange-rate";
 import { FromInput } from "@components/from-input";
+import { Modal } from "@components/modal";
 import { PriceChart } from "@components/price-chart";
 import { ProfileFull, ProfileMini } from "@components/profile/profile";
 import { QtyInput } from "@components/qty-input";
@@ -24,7 +25,7 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <Task id={0n} />
+        <Modal>Hahah</Modal>
       </section>
     </main>
   );

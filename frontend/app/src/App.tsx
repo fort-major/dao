@@ -10,6 +10,7 @@ import { debugStringify } from "./utils/encoding";
 import { TasksStore } from "./store/tasks";
 import { VotingsStore } from "./store/votings";
 import { BankStore } from "./store/bank";
+import { Portal } from "solid-js/web";
 
 const AppRoot = (props: IChildren) => (
   <>
