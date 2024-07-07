@@ -1,8 +1,8 @@
 import { EIconKind, Icon } from "@components/icon";
 import { COLORS } from "@utils/colors";
 import { IChildren } from "@utils/types";
-import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
-import { Portal, Show } from "solid-js/web";
+import { onCleanup, onMount } from "solid-js";
+import { Portal } from "solid-js/web";
 
 export interface IModalProps extends IChildren {
   title?: string;
@@ -18,7 +18,7 @@ export function Modal(props: IModalProps) {
   const mount = document.getElementById("portal")!;
 
   onMount(() => {
-    ref!.className = "relative";
+    ref!.className = "relative flex justify-center p-5";
     mount.onclick = handleClose;
     mount.style.display = "block";
   });
@@ -29,7 +29,7 @@ export function Modal(props: IModalProps) {
 
   return (
     <Portal ref={ref} mount={mount}>
-      <div class="flex flex-col gap-4 p-2 shadow-lg min-w-80 min-h-80">
+      <div class="flex flex-col gap-4 p-2 shadow-lg min-w-[550px] min-h-80">
         <div class="flex items-center justify-between">
           <p class="font-primary font-bold text-2xl">
             {props.title ?? "Dialog"}

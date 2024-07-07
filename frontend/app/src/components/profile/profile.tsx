@@ -169,8 +169,8 @@ export function ProfileFull(props: IProfileProps) {
               </Match>
               <Match when={edited()}>
                 <TextInput
-                  defaultValue={profile()!.name}
-                  onChange={handleNameEdit}
+                  value={profile()!.name}
+                  setValue={handleNameEdit}
                   validations={[{ minLen: 2 }, { maxLen: 64 }]}
                 />
                 <Btn

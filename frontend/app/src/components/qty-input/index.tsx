@@ -1,59 +1,54 @@
-import { EE8sKind } from "@components/e8s-widget";
 import { ValidationError } from "@components/validation-error";
 import { E8s } from "@utils/math";
 import { eventHandler } from "@utils/security";
+import { Result } from "@utils/types";
 import { createSignal, onMount, Setter, Show } from "solid-js";
 
-export type TQtyInputValidation = { min: E8s } | { max: E8s };
+export type TQtyInputValidation<T> =
+  | { required: null }
+  | { min: T }
+  | { max: T };
 
-export interface IQtyInputProps {
-  symbol: EE8sKind;
-  defaultValue?: E8s;
-  validations?: TQtyInputValidation[];
-  setter?: { set?: (v: string) => void };
-  onChange?: (v: E8s | undefined) => void;
+export interface IQtyInputProps<T extends E8s | number | undefined> {
+  value: T;
+  onChange: (v: Result<T, T>) => void;
+  symbol: string;
+  mode?: "e8s" | "num";
+  validations?: TQtyInputValidation<T>[];
+  disabled?: boolean;
 }
 
-export function QtyInput(props: IQtyInputProps) {
-  const [value, setValue] = createSignal(props.defaultValue);
+export function QtyInput<T extends E8s | number>(props: IQtyInputProps<T>) {
   const [error, setError] = createSignal<string | undefined>();
 
-  onMount(() => {
-    if (props.setter) {
-      props.setter.set = processChange;
-    }
-  });
+  const mode = () => (props.mode === "num" ? "num" : "e8s");
 
   const handleChange = eventHandler(
     (e: Event & { target: HTMLInputElement }) => {
-      const v = e.target.value;
+      processChange(e.target.value);
     }
   );
 
-  const processChange = (v: string) => {
+  const processChange = (v: string | undefined) => {
     if (v === "") {
-      setValue(undefined);
-      setError(undefined);
-      props.onChange?.(undefined);
-      return;
+      v = undefined;
     }
 
     try {
-      const ve = E8s.fromString(v);
-      const er = isValid(ve, props.validations);
+      const ve =
+        v === undefined
+          ? undefined
+          : mode() === "e8s"
+          ? E8s.fromString(v)
+          : parseInt(v);
+      const er = isValid(mode(), ve, props.validations);
 
-      if (er) {
-        setError(er);
-        props.onChange?.(undefined);
-        return;
-      }
+      setError(er);
 
-      setError(undefined);
-      setValue(ve);
-      props.onChange?.(ve);
+      props.onChange(er ? Result.Err<T, T>(ve as T) : Result.Ok<T, T>(ve as T));
     } catch (_) {
       setError("Invalid number");
-      props.onChange?.(undefined);
+      props.onChange(Result.Err<T, T>(undefined as unknown as T));
     }
   };
 
@@ -65,10 +60,12 @@ export function QtyInput(props: IQtyInputProps) {
       >
         <input
           class="font-primary italic text-md font-medium leading-6 text-black focus:outline-none flex-grow"
+          classList={{ "bg-gray-190": props.disabled }}
           placeholder="Amount..."
           type="text"
-          value={value() ? value()!.toString() : ""}
+          value={props.value === undefined ? "" : props.value.toString()}
           onChange={handleChange}
+          disabled={props.disabled}
         />
         <p class="font-primary text-md font-normal leading-6 text-gray-150">
           {props.symbol}
@@ -80,18 +77,33 @@ export function QtyInput(props: IQtyInputProps) {
 }
 
 function isValid(
-  v: E8s,
-  validations?: TQtyInputValidation[]
+  mode: "e8s" | "num",
+  v?: E8s | number,
+  validations?: TQtyInputValidation<E8s | number>[]
 ): string | undefined {
   if (!validations || validations.length == 0) return undefined;
 
   for (let validation of validations) {
+    if ("required" in validation) {
+      if (v === undefined) return "The field is required";
+    }
+
     if ("min" in validation) {
-      if (v.lt(validation.min)) return `Min is ${validation.min.toString()}`;
+      if (mode === "e8s") {
+        if ((v as E8s).lt(validation.min as E8s))
+          return `Min is ${validation.min.toString()}`;
+      } else {
+        if (v! < validation.min) return `Min is ${validation.min.toString()}`;
+      }
     }
 
     if ("max" in validation) {
-      if (v.gt(validation.max)) return `Max is ${validation.max.toString()}`;
+      if (mode === "e8s") {
+        if ((v as E8s).gt(validation.max as E8s))
+          return `Max is ${validation.max.toString()}`;
+      } else {
+        if (v! > validation.max) return `Max is ${validation.max.toString()}`;
+      }
     }
   }
 

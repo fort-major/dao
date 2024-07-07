@@ -23,6 +23,129 @@ export interface ITaskProps {
 
 type TStatus = "Edit" | "Solve" | "Evaluate" | "Archived";
 
+export function TaskMini(props: ITaskProps) {
+  const { tasks, fetchTasks } = useTasks();
+
+  onMount(() => {
+    if (!task()) fetchTasks([props.id]);
+  });
+
+  const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
+    tasks[props.id.toString()];
+
+  const stage = (): TStatus => {
+    const t = task();
+
+    if (!t || !t.stage) return "Archived";
+
+    if ("Edit" in t.stage) {
+      return "Edit";
+    }
+
+    if ("Solve" in t.stage) {
+      return "Solve";
+    }
+
+    if ("Evaluate" in t.stage) {
+      return "Evaluate";
+    }
+
+    return "Archived";
+  };
+
+  const stageLabel = () => {
+    const t = task();
+
+    const pClass = "font-primary font-normal text-md text-gray-150";
+    const spanClass = "font-bold text-black text-xl";
+    const n = nowNs();
+
+    return (
+      <Switch fallback={<p class={pClass}>archived</p>}>
+        <Match when={t && t.stage && "Edit" in t.stage}>
+          <p class={pClass}>
+            this <span class={spanClass}>draft</span> can still be edited by the
+            creator
+          </p>
+        </Match>
+        <Match when={t && t.stage && "Solve" in t.stage}>
+          <p class={pClass}>
+            accepts solutions for{" "}
+            <span class={spanClass}>
+              {daysLeft(
+                n,
+                (t!.stage as { Solve: { until_timestamp: bigint } }).Solve
+                  .until_timestamp - n,
+                n
+              ).toString()}
+            </span>{" "}
+            more days
+          </p>
+        </Match>
+        <Match when={t && t.stage && "Evaluate" in t.stage}>
+          <p class={pClass}>
+            awaits <span class={spanClass}>evaluation</span> from the team
+          </p>
+        </Match>
+      </Switch>
+    );
+  };
+
+  const statusIcon = () => {
+    const s = stage();
+
+    return (
+      <Switch fallback={<Icon kind={EIconKind.DocInfo} color={COLORS.black} />}>
+        <Match when={s === "Edit"}>
+          <Icon kind={EIconKind.DocEdit} color={COLORS.gray[150]} />
+        </Match>
+        <Match when={s === "Solve"}>
+          <Icon kind={EIconKind.DocQuestion} color={COLORS.green} />
+        </Match>
+        <Match when={s === "Evaluate"}>
+          <Icon kind={EIconKind.DocSearch} color={COLORS.darkBlue} />
+        </Match>
+      </Switch>
+    );
+  };
+
+  return (
+    <div class="flex flex-col gap-5">
+      <div class="flex flex-grow gap-1 items-center">
+        <div class="flex flex-grow gap-1 items-baseline">
+          <p class="font-primary font-medium text-xs text-gray-150">
+            {props.id.toString()}
+          </p>
+          <h3 class="flex-grow font-primary font-medium text-4xl text-black">
+            {task() ? task()!.title : "Loading..."}
+          </h3>
+          <div class="flex flex-col items-center py-2">{statusIcon()}</div>
+        </div>
+      </div>
+      <Show when={stage() !== "Archived"}>
+        <div class="flex gap-1 justify-between items-center">
+          {stageLabel()}
+          <div class="flex gap-1 items-center">
+            <E8sWidget
+              kind={EE8sKind.Hours}
+              minValue={task()?.hours_base ? task()!.hours_base! : E8s.zero()}
+            />
+            <E8sWidget
+              kind={EE8sKind.Storypoints}
+              minValue={
+                task()?.storypoints_base
+                  ? task()!.storypoints_base!
+                  : E8s.zero()
+              }
+              maxValue={task()?.storypoints_ext_budget}
+            />
+          </div>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
 export function Task(props: ITaskProps) {
   const { tasks, fetchTasks, attachToTask } = useTasks();
   const { identity, isAuthorized, profileProof, authorize } = useAuth();
@@ -31,6 +154,10 @@ export function Task(props: ITaskProps) {
 
   const [showSolveModal, setShowSolveModal] = createSignal(false);
   const [disabled, setDisabled] = createSignal(false);
+
+  onMount(() => {
+    if (!task()) fetchTasks([props.id]);
+  });
 
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
     tasks[props.id.toString()];
@@ -240,10 +367,6 @@ export function Task(props: ITaskProps) {
     fetchTasks([props.id]);
   };
 
-  onMount(() => {
-    if (!task()) fetchTasks([props.id]);
-  });
-
   const handleSolutionSubmit = async () => {
     setShowSolveModal(false);
     fetchTasks([props.id]);
@@ -333,7 +456,7 @@ export function Task(props: ITaskProps) {
         </div>
       </div>
       <Show when={showSolveModal() && task()?.solution_fields}>
-        <Modal>
+        <Modal title={`Submit a solution for task #${props.id}`}>
           <SolutionSubmitForm
             onSubmit={handleSolutionSubmit}
             taskId={props.id}

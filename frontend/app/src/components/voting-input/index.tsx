@@ -3,12 +3,13 @@ import { COLORS } from "@utils/colors";
 import { ErrorCode, err } from "@utils/error";
 import { E8s } from "@utils/math";
 import { eventHandler } from "@utils/security";
+import { Result } from "@utils/types";
 import { Match, Switch, createSignal } from "solid-js";
 
 export interface IVotingInputProps {
   kind: "binary" | "evaluation" | "satisfaction";
-  defaultValue?: E8s | null;
-  onChange?: (newValue: E8s | null) => void;
+  value: E8s | undefined;
+  onChange: (newValue: Result<E8s | undefined, E8s | undefined>) => void;
   reset?: boolean;
   disabled?: boolean;
 }
@@ -33,7 +34,7 @@ function BinaryVotingInput(props: IVotingInputProps) {
   const downColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue === null
+      : !props.value
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.errorRed
@@ -42,7 +43,7 @@ function BinaryVotingInput(props: IVotingInputProps) {
   const upColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue?.toBool()
+      : props.value?.toBool()
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.green
@@ -54,14 +55,14 @@ function BinaryVotingInput(props: IVotingInputProps) {
         kind={EIconKind.ThumbDown}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
         color={downColor()}
-        onClick={() => props.onChange?.(null)}
+        onClick={() => props.onChange(Result.Ok(undefined))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.ThumbUp}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.green}
         color={upColor()}
-        onClick={() => props.onChange?.(E8s.one())}
+        onClick={() => props.onChange?.(Result.Ok(E8s.one()))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
     </div>
@@ -72,7 +73,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
   const rejectColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue === null
+      : !props.value
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.errorRed
@@ -81,7 +82,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
   const verySadColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue?.eq(E8s.f0_2())
+      : props.value?.eq(E8s.f0_2())
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.pink
@@ -90,7 +91,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
   const sadColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue?.eq(E8s.f0_4())
+      : props.value?.eq(E8s.f0_4())
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.orange
@@ -99,7 +100,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
   const neutralColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue?.eq(E8s.f0_6())
+      : props.value?.eq(E8s.f0_6())
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.gray[110]
@@ -108,7 +109,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
   const happyColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue?.eq(E8s.f0_8())
+      : props.value?.eq(E8s.f0_8())
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.green
@@ -117,7 +118,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
   const veryHappyColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue?.eq(E8s.one())
+      : props.value?.eq(E8s.one())
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.blue
@@ -129,42 +130,42 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
         kind={EIconKind.CancelCircle}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
         color={rejectColor()}
-        onClick={() => props.onChange?.(null)}
+        onClick={() => props.onChange(Result.Ok(undefined))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceVerySad}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.pink}
         color={verySadColor()}
-        onClick={() => props.onChange?.(E8s.f0_2())}
+        onClick={() => props.onChange(Result.Ok(E8s.f0_2()))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceSad}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.orange}
         color={sadColor()}
-        onClick={() => props.onChange?.(E8s.f0_4())}
+        onClick={() => props.onChange(Result.Ok(E8s.f0_4()))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceNeutral}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.gray[110]}
         color={neutralColor()}
-        onClick={() => props.onChange?.(E8s.f0_6())}
+        onClick={() => props.onChange(Result.Ok(E8s.f0_6()))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceHappy}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.green}
         color={happyColor()}
-        onClick={() => props.onChange?.(E8s.f0_8())}
+        onClick={() => props.onChange(Result.Ok(E8s.f0_8()))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceVeryHappy}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.blue}
         color={veryHappyColor()}
-        onClick={() => props.onChange?.(E8s.one())}
+        onClick={() => props.onChange(Result.Ok(E8s.one()))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
     </div>
@@ -203,7 +204,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
   const rejectColor = () =>
     props.disabled
       ? COLORS.gray[150]
-      : props.defaultValue === null
+      : !props.value
       ? props.reset
         ? COLORS.gray[150]
         : COLORS.errorRed
@@ -218,7 +219,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
       if (!h) return COLORS.gray[150];
 
       return COLORS.yellow;
-    } else if (props.defaultValue) {
+    } else if (props.value) {
       return COLORS.yellow;
     } else {
       return COLORS.gray[150];
@@ -232,8 +233,8 @@ function EvaluationVotingInput(props: IVotingInputProps) {
       if (!h) return EIconKind.StarEmpty;
 
       return h >= idx ? EIconKind.StarFilled : EIconKind.StarEmpty;
-    } else if (props.defaultValue) {
-      const s = levelToStars(props.defaultValue);
+    } else if (props.value) {
+      const s = levelToStars(props.value);
 
       return s >= idx ? EIconKind.StarFilled : EIconKind.StarEmpty;
     } else {
@@ -247,7 +248,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
         kind={EIconKind.CancelCircle}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
         color={rejectColor()}
-        onClick={() => props.onChange?.(null)}
+        onClick={() => props.onChange(Result.Ok(undefined))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <div class="flex items-center">
@@ -255,7 +256,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(1)}
           color={starColor()}
           hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange?.(E8s.f0_2())}
+          onClick={() => props.onChange(Result.Ok(E8s.f0_2()))}
           onMouseEnter={() => setHoveredStar(1)}
           onMouseLeave={setHoveredStar}
           class={props.disabled ? "" : "cursor-pointer"}
@@ -264,7 +265,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(2)}
           color={starColor()}
           hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange?.(E8s.f0_4())}
+          onClick={() => props.onChange(Result.Ok(E8s.f0_4()))}
           onMouseEnter={() => setHoveredStar(2)}
           onMouseLeave={setHoveredStar}
           class={props.disabled ? "" : "cursor-pointer"}
@@ -273,7 +274,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(3)}
           color={starColor()}
           hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange?.(E8s.f0_6())}
+          onClick={() => props.onChange(Result.Ok(E8s.f0_6()))}
           onMouseEnter={() => setHoveredStar(3)}
           onMouseLeave={setHoveredStar}
           class={props.disabled ? "" : "cursor-pointer"}
@@ -282,7 +283,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(4)}
           color={starColor()}
           hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange?.(E8s.f0_8())}
+          onClick={() => props.onChange(Result.Ok(E8s.f0_8()))}
           onMouseEnter={() => setHoveredStar(4)}
           onMouseLeave={setHoveredStar}
           class={props.disabled ? "" : "cursor-pointer"}
@@ -291,7 +292,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(5)}
           color={starColor()}
           hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange?.(E8s.one())}
+          onClick={() => props.onChange(Result.Ok(E8s.one()))}
           onMouseEnter={() => setHoveredStar(5)}
           onMouseLeave={setHoveredStar}
           class={props.disabled ? "" : "cursor-pointer"}

@@ -1,9 +1,11 @@
 import { ValidationError } from "@components/validation-error";
 import { Principal } from "@dfinity/principal";
 import { eventHandler } from "@utils/security";
+import { Result } from "@utils/types";
 import { Show, createSignal, onMount } from "solid-js";
 
 export type TTextInputValidation =
+  | { required: null }
   | { minLen: number }
   | { maxLen: number }
   | {
@@ -19,47 +21,39 @@ export type TTextInputValidation =
   | { principal: null };
 
 export interface ITextInputProps {
-  defaultValue?: string;
-  onChange?: (val: string | undefined) => void;
+  value: string;
+  onChange: (v: Result<string, string>) => void;
   placeholder?: string;
   validations?: TTextInputValidation[];
   disabled?: boolean;
 }
 
 export function TextInput(props: ITextInputProps) {
-  const [value, setValue] = createSignal(props.defaultValue ?? "");
   const [error, setError] = createSignal<string | undefined>();
-
-  onMount(() => {
-    if (props.defaultValue && props.onChange) {
-      props.onChange(props.defaultValue);
-    }
-  });
 
   const handleChange = eventHandler(
     (e: Event & { target: HTMLInputElement }) => {
       const v = e.target.value;
 
-      setValue(v);
       const error = isValid(v, props.validations);
       setError(error);
 
-      props.onChange?.(error ? undefined : v);
+      props.onChange(error ? Result.Err(v) : Result.Ok(v));
     }
   );
 
   return (
-    <div class="flex flex-col flex-1">
+    <div class="flex flex-col gap-1 flex-1">
       <input
         type="text"
         class="flex p-2 font-primary focus:outline-none text-sm leading-6 flex-1 shadow-sm"
         classList={{
-          italic: value() === "",
+          italic: props.value === "",
           "shadow-errorRed": !!error(),
           "bg-gray-190": props.disabled,
         }}
         placeholder={props.placeholder ?? "Type here"}
-        value={value()}
+        value={props.value}
         onChange={handleChange}
         disabled={props.disabled}
       />
@@ -75,6 +69,10 @@ function isValid(
   if (!validations || validations.length == 0) return undefined;
 
   for (let validation of validations) {
+    if ("required" in validation) {
+      return `This field is required`;
+    }
+
     if ("minLen" in validation) {
       if (s.length < validation.minLen)
         return `Min length is ${validation.minLen}`;

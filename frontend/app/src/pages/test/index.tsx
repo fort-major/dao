@@ -26,24 +26,33 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <SolutionSubmitForm
-          taskId={10n}
-          fields={[
-            {
-              name: "Test Field 1",
-              description:
-                "This is a test field with a test value ahahahaha pretty long description",
-              kind: { Md: null },
-              required: false,
-            },
-            {
-              name: "Test field 2",
-              description: "Another field",
-              kind: { Url: { kind: { Twitter: null } } },
-              required: true,
-            },
-          ]}
-        />
+        <Modal title="Submit solution for task #1">
+          <SolutionSubmitForm
+            taskId={10n}
+            fields={[
+              {
+                name: "Test Field 1",
+                description:
+                  "This is a test field with a test value ahahahaha pretty long description",
+                kind: { Md: null },
+                required: false,
+              },
+              {
+                name: "Test Field 1",
+                description:
+                  "This is a test field with a test value ahahahaha pretty long description",
+                kind: { Md: null },
+                required: false,
+              },
+              {
+                name: "Test field 2",
+                description: "Another field",
+                kind: { Url: { kind: { Twitter: null } } },
+                required: true,
+              },
+            ]}
+          />
+        </Modal>
       </section>
     </main>
   );

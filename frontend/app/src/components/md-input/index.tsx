@@ -1,25 +1,33 @@
 import { MdPreview } from "@components/md-preview";
 import { MdTools } from "@components/md-tools";
+import { ValidationError } from "@components/validation-error";
 import { ErrorCode, err } from "@utils/error";
 import { eventHandler } from "@utils/security";
+import { Result } from "@utils/types";
 import { Match, Switch, createSignal } from "solid-js";
 import TextArea from "solid-textarea-autosize";
 
+export type TMdInputValidation =
+  | { required: null }
+  | { minLen: number }
+  | { maxLen: number };
+
 export interface IMdInputProps {
-  defaultValue?: string;
-  onChange?: (value: string) => void;
+  value: string;
+  onChange: (value: Result<string, string>) => void;
   placeholder?: string;
   disabled?: boolean;
+  validations?: TMdInputValidation[];
 }
 
 export function MdInput(props: IMdInputProps) {
-  const [history, setHistory] = createSignal<string[]>([]);
-  const [value, setValue] = createSignal(props.defaultValue ?? "");
+  const [history, setHistory] = createSignal<Result<string, string>[]>([]);
   const [mode, setMode] = createSignal<"edit" | "preview">("edit");
+  const [error, setError] = createSignal<string | undefined>();
 
   let textAreaRef: HTMLTextAreaElement | undefined;
 
-  const pushHistory = (v: string) => {
+  const pushHistory = (v: Result<string, string>) => {
     setHistory((h) => {
       if (h.length == 256) {
         h.shift();
@@ -31,7 +39,7 @@ export function MdInput(props: IMdInputProps) {
     });
   };
 
-  const popHistory = (): string | undefined => {
+  const popHistory = (): Result<string, string> | undefined => {
     const h = history();
 
     if (h.length === 0) return undefined;
@@ -50,32 +58,16 @@ export function MdInput(props: IMdInputProps) {
     (e: Event & { target: HTMLTextAreaElement }) => handleChange(e.target.value)
   );
 
-  const handleChange = (newValue: string | ((v: string) => string)) => {
-    if (typeof newValue === "string") {
-      setValue((v) => {
-        if (newValue === v) return v;
+  const handleChange = (newValue: string) => {
+    const error = isValid(newValue, props.validations);
+    setError(error);
 
-        pushHistory(v);
+    const v = error
+      ? Result.Err<string, string>(newValue)
+      : Result.Ok<string, string>(newValue);
 
-        return newValue;
-      });
-
-      props.onChange?.(newValue);
-    } else {
-      let nv: string;
-
-      setValue((v) => {
-        nv = newValue(v);
-
-        if (nv === v) return v;
-
-        pushHistory(v);
-
-        return nv;
-      });
-
-      props.onChange?.(nv!);
-    }
+    pushHistory(v);
+    props.onChange(v);
   };
 
   const handleOnPreview = (isPreview: boolean) => {
@@ -225,11 +217,13 @@ export function MdInput(props: IMdInputProps) {
     const from = textAreaRef.selectionStart;
     const to = textAreaRef.selectionEnd;
 
-    const selected = value().substring(from, to);
+    const selected = props.value.substring(from, to);
     const [replacement, newFrom, newTo] = fn(selected, from, to);
 
     handleChange(
-      (v) => `${v.substring(0, from)}${replacement}${v.substring(to)}`
+      `${props.value.substring(0, from)}${replacement}${props.value.substring(
+        to
+      )}`
     );
 
     textAreaRef.focus();
@@ -258,6 +252,8 @@ export function MdInput(props: IMdInputProps) {
 
         return [selected, null, null];
       });
+
+      return;
     }
 
     if (e.ctrlKey) {
@@ -286,8 +282,9 @@ export function MdInput(props: IMdInputProps) {
           e.preventDefault();
           const v = popHistory();
           if (v !== undefined) {
-            setValue(v);
-            props.onChange?.(v);
+            props.onChange(v);
+          } else {
+            handleChange("");
           }
           break;
       }
@@ -295,40 +292,74 @@ export function MdInput(props: IMdInputProps) {
   };
 
   return (
-    <div class="flex flex-col shadow-sm">
-      <MdTools
-        onPreview={handleOnPreview}
-        onBold={handleOnBold}
-        onItalic={handleOnItalic}
-        onUnderline={handleOnUnderline}
-        onLink={handleOnLink}
-        onImage={handleOnImage}
-        onH1={handleOnH1}
-        onH2={handleOnH2}
-        onH3={handleOnH3}
-        onH4={handleOnH4}
-        onH5={handleOnH5}
-        onH6={handleOnH6}
-      />
-      <Switch>
-        <Match when={mode() === "edit"}>
-          <TextArea
-            class="font-primary font-light p-3 focus:outline-none"
-            classList={{ italic: value().length === 0 }}
-            minRows={10}
-            ref={textAreaRef}
-            placeholder={props.placeholder ?? "Start typing..."}
-            onInput={handleChangeEvent}
-            onChange={handleChangeEvent}
-            value={value()}
-            onKeyDown={handleKeyDown}
-            disabled={props.disabled}
-          />
-        </Match>
-        <Match when={mode() === "preview"}>
-          <MdPreview class="font-primary font-light p-3" content={value()} />
-        </Match>
-      </Switch>
+    <div class="flex flex-col gap-1">
+      <div
+        class="flex flex-col shadow-sm"
+        classList={{ "shadow-errorRed": !!error() }}
+      >
+        <MdTools
+          onPreview={handleOnPreview}
+          onBold={handleOnBold}
+          onItalic={handleOnItalic}
+          onUnderline={handleOnUnderline}
+          onLink={handleOnLink}
+          onImage={handleOnImage}
+          onH1={handleOnH1}
+          onH2={handleOnH2}
+          onH3={handleOnH3}
+          onH4={handleOnH4}
+          onH5={handleOnH5}
+          onH6={handleOnH6}
+        />
+        <Switch>
+          <Match when={mode() === "edit"}>
+            <TextArea
+              class="font-primary font-light focus:outline-none"
+              classList={{
+                italic: props.value.length === 0,
+                "bg-gray-190": props.disabled,
+              }}
+              minRows={10}
+              ref={textAreaRef}
+              placeholder={props.placeholder ?? "Start typing..."}
+              onInput={handleChangeEvent}
+              onChange={handleChangeEvent}
+              value={props.value}
+              onKeyDown={handleKeyDown}
+              disabled={props.disabled}
+            />
+          </Match>
+          <Match when={mode() === "preview"}>
+            <MdPreview class="font-primary font-light" content={props.value} />
+          </Match>
+        </Switch>
+      </div>
+      <ValidationError error={error()} />
     </div>
   );
+}
+
+function isValid(
+  v: string,
+  validations?: TMdInputValidation[]
+): string | undefined {
+  if (!validations || validations.length === 0) return undefined;
+
+  for (let validation of validations) {
+    if ("required" in validation) {
+      if (v.length === 0) return "The field is required";
+    }
+
+    if ("minLen" in validation) {
+      if (v.length < validation.minLen)
+        return `Min len is ${validation.minLen}`;
+    }
+
+    if ("maxLen" in validation) {
+      if (v.length > validation.maxLen)
+        return `Max len is ${validation.maxLen}`;
+    }
+  }
+
+  return undefined;
 }

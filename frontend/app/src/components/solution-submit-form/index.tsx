@@ -74,7 +74,7 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
           <Match when={"Url" in f.kind}>
             <TextInput
               validations={validations()}
-              onChange={handleChange}
+              setValue={handleChange}
               disabled={disabled()}
             />
           </Match>

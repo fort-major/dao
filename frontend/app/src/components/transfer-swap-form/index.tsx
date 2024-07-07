@@ -146,7 +146,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
             <Title class="p-2" text="Transfer to Principal ID" />
             <div class="flex justify-between gap-5">
               <TextInput
-                onChange={handleTransferRecipientChange}
+                setValue={handleTransferRecipientChange}
                 validations={[{ principal: null }]}
               />
               <E8sWidget minValue={amountToTransfer()} kind={from()} />
