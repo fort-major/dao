@@ -8,6 +8,7 @@ export type TTextInputValidation =
   | { maxLen: number }
   | {
       url:
+        | "Any"
         | "Github"
         | "Notion"
         | "Figma"
@@ -22,6 +23,7 @@ export interface ITextInputProps {
   onChange?: (val: string | undefined) => void;
   placeholder?: string;
   validations?: TTextInputValidation[];
+  disabled?: boolean;
 }
 
 export function TextInput(props: ITextInputProps) {
@@ -51,10 +53,15 @@ export function TextInput(props: ITextInputProps) {
       <input
         type="text"
         class="flex p-2 font-primary focus:outline-none text-sm leading-6 flex-1 shadow-sm"
-        classList={{ italic: value() === "", "shadow-errorRed": !!error() }}
+        classList={{
+          italic: value() === "",
+          "shadow-errorRed": !!error(),
+          "bg-gray-190": props.disabled,
+        }}
         placeholder={props.placeholder ?? "Type here"}
         value={value()}
         onChange={handleChange}
+        disabled={props.disabled}
       />
       <ValidationError error={error()} />
     </div>

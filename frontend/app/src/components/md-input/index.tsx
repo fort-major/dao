@@ -9,6 +9,7 @@ export interface IMdInputProps {
   defaultValue?: string;
   onChange?: (value: string) => void;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export function MdInput(props: IMdInputProps) {
@@ -321,6 +322,7 @@ export function MdInput(props: IMdInputProps) {
             onChange={handleChangeEvent}
             value={value()}
             onKeyDown={handleKeyDown}
+            disabled={props.disabled}
           />
         </Match>
         <Match when={mode() === "preview"}>

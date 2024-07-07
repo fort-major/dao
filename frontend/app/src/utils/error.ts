@@ -7,6 +7,7 @@ export enum ErrorCode {
   UNKNOWN = "UNKNOWN",
   ICRC1 = "ICRC1",
   NETWORK = "NETWORK",
+  VALIDATION = "VALIDATION",
 }
 
 export function err(code: ErrorCode, msg?: string): never {

@@ -4,7 +4,9 @@ import { daysLeft, nowNs } from "@components/countdown";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { EIconKind, Icon } from "@components/icon";
 import { MdPreview } from "@components/md-preview";
+import { Modal } from "@components/modal";
 import { ProfileMicro, ProfileMini } from "@components/profile/profile";
+import { SolutionSubmitForm } from "@components/solution-submit-form";
 import { Title } from "@components/title";
 import { useAuth } from "@store/auth";
 import { IArchivedTaskV1, ITask, useTasks } from "@store/tasks";
@@ -27,6 +29,7 @@ export function Task(props: ITaskProps) {
   const { createTasksFinishEditVoting, createTasksEvaluateVoting } =
     useVotings();
 
+  const [showSolveModal, setShowSolveModal] = createSignal(false);
   const [disabled, setDisabled] = createSignal(false);
 
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
@@ -157,6 +160,10 @@ export function Task(props: ITaskProps) {
     setDisabled(false);
   };
 
+  const handleSolveClick = () => {
+    setShowSolveModal(true);
+  };
+
   const button = () => {
     return (
       <Switch>
@@ -180,6 +187,7 @@ export function Task(props: ITaskProps) {
             icon={EIconKind.CheckRect}
             iconColor={COLORS.green}
             disabled={disabled()}
+            onClick={handleSolveClick}
           />
         </Match>
         <Match when={canSolve() && !profileProof()}>
@@ -236,87 +244,103 @@ export function Task(props: ITaskProps) {
     if (!task()) fetchTasks([props.id]);
   });
 
+  const handleSolutionSubmit = async () => {
+    setShowSolveModal(false);
+    fetchTasks([props.id]);
+  };
+
   return (
-    <div class="flex flex-col gap-5">
-      <div class="flex flex-grow gap-1 items-center">
-        <div class="flex flex-grow gap-1 items-baseline">
-          <p class="font-primary font-medium text-xs text-gray-150">
-            {props.id.toString()}
-          </p>
-          <h3 class="flex-grow font-primary font-medium text-4xl text-black">
-            {task() ? task()!.title : "Loading..."}
-          </h3>
-          <div class="flex flex-col items-center py-2">
-            {statusIcon()}
-            <Show when={canEdit()}>
-              <Icon kind={EIconKind.Edit} color={COLORS.gray[150]} />
-            </Show>
+    <>
+      <div class="flex flex-col gap-5">
+        <div class="flex flex-grow gap-1 items-center">
+          <div class="flex flex-grow gap-1 items-baseline">
+            <p class="font-primary font-medium text-xs text-gray-150">
+              {props.id.toString()}
+            </p>
+            <h3 class="flex-grow font-primary font-medium text-4xl text-black">
+              {task() ? task()!.title : "Loading..."}
+            </h3>
+            <div class="flex flex-col items-center py-2">
+              {statusIcon()}
+              <Show when={canEdit()}>
+                <Icon kind={EIconKind.Edit} color={COLORS.gray[150]} />
+              </Show>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="flex flex-col py-2">
-        <MdPreview content={task() ? task()!.description : "Loading..."} />
-      </div>
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-grow gap-5">
-          <div class="flex flex-grow flex-col gap-1">
-            <div class="flex items-center justify-between">
-              <Title text="Created By" />
-              <Title
-                text={task() ? timestampToStr(task()!.created_at) : "N/A"}
-              />
+        <div class="flex flex-col py-2">
+          <MdPreview content={task() ? task()!.description : "Loading..."} />
+        </div>
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-grow gap-5">
+            <div class="flex flex-grow flex-col gap-1">
+              <div class="flex items-center justify-between">
+                <Title text="Created By" />
+                <Title
+                  text={task() ? timestampToStr(task()!.created_at) : "N/A"}
+                />
+              </div>
+              <ProfileMini id={task()?.creator} />
             </div>
-            <ProfileMini id={task()?.creator} />
+            <div class="flex flex-grow flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <Title text="Working On It" />
+              </div>
+              <div class="flex flex-wrap gap-1 items-center">
+                <For
+                  fallback={
+                    <p class="font-primary text-xs text-gray-140 italic">
+                      Be the first one
+                    </p>
+                  }
+                  each={task()?.solvers ? task()!.solvers! : []}
+                >
+                  {(id) => <ProfileMicro id={id} />}
+                </For>
+              </div>
+              <div class="flex flex-grow justify-end">
+                <BooleanInput
+                  labels={["Won't Do", "Count Me It"]}
+                  defaultValue={countMeInValue()}
+                  disabled={disabled()}
+                  onChange={handleCountMeIn}
+                />
+              </div>
+            </div>
           </div>
-          <div class="flex flex-grow flex-col gap-2">
-            <div class="flex items-center justify-between">
-              <Title text="Working On It" />
-            </div>
-            <div class="flex flex-wrap gap-1 items-center">
-              <For
-                fallback={
-                  <p class="font-primary text-xs text-gray-140 italic">
-                    Be the first one
-                  </p>
+          <div class="flex flex-grow gap-2">
+            <div class="flex flex-grow flex-col gap-1">
+              <Title text="Rewards" />
+              <E8sWidget
+                kind={EE8sKind.Hours}
+                minValue={task()?.hours_base ? task()!.hours_base! : E8s.zero()}
+              />
+              <E8sWidget
+                kind={EE8sKind.Storypoints}
+                minValue={
+                  task()?.storypoints_base
+                    ? task()!.storypoints_base!
+                    : E8s.zero()
                 }
-                each={task()?.solvers ? task()!.solvers! : []}
-              >
-                {(id) => <ProfileMicro id={id} />}
-              </For>
-            </div>
-            <div class="flex flex-grow justify-end">
-              <BooleanInput
-                labels={["Won't Do", "Count Me It"]}
-                defaultValue={countMeInValue()}
-                disabled={disabled()}
-                onChange={handleCountMeIn}
+                maxValue={task()?.storypoints_ext_budget}
               />
             </div>
-          </div>
-        </div>
-        <div class="flex flex-grow gap-2">
-          <div class="flex flex-grow flex-col gap-1">
-            <Title text="Rewards" />
-            <E8sWidget
-              kind={EE8sKind.Hours}
-              minValue={task()?.hours_base ? task()!.hours_base! : E8s.zero()}
-            />
-            <E8sWidget
-              kind={EE8sKind.Storypoints}
-              minValue={
-                task()?.storypoints_base
-                  ? task()!.storypoints_base!
-                  : E8s.zero()
-              }
-              maxValue={task()?.storypoints_ext_budget}
-            />
-          </div>
-          <div class="flex flex-grow flex-col gap-1 justify-end items-end">
-            {stageLabel()}
-            {button()}
+            <div class="flex flex-grow flex-col gap-1 justify-end items-end">
+              {stageLabel()}
+              {button()}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      <Show when={showSolveModal() && task()?.solution_fields}>
+        <Modal>
+          <SolutionSubmitForm
+            onSubmit={handleSolutionSubmit}
+            taskId={props.id}
+            fields={task()!.solution_fields!}
+          />
+        </Modal>
+      </Show>
+    </>
   );
 }

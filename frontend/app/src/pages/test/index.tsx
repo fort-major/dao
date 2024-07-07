@@ -6,6 +6,7 @@ import { PriceChart } from "@components/price-chart";
 import { ProfileFull, ProfileMini } from "@components/profile/profile";
 import { QtyInput } from "@components/qty-input";
 import { Select } from "@components/select";
+import { SolutionSubmitForm } from "@components/solution-submit-form";
 import { Task } from "@components/task";
 import { TextInput } from "@components/text-input";
 import { TransferSwapForm } from "@components/transfer-swap-form";
@@ -25,7 +26,24 @@ export function TestPage() {
   return (
     <main class="flex flex-row justify-center">
       <section class="w-256 flex flex-col gap-4">
-        <Modal>Hahah</Modal>
+        <SolutionSubmitForm
+          taskId={10n}
+          fields={[
+            {
+              name: "Test Field 1",
+              description:
+                "This is a test field with a test value ahahahaha pretty long description",
+              kind: { Md: null },
+              required: false,
+            },
+            {
+              name: "Test field 2",
+              description: "Another field",
+              kind: { Url: { kind: { Twitter: null } } },
+              required: true,
+            },
+          ]}
+        />
       </section>
     </main>
   );

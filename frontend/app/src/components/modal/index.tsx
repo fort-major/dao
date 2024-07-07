@@ -1,7 +1,7 @@
 import { EIconKind, Icon } from "@components/icon";
 import { COLORS } from "@utils/colors";
 import { IChildren } from "@utils/types";
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { Portal, Show } from "solid-js/web";
 
 export interface IModalProps extends IChildren {
@@ -17,9 +17,14 @@ export function Modal(props: IModalProps) {
   let ref: HTMLDivElement | undefined = undefined;
   const mount = document.getElementById("portal")!;
 
-  createEffect(() => {
+  onMount(() => {
     ref!.className = "relative";
     mount.onclick = handleClose;
+    mount.style.display = "block";
+  });
+
+  onCleanup(() => {
+    mount.style.display = "none";
   });
 
   return (
