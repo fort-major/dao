@@ -32,14 +32,14 @@ type ResultMatchExpr<T, E, R> =
   | { Ok: ResultMatchExprFn<T, R>; Err?: ResultMatchExprFn<E, R> }
   | { Ok?: ResultMatchExprFn<T, R>; Err: ResultMatchExprFn<E, R> };
 
-export class Result<T, E = void> {
+export class Result<T, E = T> {
   private constructor(public value: { Ok: T } | { Err: E }) {}
 
-  public static Ok<T, E>(v: T): Result<T, E> {
+  public static Ok<T, E = T>(v: T): Result<T, E> {
     return new Result({ Ok: v });
   }
 
-  public static Err<T, E>(e: E): Result<T, E> {
+  public static Err<T, E = T>(e: E): Result<T, E> {
     return new Result({ Err: e });
   }
 
@@ -107,6 +107,11 @@ export class Result<T, E = void> {
       );
 
     return this.value.Err;
+  }
+
+  unwrap(): T | E {
+    if ("Ok" in this.value) return this.value.Ok;
+    else return this.value.Err;
   }
 
   expect(msg: string): T {

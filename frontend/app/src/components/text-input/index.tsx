@@ -1,3 +1,4 @@
+import { TMdInputValidation } from "@components/md-input";
 import { ValidationError } from "@components/validation-error";
 import { Principal } from "@dfinity/principal";
 import { eventHandler } from "@utils/security";
@@ -5,9 +6,7 @@ import { Result } from "@utils/types";
 import { Show, createSignal, onMount } from "solid-js";
 
 export type TTextInputValidation =
-  | { required: null }
-  | { minLen: number }
-  | { maxLen: number }
+  | TMdInputValidation
   | {
       url:
         | "Any"

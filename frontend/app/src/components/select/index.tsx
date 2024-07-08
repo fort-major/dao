@@ -1,17 +1,18 @@
 import { EIconKind, Icon } from "@components/icon";
 import { COLORS } from "@utils/colors";
 import { eventHandler } from "@utils/security";
+import { Result } from "@utils/types";
 import { createSignal, For, Show } from "solid-js";
 
 export interface ISelectProps {
-  values: string[];
-  defaultValue?: string;
-  onChange?: (v: string) => void;
+  possibleValues: string[];
+  value: string;
+  onChange: (v: Result<string, string>) => void;
+  disabled?: boolean;
 }
 
 export function Select(props: ISelectProps) {
   const [expanded, setExpanded] = createSignal(false);
-  const [value, setValue] = createSignal(props.defaultValue ?? props.values[0]);
 
   const handleValueClick = eventHandler(() => {
     setExpanded((e) => !e);
@@ -20,8 +21,7 @@ export function Select(props: ISelectProps) {
   const handleOptionClick = eventHandler(
     (e: Event & { currentTarget: HTMLDivElement }) => {
       const v = e.currentTarget.innerText;
-      setValue(v);
-      props.onChange?.(v);
+      props.onChange(Result.Ok(v));
 
       setExpanded(false);
     }
@@ -31,17 +31,22 @@ export function Select(props: ISelectProps) {
     <div class="flex flex-col min-w-36 p-2 text-black shadow-sm relative">
       <div
         class="flex items-center justify-between cursor-pointer"
+        classList={{ "bg-gray-190": props.disabled }}
         onClick={handleValueClick}
       >
-        <p class="select-none">{value()}</p>
+        <p class="select-none">{props.value}</p>
         <Icon
-          kind={expanded() ? EIconKind.ChevronUp : EIconKind.ChevronDown}
+          kind={
+            expanded() && !props.disabled
+              ? EIconKind.ChevronUp
+              : EIconKind.ChevronDown
+          }
           color={COLORS.black}
         />
       </div>
-      <Show when={expanded()}>
+      <Show when={expanded() && !props.disabled}>
         <div class="flex flex-col gap-1 absolute z-10 bg-white w-full top-full left-0 shadow-sm">
-          <For each={props.values}>
+          <For each={props.possibleValues}>
             {(p) => (
               <div
                 class="select-none hover:bg-gray-190 cursor-pointer p-2"

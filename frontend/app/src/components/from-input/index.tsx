@@ -3,44 +3,37 @@ import { QtyInput } from "@components/qty-input";
 import { Select } from "@components/select";
 import { E8s } from "@utils/math";
 import { eventHandler } from "@utils/security";
-import { createEffect, createSignal } from "solid-js";
+import { Result } from "@utils/types";
 
 export interface IFromInputProps {
   balance: E8s;
+  amount: E8s | undefined;
   kind: EE8sKind;
-  onChange?: (kind: EE8sKind, amount: E8s | undefined) => void;
+  onKindChange: (k: Result<EE8sKind, EE8sKind>) => void;
+  onAmountChange: (a: Result<E8s | undefined, E8s | undefined>) => void;
 }
 
 export function FromInput(props: IFromInputProps) {
-  const [amount, setAmount] = createSignal<E8s | undefined>();
-
-  const setter: { set?: (v: string) => void } = {};
-
   const handleMaxClick = eventHandler(() => {
-    setter.set!(props.balance.toString());
+    props.onAmountChange(Result.Ok(props.balance));
   });
 
-  const handleAmountChange = (a: E8s | undefined) => {
-    setAmount(a);
-    props.onChange?.(props.kind, a);
-  };
-
-  const handleHandleKindChange = (kind: string) => {
-    setter.set!("0");
-    props.onChange?.(kind as EE8sKind, E8s.zero());
+  const handleHandleKindChange = (kind: Result<string, string>) => {
+    props.onKindChange(kind as Result<EE8sKind, EE8sKind>);
+    props.onAmountChange(Result.Ok(E8s.zero()));
   };
 
   return (
     <div class="flex gap-2 items-center justify-between">
       <div class="flex flex-col gap-2 justify-between">
         <Select
-          values={[
+          possibleValues={[
             EE8sKind.Hours,
             EE8sKind.Storypoints,
             EE8sKind.FMJ,
             EE8sKind.ICP,
           ]}
-          defaultValue={props.kind}
+          value={props.kind}
           onChange={handleHandleKindChange}
         />
         <span class="flex px-2">
@@ -50,9 +43,8 @@ export function FromInput(props: IFromInputProps) {
       <div class="flex flex-col gap-2 justify-between">
         <QtyInput
           symbol={props.kind}
-          defaultValue={amount()}
-          onChange={handleAmountChange}
-          setter={setter}
+          value={props.amount}
+          onChange={props.onAmountChange}
         />
         <p
           class="flex justify-end px-2 text-darkBlue underline cursor-pointer"

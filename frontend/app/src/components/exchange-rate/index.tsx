@@ -2,40 +2,64 @@ import { Btn } from "@components/btn";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { EIconKind, Icon } from "@components/icon";
 import { QtyInput } from "@components/qty-input";
-import { TPairStr } from "@store/bank";
+import { TPairStr, useBank } from "@store/bank";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
 import { encodeVotingId, strToPair, unwrapPair } from "@utils/encoding";
 import { logInfo } from "@utils/error";
 import { E8s } from "@utils/math";
-import { createMemo, createSignal, Match, Show, Switch } from "solid-js";
+import { Result } from "@utils/types";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  Match,
+  onMount,
+  Show,
+  Switch,
+} from "solid-js";
 
 export interface IExchangeRateProps {
   pair: TPairStr;
-  rate: E8s;
   editable?: boolean;
 }
 
 export function ExchangeRate(props: IExchangeRateProps) {
   const { createBankSetExchangeRateVoting } = useVotings();
+  const { exchangeRates, fetchExchangeRates } = useBank();
 
   const [edited, setEdited] = createSignal(false);
-  const [rate, setRate] = createSignal(props.rate);
   const [proposing, setProposing] = createSignal(false);
+  const [newRate, setNewRate] = createSignal<Result<E8s, E8s>>(
+    Result.Ok(E8s.zero())
+  );
 
+  const rate = () => {
+    const history = exchangeRates[props.pair];
+    if (!history) return undefined;
+
+    const current = history[history.length - 1];
+
+    return current[1];
+  };
   const pair = createMemo(() => strToPair(props.pair));
+
+  onMount(() => {
+    const r = rate();
+
+    if (!r) fetchExchangeRates();
+  });
+
+  createEffect(() => {
+    const r = rate();
+
+    if (r) {
+      setNewRate(Result.Ok(r));
+    }
+  });
 
   const handleEditClick = () => {
     setEdited(true);
-  };
-
-  const handleEdit = (newRate: E8s | undefined) => {
-    if (!newRate || newRate.eq(props.rate)) {
-      setEdited(false);
-      return;
-    }
-
-    setRate(newRate);
   };
 
   const handleProposeClick = async () => {
@@ -44,21 +68,23 @@ export function ExchangeRate(props: IExchangeRateProps) {
     const agreed = confirm(
       `Are you sure you want to start a voting to set new ${pair().from} -> ${
         pair().into
-      } exchange rate to ${rate().toString()}?`
+      } exchange rate to ${newRate().unwrapOk().toString()}?`
     );
 
     if (!agreed) {
-      setRate(props.rate);
       return;
     }
 
     setProposing(true);
 
     const [from, into] = unwrapPair(pair());
-    const votingId = await createBankSetExchangeRateVoting(from, into, rate());
+    const votingId = await createBankSetExchangeRateVoting(
+      from,
+      into,
+      newRate().unwrapOk()
+    );
 
     setProposing(false);
-    setRate(props.rate);
 
     logInfo(
       `The voting (${encodeVotingId(
@@ -74,7 +100,10 @@ export function ExchangeRate(props: IExchangeRateProps) {
           <div class="flex items-center gap-1">
             <E8sWidget minValue={E8s.one()} kind={pair().from as EE8sKind} />
             <p>=</p>
-            <E8sWidget minValue={props.rate} kind={pair().into as EE8sKind} />
+            <E8sWidget
+              minValue={rate() ? rate()! : E8s.zero()}
+              kind={pair().into as EE8sKind}
+            />
           </div>
           <Show when={props.editable && !proposing()}>
             <Icon
@@ -90,9 +119,9 @@ export function ExchangeRate(props: IExchangeRateProps) {
             <E8sWidget minValue={E8s.one()} kind={pair().from as EE8sKind} />
             <p>=</p>
             <QtyInput
-              defaultValue={props.rate}
-              onChange={handleEdit}
-              symbol={pair().into as EE8sKind}
+              value={newRate().unwrap()}
+              onChange={setNewRate}
+              symbol={pair().into}
             />
             <Btn
               icon={EIconKind.CheckRect}

@@ -23,7 +23,7 @@ export interface ISolution {
   evaluation?: E8s;
   attached_at: bigint;
   reward_hours?: E8s;
-  fields: Array<string | undefined>;
+  fields: Array<string>;
   rejected: boolean;
   reward_storypoints?: E8s;
 }
@@ -195,7 +195,7 @@ export function TasksStore(props: IChildren) {
               );
 
               const sol: ISolution = {
-                fields: solution.fields.map(optUnwrap),
+                fields: solution.fields.map((it) => optUnwrap(it) ?? ""),
                 attached_at: solution.attached_at,
                 rejected: solution.rejected,
                 evaluation,
@@ -259,6 +259,9 @@ export function TasksStore(props: IChildren) {
         reputation_proof: [],
       },
     });
+
+    setTaskIds(taskIds.length, id);
+    fetchTasks([id]);
 
     return id;
   };
@@ -459,7 +462,7 @@ export function TasksStore(props: IChildren) {
             );
 
             const sol: ISolution = {
-              fields: solution.fields.map(optUnwrap),
+              fields: solution.fields.map((it) => optUnwrap(it) ?? ""),
               attached_at: solution.attached_at,
               rejected: solution.rejected,
               evaluation,

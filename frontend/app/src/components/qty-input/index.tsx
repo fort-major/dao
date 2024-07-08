@@ -9,11 +9,10 @@ export type TQtyInputValidation<T> =
   | { min: T }
   | { max: T };
 
-export interface IQtyInputProps<T extends E8s | number | undefined> {
+export interface IQtyInputProps<T extends E8s | number> {
   value: T;
   onChange: (v: Result<T, T>) => void;
   symbol: string;
-  mode?: "e8s" | "num";
   validations?: TQtyInputValidation<T>[];
   disabled?: boolean;
 }
@@ -21,7 +20,7 @@ export interface IQtyInputProps<T extends E8s | number | undefined> {
 export function QtyInput<T extends E8s | number>(props: IQtyInputProps<T>) {
   const [error, setError] = createSignal<string | undefined>();
 
-  const mode = () => (props.mode === "num" ? "num" : "e8s");
+  const mode = () => (typeof props.value === "number" ? "num" : "e8s");
 
   const handleChange = eventHandler(
     (e: Event & { target: HTMLInputElement }) => {
@@ -29,26 +28,18 @@ export function QtyInput<T extends E8s | number>(props: IQtyInputProps<T>) {
     }
   );
 
-  const processChange = (v: string | undefined) => {
-    if (v === "") {
-      v = undefined;
-    }
-
+  const processChange = (v: string) => {
     try {
-      const ve =
-        v === undefined
-          ? undefined
-          : mode() === "e8s"
-          ? E8s.fromString(v)
-          : parseInt(v);
+      const ve = mode() === "e8s" ? E8s.fromString(v) : parseInt(v);
       const er = isValid(mode(), ve, props.validations);
 
       setError(er);
 
       props.onChange(er ? Result.Err<T, T>(ve as T) : Result.Ok<T, T>(ve as T));
     } catch (_) {
-      setError("Invalid number");
-      props.onChange(Result.Err<T, T>(undefined as unknown as T));
+      props.onChange(
+        Result.Err<T, T>(mode() === "e8s" ? (E8s.zero() as T) : (0 as T))
+      );
     }
   };
 
@@ -63,7 +54,7 @@ export function QtyInput<T extends E8s | number>(props: IQtyInputProps<T>) {
           classList={{ "bg-gray-190": props.disabled }}
           placeholder="Amount..."
           type="text"
-          value={props.value === undefined ? "" : props.value.toString()}
+          value={props.value.toString()}
           onChange={handleChange}
           disabled={props.disabled}
         />

@@ -1,11 +1,12 @@
 import { SolutionField } from "@/declarations/tasks/tasks.did";
 import { Btn } from "@components/btn";
-import { MdInput } from "@components/md-input";
+import { MdInput, TMdInputValidation } from "@components/md-input";
 import { TextInput, TTextInputValidation } from "@components/text-input";
 import { Title } from "@components/title";
+import { useAuth } from "@store/auth";
 import { useTasks } from "@store/tasks";
 import { err, ErrorCode } from "@utils/error";
-import { TTaskId } from "@utils/types";
+import { Result, TTaskId } from "@utils/types";
 import { createMemo, createSignal, For, Match, Show, Switch } from "solid-js";
 
 export interface ISolutionSubmitFormProps {
@@ -15,40 +16,64 @@ export interface ISolutionSubmitFormProps {
 }
 
 export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
-  const { solveTask } = useTasks();
+  const { solveTask, tasks } = useTasks();
+  const { identity } = useAuth();
 
-  const [values, setValues] = createSignal<(string | undefined)[]>(
-    props.fields.map((_) => undefined)
+  const prevFields = createMemo(() => {
+    const me = identity()?.getPrincipal();
+    if (!me) return undefined;
+
+    const prevSolution = tasks[props.taskId.toString()]?.solutions.find(
+      ([solver, _]) => solver.compareTo(me) === "eq"
+    );
+
+    if (!prevSolution) return;
+
+    return prevSolution[1].fields;
+  });
+
+  const [values, setValues] = createSignal<Result<string, string>[]>(
+    prevFields()
+      ? prevFields()!.map(Result.Ok)
+      : props.fields.map((_) => Result.Ok(""))
   );
-  const [isErr, setIsErr] = createSignal(false);
   const [disabled, setDisabled] = createSignal(false);
+
+  const isErr = () => values().some((it) => it.isErr());
 
   const field = (f: SolutionField, idx: number) => {
     const validations = createMemo(() => {
-      const v: TTextInputValidation[] = [{ maxLen: 512 }];
+      const v: TMdInputValidation[] | TTextInputValidation[] = [
+        { maxLen: 512 },
+      ];
+
+      if (f.required) {
+        v.push({ required: null });
+      }
 
       if ("Url" in f.kind) {
         const k = f.kind.Url.kind;
 
-        if ("Any" in k) v.push({ url: "Any" });
-        if ("Github" in k) v.push({ url: "Github" });
-        if ("Twitter" in k) v.push({ url: "Twitter" });
-        if ("Notion" in k) v.push({ url: "Notion" });
-        if ("Figma" in k) v.push({ url: "Figma" });
-        if ("DfinityForum" in k) v.push({ url: "DfinityForum" });
-        if ("FortMajorSite" in k) v.push({ url: "FortMajorSite" });
+        if ("Any" in k) (v as TTextInputValidation[]).push({ url: "Any" });
+        if ("Github" in k)
+          (v as TTextInputValidation[]).push({ url: "Github" });
+        if ("Twitter" in k)
+          (v as TTextInputValidation[]).push({ url: "Twitter" });
+        if ("Notion" in k)
+          (v as TTextInputValidation[]).push({ url: "Notion" });
+        if ("Figma" in k) (v as TTextInputValidation[]).push({ url: "Figma" });
+        if ("DfinityForum" in k)
+          (v as TTextInputValidation[]).push({ url: "DfinityForum" });
+        if ("FortMajorSite" in k)
+          (v as TTextInputValidation[]).push({ url: "FortMajorSite" });
       }
 
       return v;
     });
 
-    const handleChange = (value: string | undefined) => {
+    const handleChange = (result: Result<string, string>) => {
       setValues((v) => {
-        v[idx] = value;
-
-        if (value === undefined) {
-          setIsErr(true);
-        }
+        v[idx] = result;
 
         return v;
       });
@@ -69,12 +94,18 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
         </div>
         <Switch>
           <Match when={"Md" in f.kind}>
-            <MdInput onChange={handleChange} disabled={disabled()} />
+            <MdInput
+              value={values()[idx].unwrap()}
+              onChange={handleChange}
+              disabled={disabled()}
+              validations={validations() as TMdInputValidation[]}
+            />
           </Match>
           <Match when={"Url" in f.kind}>
             <TextInput
+              value={values()[idx].unwrap()}
+              onChange={handleChange}
               validations={validations()}
-              setValue={handleChange}
               disabled={disabled()}
             />
           </Match>
@@ -84,14 +115,11 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
   };
 
   const handleSubmit = async () => {
-    for (let i = 0; i < props.fields.length; i++) {
-      if (props.fields[i].required && !values()[i]) {
-        err(ErrorCode.VALIDATION, `Field ${props.fields[i].name} is required`);
-      }
-    }
-
     setDisabled(true);
-    await solveTask(props.taskId, values());
+    await solveTask(
+      props.taskId,
+      values().map((it) => it.unwrapOk())
+    );
     setDisabled(false);
 
     props.onSubmit?.();

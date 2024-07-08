@@ -310,7 +310,7 @@ export function Task(props: ITaskProps) {
         </Match>
         <Match when={canSolve() && profileProof()}>
           <Btn
-            text="Solve"
+            text={mySolution() ? "Edit Solution" : "Solve"}
             icon={EIconKind.CheckRect}
             iconColor={COLORS.green}
             disabled={disabled()}
@@ -334,6 +334,18 @@ export function Task(props: ITaskProps) {
 
     if (!t || !t.stage || !("Solve" in t.stage)) return false;
   };
+
+  const mySolution = () => {
+    const t = task();
+
+    if (!t || t.solutions.length == 0) return undefined;
+   
+    const me = identity()?.getPrincipal();
+
+    if (!me) return undefined;
+
+    return t.solutions.find(([solver, _]) => solver.compareTo(me) === "eq");
+  }
 
   const canEdit = () => {
     const t = task();
@@ -423,8 +435,9 @@ export function Task(props: ITaskProps) {
               </div>
               <div class="flex flex-grow justify-end">
                 <BooleanInput
-                  labels={["Won't Do", "Count Me It"]}
-                  defaultValue={countMeInValue()}
+                  labelOff="Won't Do"
+                  labelOn="Count Me It"
+                  value={countMeInValue()}
                   disabled={disabled()}
                   onChange={handleCountMeIn}
                 />

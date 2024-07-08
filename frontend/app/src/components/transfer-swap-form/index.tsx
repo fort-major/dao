@@ -163,7 +163,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
             <Title class="p-2" text="Swap Into" />
             <div class="flex justify-between items-center">
               <Select
-                values={[EE8sKind.FMJ, EE8sKind.ICP]}
+                possibleValues={[EE8sKind.FMJ, EE8sKind.ICP]}
                 defaultValue={EE8sKind.FMJ}
                 onChange={handleSelectInto}
               />
