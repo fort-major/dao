@@ -92,6 +92,7 @@ export interface ITasksStoreContext {
   fetchTasks: (ids?: TTaskId[]) => Promise<void>;
   archivedTasks: Store<ArchivedTasksStore>;
   fetchArchivedTasks: () => Promise<boolean>;
+  fetchArchivedTasksById: (ids: TTaskId[]) => Promise<void>;
   createTask: (args: ICreateTaskArgs) => Promise<TTaskId>;
   editTask: (args: IEditTaskArgs) => Promise<void>;
   deleteTask: (taskId: TTaskId) => Promise<void>;
@@ -153,6 +154,11 @@ export function TasksStore(props: IChildren) {
 
     tasksGetTasks({ ids });
   };
+
+  const fetchArchivedTasksById: ITasksStoreContext["fetchArchivedTasksById"] =
+    async (ids) => {
+      taskArchiveGetArchivedTasksById({ ids });
+    };
 
   const fetchArchivedTasks: ITasksStoreContext["fetchArchivedTasks"] =
     async () => {
@@ -497,6 +503,67 @@ export function TasksStore(props: IChildren) {
     (reason) => err(ErrorCode.NETWORK, `Unable to fetch tasks: ${reason}`)
   );
 
+  const taskArchiveGetArchivedTasksById = debouncedBatchFetch(
+    (req: { ids: TTaskId[] }) => {
+      const tasksActor = newTaskArchiveActor(anonymousAgent()!);
+      return tasksActor.task_archive__get_archived_tasks_by_id(req);
+    },
+    ({ entries: tasks }, { ids }) => {
+      for (let i = 0; i < tasks.length; i++) {
+        const t = optUnwrap(tasks[i]);
+
+        if (!t) {
+          err(ErrorCode.UNREACHEABLE, `Archived Task ${ids[i]} not found`);
+        }
+
+        if (!("V0001" in t)) {
+          err(
+            ErrorCode.UNREACHEABLE,
+            `Archived Task version not supported ${t}`
+          );
+        }
+
+        const task = t.V0001;
+
+        const solutions: [Principal, ISolution][] = task.solutions.map(
+          ([solver, solution]) => {
+            const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
+            const hours = optUnwrap(solution.reward_hours.map(E8s.new));
+            const storypoints = optUnwrap(
+              solution.reward_storypoints.map(E8s.new)
+            );
+
+            const sol: ISolution = {
+              fields: solution.fields.map((it) => optUnwrap(it) ?? ""),
+              attached_at: solution.attached_at,
+              rejected: solution.rejected,
+              evaluation,
+              reward_hours: hours,
+              reward_storypoints: storypoints,
+            };
+
+            return [solver, sol];
+          }
+        );
+
+        const itask: IArchivedTaskV1 = {
+          id: task.id,
+          solution_fields: task.solution_fields,
+          title: task.title,
+          description: task.description,
+          creator: task.creator,
+          created_at: task.created_at,
+          solver_constraints: task.solver_constraints,
+          solutions,
+        };
+
+        setArchivedTasks(itask.id.toString(), itask);
+      }
+    },
+    (reason) =>
+      err(ErrorCode.NETWORK, `Unable to fetch archived tasks: ${reason}`)
+  );
+
   return (
     <TasksContext.Provider
       value={{
@@ -506,6 +573,7 @@ export function TasksStore(props: IChildren) {
         fetchTaskIds,
         archivedTasks,
         fetchArchivedTasks,
+        fetchArchivedTasksById,
         createTask,
         editTask,
         deleteTask,

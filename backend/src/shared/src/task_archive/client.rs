@@ -2,7 +2,8 @@ use candid::Principal;
 use ic_cdk::{api::call::CallResult, call};
 
 use super::api::{
-    AppendBatchRequest, AppendBatchResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
+    AppendBatchRequest, AppendBatchResponse, GetArchivedTasksByIdRequest,
+    GetArchivedTasksByIdResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
     SetNextRequest, SetNextResponse,
 };
 
@@ -30,6 +31,20 @@ impl TaskArchiveCanisterClient {
         call(self.canister_id, "task_archive__set_next", (req,))
             .await
             .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
+    pub async fn task_archive__get_archived_tasks_by_id(
+        &self,
+        req: GetArchivedTasksByIdRequest,
+    ) -> CallResult<GetArchivedTasksByIdResponse> {
+        call(
+            self.canister_id,
+            "task_archive__get_archived_tasks_by_id",
+            (req,),
+        )
+        .await
+        .map(|(it,)| it)
     }
 
     #[allow(non_snake_case)]

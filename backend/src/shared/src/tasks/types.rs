@@ -128,46 +128,11 @@ impl Task {
         self.stage = TaskStage::Evaluate;
     }
 
-    // makes the task stage Archive and calculates rewards based on the evaluation and the budget
-    // called by the voting canister
-    // expects normalized evaluation as input (0.0 ... 1.0 values)
-    // if the evaluation is None, the solution is recognized as rejected (it does not receive any reward)
-    // storypoints budget is split among all solutions weighted by their evaluation score
-    //  example:
-    //      if the task defines 100 storypoints as a budget, and ten solutions were provided - each scored 1.0 (max score)
-    //          then each solver gets 10 storypoints
-    //      if some solvers score 1.0, while others score 0.5, solvers with higher score will receive a higher reward (higher than 10 storypoints),
-    //          than those scored less
-    // highest evaluation score defines the cut of the budget being distributed
-    //  example:
-    //      if all solutions have mediocre evaluation e.g. 0.3, only 30% of total budget will be distributed among solvers
-    //      if at least one solution is 1.0, then 100% of the total budget will be distributed
-    // hours are rewarded to each solver in full, as defined in the task, but if the evaluation is not 0.0
-    //  example:
-    //      if the task defines 5 hours estimate and your solution receives a non-zero evaluation - you get 5 hours
-    //      if your solution receives a zero evaluation (which is only possible if all votes was against you) - you get 0 hours
     pub fn evaluate(
         &mut self,
         evaluation_per_solution: Vec<(Principal, Option<E8s>)>,
     ) -> Vec<RewardEntry> {
         let mut result = Vec::new();
-
-        let mut evaluation_sum = E8s::zero();
-        let mut max_evaluation = E8s::zero();
-
-        for (_solver, eval_opt) in evaluation_per_solution.iter() {
-            if let Some(eval) = eval_opt {
-                if eval > &max_evaluation {
-                    max_evaluation = eval.clone();
-                }
-
-                evaluation_sum += eval;
-            }
-        }
-
-        // the best result defines the budget spent
-        let storypoints_budget_used_share = &self.storypoints_ext_budget * max_evaluation;
-        let storypoints_budget_unit = storypoints_budget_used_share / evaluation_sum;
 
         for (solver, eval_opt) in evaluation_per_solution {
             let solution = self.solutions.get_mut(&solver).unwrap();
@@ -180,7 +145,7 @@ impl Task {
 
             let eval = eval_opt.unwrap();
 
-            let reward_storypoints = &self.storypoints_base + &storypoints_budget_unit * &eval;
+            let reward_storypoints = &self.storypoints_base + &self.storypoints_ext_budget * &eval;
             let reward_hours = self.hours_base.clone();
 
             solution.evaluation = Some(eval);

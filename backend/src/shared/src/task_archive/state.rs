@@ -1,26 +1,48 @@
-use std::collections::LinkedList;
-
 use candid::{CandidType, Principal};
 use serde::Deserialize;
+use std::collections::BTreeMap;
 
-use crate::{pagination::PageResponse, tasks::types::ArchivedTask};
+use crate::{
+    pagination::PageResponse,
+    tasks::types::{ArchivedTask, TaskId},
+};
 
 use super::api::{
-    AppendBatchRequest, AppendBatchResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
+    AppendBatchRequest, AppendBatchResponse, GetArchivedTasksByIdRequest,
+    GetArchivedTasksByIdResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
     SetNextRequest, SetNextResponse,
 };
 
 #[derive(CandidType, Deserialize, Default)]
 pub struct TaskArchiveState {
     pub next: Option<Principal>,
-    pub tasks: LinkedList<ArchivedTask>,
+    pub tasks: BTreeMap<TaskId, ArchivedTask>,
 }
 
 impl TaskArchiveState {
     pub fn append_batch(&mut self, req: AppendBatchRequest) -> AppendBatchResponse {
-        self.tasks.extend(req.tasks.into_iter());
+        self.tasks.extend(req.tasks.into_iter().map(|it| {
+            let id = match &it {
+                ArchivedTask::V0001(t) => t.id,
+            };
+
+            (id, it)
+        }));
 
         AppendBatchResponse {}
+    }
+
+    pub fn get_archived_tasks_by_id(
+        &self,
+        req: GetArchivedTasksByIdRequest,
+    ) -> GetArchivedTasksByIdResponse {
+        let entries = req
+            .ids
+            .into_iter()
+            .map(|id| self.tasks.get(&id).cloned())
+            .collect();
+
+        GetArchivedTasksByIdResponse { entries }
     }
 
     pub fn get_archived_tasks(&self, req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
@@ -30,6 +52,7 @@ impl TaskArchiveState {
             let entries = iter
                 .by_ref()
                 .take(req.pagination.take as usize)
+                .map(|(_, it)| it)
                 .cloned()
                 .collect();
 
@@ -42,6 +65,7 @@ impl TaskArchiveState {
             let entries = iter
                 .by_ref()
                 .take(req.pagination.take as usize)
+                .map(|(_, it)| it)
                 .cloned()
                 .collect();
 

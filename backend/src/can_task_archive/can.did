@@ -10,6 +10,8 @@ type ArchivedTaskV1 = record {
   created_at : nat64;
   solutions : vec record { principal; Solution };
 };
+type GetArchivedTasksByIdRequest = record { ids : vec nat64 };
+type GetArchivedTasksByIdResponse = record { entries : vec opt ArchivedTask };
 type GetArchivedTasksRequest = record { pagination : PageRequest };
 type GetArchivedTasksResponse = record {
   pagination : PageResponse;
@@ -47,6 +49,9 @@ service : () -> {
   task_archive__append_batch : (AppendBatchRequest) -> (record {});
   task_archive__get_archived_tasks : (GetArchivedTasksRequest) -> (
       GetArchivedTasksResponse,
+    ) query;
+  task_archive__get_archived_tasks_by_id : (GetArchivedTasksByIdRequest) -> (
+      GetArchivedTasksByIdResponse,
     ) query;
   task_archive__set_next : (SetNextRequest) -> (record {});
 }

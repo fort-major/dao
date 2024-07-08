@@ -4,7 +4,10 @@ use serde::Deserialize;
 
 use crate::{
     pagination::{PageRequest, PageResponse},
-    tasks::{state::TasksState, types::ArchivedTask},
+    tasks::{
+        state::TasksState,
+        types::{ArchivedTask, TaskId},
+    },
     Guard, ENV_VARS,
 };
 
@@ -35,6 +38,29 @@ impl Guard<TaskArchiveState> for AppendBatchRequest {
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct AppendBatchResponse {}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetArchivedTasksByIdRequest {
+    #[garde(skip)]
+    pub ids: Vec<TaskId>,
+}
+
+impl Guard<TaskArchiveState> for GetArchivedTasksByIdRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &TaskArchiveState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetArchivedTasksByIdResponse {
+    #[garde(skip)]
+    pub entries: Vec<Option<ArchivedTask>>,
+}
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetArchivedTasksRequest {
