@@ -12,6 +12,7 @@ pub mod e8s;
 mod env;
 pub mod humans;
 pub mod icrc1;
+pub mod liquid_democracy;
 pub mod pagination;
 pub mod proof;
 pub mod reputation;

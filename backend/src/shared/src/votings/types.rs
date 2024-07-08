@@ -47,9 +47,9 @@ impl Voting {
         let (duration_ns, quorum, consensus_normalized, finish_early, num_options) = match &kind {
             VotingKind::FinishEditTask { task_id: _ } => (
                 ONE_WEEK_NS,
-                &total_supply * E8s::f0_25(),
+                &total_supply * E8s::f0_2(),
                 E8s::f0_5(),
-                &total_supply * E8s::f0_75(),
+                &total_supply * E8s::f0_67(),
                 1,
             ),
             VotingKind::EvaluateTask {
@@ -68,7 +68,7 @@ impl Voting {
                 new_rate: _,
             } => (
                 ONE_WEEK_NS,
-                &total_supply * E8s::f0_33(),
+                &total_supply * E8s::f0_2(),
                 E8s::f0_67(),
                 &total_supply * E8s::f0_67(),
                 1,
@@ -78,16 +78,16 @@ impl Voting {
                 hours_a_week_commitment: _,
             } => (
                 ONE_WEEK_NS,
-                &total_supply * E8s::f0_5(),
-                E8s::f0_75(),
-                &total_supply * E8s::f0_75(),
+                &total_supply * E8s::f0_2(),
+                E8s::f0_67(),
+                &total_supply * E8s::f0_67(),
                 1,
             ),
             VotingKind::HumansUnemploy { team_member: _ } => (
                 ONE_WEEK_NS * 2,
-                &total_supply * E8s::f0_5(),
-                E8s::f0_75(),
-                &total_supply * E8s::f0_75(),
+                &total_supply * E8s::f0_2(),
+                E8s::f0_67(),
+                &total_supply * E8s::f0_67(),
                 1,
             ),
         };

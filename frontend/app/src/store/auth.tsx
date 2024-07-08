@@ -123,6 +123,7 @@ export function AuthStore(props: IChildren) {
         return Promise.all([
           humansActor.humans__init_once(),
           reputationActor.reputation__init_once(),
+          // TODO: add liquid democracy init_once
         ]);
       };
 
@@ -150,6 +151,8 @@ export function AuthStore(props: IChildren) {
           name: [name],
           avatar_src: [avatarSrc],
         });
+
+        // TODO: add liquid democracy register
       }
 
       setIdentity(id as unknown as Identity);
