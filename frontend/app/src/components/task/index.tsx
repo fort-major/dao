@@ -1,6 +1,7 @@
 import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
 import { daysLeft, nowNs } from "@components/countdown";
+import { DecisionTopic } from "@components/decision-topic";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { EIconKind, Icon } from "@components/icon";
 import { MdPreview } from "@components/md-preview";
@@ -111,15 +112,22 @@ export function TaskMini(props: ITaskProps) {
 
   return (
     <div class="flex flex-col gap-5">
-      <div class="flex flex-grow gap-1 items-center">
-        <div class="flex flex-grow gap-1 items-baseline">
-          <p class="font-primary font-medium text-xs text-gray-150">
-            {props.id.toString()}
-          </p>
-          <h3 class="flex-grow font-primary font-medium text-4xl text-black">
-            {task() ? task()!.title : "Loading..."}
-          </h3>
-          <div class="flex flex-col items-center py-2">{statusIcon()}</div>
+      <div class="flex flex-col">
+        <div class="flex flex-grow gap-1 items-center">
+          <div class="flex flex-grow gap-1 items-baseline">
+            <p class="font-primary font-medium text-xs text-gray-150">
+              {props.id.toString()}
+            </p>
+            <h3 class="flex-grow font-primary font-medium text-4xl text-black">
+              {task() ? task()!.title : "Loading..."}
+            </h3>
+            <div class="flex flex-col items-center py-2">{statusIcon()}</div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <For each={task()?.decision_topics ? task()!.decision_topics : []}>
+            {(topicId) => <DecisionTopic id={topicId} />}
+          </For>
         </div>
       </div>
       <Show when={stage() !== "Archived"}>
@@ -333,8 +341,18 @@ export function Task(props: ITaskProps) {
 
   const canSolve = () => {
     const t = task();
+    const me = identity()?.getPrincipal();
 
-    if (!t || !t.stage || !("Solve" in t.stage)) return false;
+    if (!me) return false;
+
+    if (
+      !t ||
+      !t.stage ||
+      !("Solve" in t.stage) ||
+      (t.assignees &&
+        !t.assignees.map((it) => it.toText()).includes(me.toText()))
+    )
+      return false;
   };
 
   const mySolution = () => {
@@ -389,20 +407,27 @@ export function Task(props: ITaskProps) {
   return (
     <>
       <div class="flex flex-col gap-5">
-        <div class="flex flex-grow gap-1 items-center">
-          <div class="flex flex-grow gap-1 items-baseline">
-            <p class="font-primary font-medium text-xs text-gray-150">
-              {props.id.toString()}
-            </p>
-            <h3 class="flex-grow font-primary font-medium text-4xl text-black">
-              {task() ? task()!.title : "Loading..."}
-            </h3>
-            <div class="flex flex-col items-center py-2">
-              {statusIcon()}
-              <Show when={canEdit()}>
-                <Icon kind={EIconKind.Edit} color={COLORS.gray[150]} />
-              </Show>
+        <div class="flex flex-col">
+          <div class="flex flex-grow gap-1 items-center">
+            <div class="flex flex-grow gap-1 items-baseline">
+              <p class="font-primary font-medium text-xs text-gray-150">
+                {props.id.toString()}
+              </p>
+              <h3 class="flex-grow font-primary font-medium text-4xl text-black">
+                {task() ? task()!.title : "Loading..."}
+              </h3>
+              <div class="flex flex-col items-center py-2">
+                {statusIcon()}
+                <Show when={canEdit()}>
+                  <Icon kind={EIconKind.Edit} color={COLORS.gray[150]} />
+                </Show>
+              </div>
             </div>
+          </div>
+          <div class="flex gap-2">
+            <For each={task()?.decision_topics ? task()!.decision_topics : []}>
+              {(topicId) => <DecisionTopic id={topicId} />}
+            </For>
           </div>
         </div>
         <div class="flex flex-col py-2">
@@ -419,32 +444,52 @@ export function Task(props: ITaskProps) {
               </div>
               <ProfileMini id={task()?.creator} />
             </div>
-            <div class="flex flex-grow flex-col gap-2">
-              <div class="flex items-center justify-between">
-                <Title text="Working On It" />
-              </div>
-              <div class="flex flex-wrap gap-1 items-center">
-                <For
-                  fallback={
-                    <p class="font-primary text-xs text-gray-140 italic">
-                      Be the first one
-                    </p>
-                  }
-                  each={task()?.solvers ? task()!.solvers! : []}
-                >
-                  {(id) => <ProfileMicro id={id} />}
-                </For>
-              </div>
-              <div class="flex flex-grow justify-end">
-                <BooleanInput
-                  labelOff="Won't Do"
-                  labelOn="Count Me It"
-                  value={countMeInValue()}
-                  disabled={disabled()}
-                  onChange={handleCountMeIn}
-                />
-              </div>
-            </div>
+            <Switch>
+              <Match
+                when={
+                  task() && task()!.assignees && task()!.assignees!.length > 0
+                }
+              >
+                <div class="flex flex-grow flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <Title text="Predefined Assignees" />
+                  </div>
+                  <div class="flex flex-wrap gap-1 items-center">
+                    <For each={task()!.assignees!}>
+                      {(id) => <ProfileMicro id={id} />}
+                    </For>
+                  </div>
+                </div>
+              </Match>
+              <Match when={task() && !task()!.assignees}>
+                <div class="flex flex-grow flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <Title text="Working On It" />
+                  </div>
+                  <div class="flex flex-wrap gap-1 items-center">
+                    <For
+                      fallback={
+                        <p class="font-primary text-xs text-gray-140 italic">
+                          Be the first one
+                        </p>
+                      }
+                      each={task()?.solvers ? task()!.solvers! : []}
+                    >
+                      {(id) => <ProfileMicro id={id} />}
+                    </For>
+                  </div>
+                  <div class="flex flex-grow justify-end">
+                    <BooleanInput
+                      labelOff="Won't Do"
+                      labelOn="Count Me It"
+                      value={countMeInValue()}
+                      disabled={disabled()}
+                      onChange={handleCountMeIn}
+                    />
+                  </div>
+                </div>
+              </Match>
+            </Switch>
           </div>
           <div class="flex flex-grow gap-2">
             <div class="flex flex-grow flex-col gap-1">

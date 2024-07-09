@@ -8,8 +8,8 @@ import { Match, Switch, createSignal } from "solid-js";
 
 export interface IVotingInputProps {
   kind: "binary" | "evaluation" | "satisfaction";
-  value: E8s | undefined;
-  onChange: (newValue: Result<E8s | undefined, E8s | undefined>) => void;
+  value: E8s | null;
+  onChange: (newValue: Result<E8s | null, E8s | null>) => void;
   reset?: boolean;
   disabled?: boolean;
 }
@@ -55,7 +55,7 @@ function BinaryVotingInput(props: IVotingInputProps) {
         kind={EIconKind.ThumbDown}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
         color={downColor()}
-        onClick={() => props.onChange(Result.Ok(undefined))}
+        onClick={() => props.onChange(Result.Ok(null))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <Icon
@@ -130,7 +130,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
         kind={EIconKind.CancelCircle}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
         color={rejectColor()}
-        onClick={() => props.onChange(Result.Ok(undefined))}
+        onClick={() => props.onChange(Result.Ok(null))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <Icon
@@ -248,7 +248,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
         kind={EIconKind.CancelCircle}
         hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
         color={rejectColor()}
-        onClick={() => props.onChange(Result.Ok(undefined))}
+        onClick={() => props.onChange(Result.Ok(null))}
         class={props.disabled ? "" : "cursor-pointer"}
       />
       <div class="flex items-center">

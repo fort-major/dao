@@ -7,7 +7,7 @@ import { IVote, IVoting, TVotingIdStr, useVotings } from "@store/votings";
 import { debounce } from "@utils/common";
 import { E8s } from "@utils/math";
 import { eventHandler } from "@utils/security";
-import { TTimestamp } from "@utils/types";
+import { Result, TTimestamp } from "@utils/types";
 import { createSignal } from "solid-js";
 
 export interface IVotingWidgetProps {
@@ -48,7 +48,7 @@ export function VotingWidget(props: IVotingWidgetProps) {
 
   const isDisabled = () =>
     !reputationProof() ||
-    reputationProof()!.reputation.balance.isZero() ||
+    reputationProof()!.reputation.isZero() ||
     !["ready", "debouncing"].includes(status());
 
   const handleMouseEnter = eventHandler(() => {
@@ -72,8 +72,8 @@ export function VotingWidget(props: IVotingWidgetProps) {
     });
   }, 1500);
 
-  const handleCastVote = (approval: E8s | null) => {
-    setNewVote(approval);
+  const handleCastVote = (approval: Result<E8s | null>) => {
+    setNewVote(approval.unwrapOk());
     castVoteDebounced(approval);
     setStatus(stageToStatus(props.stage, "debouncing"));
   };
@@ -88,7 +88,13 @@ export function VotingWidget(props: IVotingWidgetProps) {
         <VotingInput
           kind={props.kind}
           reset={hovered()}
-          defaultValue={newVote() === undefined ? props.myVote : newVote()}
+          value={
+            newVote() === undefined
+              ? props.myVote === undefined
+                ? E8s.zero()
+                : props.myVote
+              : (newVote() as E8s | null)
+          }
           onChange={handleCastVote}
           disabled={isDisabled()}
         />
@@ -105,7 +111,7 @@ export function VotingWidget(props: IVotingWidgetProps) {
         totalVoted={props.totalVoted}
         quorum={props.quorum}
         finishEarly={props.finishEarly}
-        myRep={reputationProof()?.reputation?.balance}
+        myRep={reputationProof()?.reputation}
       />
     </div>
   );

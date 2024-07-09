@@ -14,7 +14,8 @@ export interface IMdTools {
   onUnderline?: () => void;
   onLink?: () => void;
   onImage?: () => void;
-  onPreview?: (isPreview: boolean) => void;
+  isEdit: boolean;
+  onPreview: (isEdit: boolean) => void;
 }
 
 export function MdTools(props: IMdTools) {
@@ -101,7 +102,12 @@ export function MdTools(props: IMdTools) {
           class="cursor-pointer"
         />
       </div>
-      <BooleanInput onChange={props.onPreview} labels={["Preview", "Edit"]} />
+      <BooleanInput
+        onChange={props.onPreview}
+        value={props.isEdit}
+        labelOff="Preview"
+        labelOn="Edit"
+      />
     </div>
   );
 }

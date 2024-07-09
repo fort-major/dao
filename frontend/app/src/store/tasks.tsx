@@ -47,6 +47,7 @@ export interface ITask {
   solver_constraints: Array<SolverConstraint>;
   solutions: Array<[Principal, ISolution]>;
   decision_topics: DecisionTopicId[];
+  assignees?: Principal[];
 }
 
 export interface IArchivedTaskV1 {
@@ -59,6 +60,7 @@ export interface IArchivedTaskV1 {
   solution_fields: Array<SolutionField>;
   solutions: Array<[Principal, ISolution]>;
   decision_topics: DecisionTopicId[];
+  assignees?: Principal[];
 }
 
 export interface ICreateTaskArgs {
@@ -71,6 +73,7 @@ export interface ICreateTaskArgs {
   hours_base: E8s;
   storypoints_ext_budget: E8s;
   decision_topics: DecisionTopicId[];
+  assignees?: Principal[];
 }
 
 export interface IEditTaskArgs {
@@ -84,6 +87,8 @@ export interface IEditTaskArgs {
   new_storypoints_ext_budget?: E8s;
   new_days_to_solve?: bigint;
   new_decision_topics?: DecisionTopicId[];
+  // null - delete prev assignees, undefined - don't change anything
+  new_assignees?: null | Principal[];
 }
 
 type TTaskId = bigint;
@@ -230,6 +235,7 @@ export function TasksStore(props: IChildren) {
             solution_fields: taskV1.solution_fields,
             solutions,
             decision_topics: taskV1.decision_topics as number[],
+            assignees: optUnwrap(taskV1.assignees),
           };
 
           setArchivedTasks(itask.id.toString(), itask);
@@ -273,6 +279,7 @@ export function TasksStore(props: IChildren) {
         reputation_proof: [],
       },
       decision_topics: args.decision_topics,
+      assignees: opt(args.assignees),
     });
 
     setTaskIds(taskIds.length, id);
@@ -320,6 +327,12 @@ export function TasksStore(props: IChildren) {
         args.new_storypoints_ext_budget?.toBigIntRaw()
       ),
       new_decision_topics_opt: opt(args.new_decision_topics),
+      new_assignees_opt:
+        args.new_assignees === undefined
+          ? []
+          : args.new_assignees === null
+          ? [[]]
+          : [[args.new_assignees]],
     });
   };
 
@@ -506,6 +519,7 @@ export function TasksStore(props: IChildren) {
           solvers: task.solvers,
           solutions,
           decision_topics: task.decision_topics as number[],
+          assignees: optUnwrap(task.assignees),
         };
 
         setTasks(itask.id.toString(), itask);

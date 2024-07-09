@@ -6,7 +6,7 @@ import {
   createMemo,
   createSignal,
 } from "solid-js";
-import { IClass, ONE_WEEK_NS } from "../../utils/types";
+import { IClass, ONE_WEEK_NS, Result } from "../../utils/types";
 import { Avatar } from "../avatar";
 import { Principal } from "@dfinity/principal";
 import { useHumans } from "../../store/humans";
@@ -26,6 +26,7 @@ import { Btn } from "@components/btn";
 import { useAuth } from "@store/auth";
 import { useVotings } from "@store/votings";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
+import { avatarSrcFromPrincipal } from "@utils/common";
 
 export interface IProfileProps extends IClass {
   id?: Principal;
@@ -38,7 +39,9 @@ export function ProfileFull(props: IProfileProps) {
   const { editMyProfile, profileProof, myBalance, fetchMyBalance } = useAuth();
   const { createHumansEmployVoting, createHumansUnemployVoting } = useVotings();
 
-  const [newName, setNewName] = createSignal<string | undefined>();
+  const [newName, setNewName] = createSignal<Result<string, string>>(
+    Result.Ok("Anonymous")
+  );
   const [edited, setEdited] = createSignal(false);
   const [disabled, setDisabled] = createSignal(false);
 
@@ -78,20 +81,18 @@ export function ProfileFull(props: IProfileProps) {
     setEdited(true);
   };
 
-  const handleNameEdit = (newName: string | undefined) => {
+  const handleNameEdit = (newName: Result<string, string>) => {
     setNewName(newName);
   };
 
-  const canUpdateName = () =>
-    !disabled() || (newName() && newName() != profile()?.name);
+  const canUpdateName = () => !disabled() && newName().isOk();
 
   const handleUpdateName = async () => {
     setDisabled(true);
 
-    await editMyProfile(newName(), profile()!.avatar_src);
+    await editMyProfile(newName()!.unwrapOk());
 
     setEdited(false);
-    setNewName(undefined);
 
     await fetchProfiles([props.id!]);
 
@@ -151,7 +152,7 @@ export function ProfileFull(props: IProfileProps) {
           borderColor={
             profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]
           }
-          url={profile()?.avatar_src}
+          url={props.id ? avatarSrcFromPrincipal(props.id) : undefined}
         />
         <p class="flex gap-1 items-center text-center font-primary text-xs font-bold">
           <Show when={profile()?.name} fallback={"Anonymous"}>
@@ -169,8 +170,8 @@ export function ProfileFull(props: IProfileProps) {
               </Match>
               <Match when={edited()}>
                 <TextInput
-                  value={profile()!.name}
-                  setValue={handleNameEdit}
+                  value={profile()!.name ?? "Anonymous"}
+                  onChange={handleNameEdit}
                   validations={[{ minLen: 2 }, { maxLen: 64 }]}
                 />
                 <Btn
@@ -329,7 +330,7 @@ export function ProfileMini(props: IProfileProps) {
     <div class="flex flex-row items-center gap-2">
       <Avatar
         borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
-        url={profile()?.avatar_src}
+        url={props.id ? avatarSrcFromPrincipal(props.id) : undefined}
       />
       <div class="flex flex-col gap-1">
         <p class="font-primary text-xs font-bold">
@@ -360,7 +361,7 @@ export function ProfileMicro(props: IProfileProps) {
     <div class="flex flex-row items-center gap-2">
       <Avatar
         borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
-        url={profile()?.avatar_src}
+        url={props.id ? avatarSrcFromPrincipal(props.id) : undefined}
         size="sm"
       />
     </div>

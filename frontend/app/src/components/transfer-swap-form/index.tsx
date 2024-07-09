@@ -13,6 +13,7 @@ import { COLORS } from "@utils/colors";
 import { pairToStr } from "@utils/encoding";
 import { err, ErrorCode } from "@utils/error";
 import { E8s } from "@utils/math";
+import { Result } from "@utils/types";
 import { createSignal, from, Match, Switch } from "solid-js";
 
 export interface ITransferSwapFormProps {}
@@ -23,10 +24,10 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
 
   const [from, setFrom] = createSignal(EE8sKind.Hours);
   const [into, setInto] = createSignal(EE8sKind.FMJ);
-  const [amount, setAmount] = createSignal<E8s | undefined>();
+  const [amount, setAmount] = createSignal<E8s>(E8s.zero());
   const [transferRecipient, setTransferRecipient] = createSignal<
-    Principal | undefined
-  >();
+    Result<string, string>
+  >(Result.Ok(""));
   const [disabled, setDisabled] = createSignal(false);
 
   const balance = () => {
@@ -59,40 +60,40 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     err(ErrorCode.UNREACHEABLE, `Unexpected token ${from()}`);
   };
 
-  const handleFromChange = (kind: EE8sKind, a: E8s | undefined) => {
-    setFrom(kind);
-    setAmount(a);
-  };
-
   const canTransfer = () =>
     mode() === "transfer" && transferRecipient() && amount()?.toBool();
 
   const canSwap = () => mode() === "swap" && into() && intoAmount().toBool();
-
-  const handleTransferRecipientChange = (value: string | undefined) => {
-    setTransferRecipient(value ? Principal.fromText(value) : undefined);
-  };
 
   const handleTransfer = async () => {
     const a = amount()!;
     const at = amountToTransfer()!;
     const recipient = transferRecipient()!;
 
+    if (recipient.isErr()) {
+      alert("Invalid recipient principal ID");
+      return;
+    }
+
     const agreed = confirm(
-      `Are you sure you want to transfer ${at.toString()} total ${from()} to ${recipient.toText()}? This action can't be reversed.`
+      `Are you sure you want to transfer ${at.toString()} total ${from()} to ${recipient.unwrapOk()}? This action can't be reversed.`
     );
 
     if (!agreed) return;
 
     setDisabled(true);
-    await transfer(from() as "ICP" | "FMJ", a, recipient);
+    await transfer(
+      from() as "ICP" | "FMJ",
+      a,
+      Principal.fromText(recipient.unwrapOk())
+    );
     setDisabled(false);
 
     alert("Successful transfer");
   };
 
-  const handleSelectInto = (into: string) => {
-    setInto(into as EE8sKind);
+  const handleSelectInto = (into: Result<string, string>) => {
+    setInto(into.unwrap() as EE8sKind);
   };
 
   const exchangeRate = () => {
@@ -137,8 +138,10 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     <div class="flex flex-col gap-5">
       <FromInput
         balance={balance()}
+        amount={amount()}
         kind={from()}
-        onChange={handleFromChange}
+        onAmountChange={setAmount}
+        onKindChange={setFrom}
       />
       <div class="flex flex-col justify-end gap-2">
         <Switch>
@@ -146,7 +149,8 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
             <Title class="p-2" text="Transfer to Principal ID" />
             <div class="flex justify-between gap-5">
               <TextInput
-                setValue={handleTransferRecipientChange}
+                onChange={setTransferRecipient}
+                value={transferRecipient().unwrap()}
                 validations={[{ principal: null }]}
               />
               <E8sWidget minValue={amountToTransfer()} kind={from()} />
@@ -164,7 +168,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
             <div class="flex justify-between items-center">
               <Select
                 possibleValues={[EE8sKind.FMJ, EE8sKind.ICP]}
-                defaultValue={EE8sKind.FMJ}
+                value={EE8sKind.FMJ}
                 onChange={handleSelectInto}
               />
               <E8sWidget minValue={intoAmount()} kind={into()} />
@@ -172,7 +176,6 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
             <div class="flex justify-between items-center">
               <ExchangeRate
                 pair={pairToStr({ from: from(), into: into() })}
-                rate={exchangeRate()}
                 editable={profileProof()?.is_team_member}
               />
             </div>

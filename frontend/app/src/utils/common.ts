@@ -62,5 +62,5 @@ export function pushAllDedup<T>(dest: T[], src: T[]): void {
 export function avatarSrcFromPrincipal(id: Principal) {
   const svg = btoa(makeAvatarSvg(id, "#ffffff"));
 
-  return Promise.resolve(`data:image/svg+xml;base64,${svg}`);
+  return `data:image/svg+xml;base64,${svg}`;
 }

@@ -236,6 +236,12 @@ impl Guard<TasksState> for AttachToTaskRequest {
             return Err(format!("Access denied"));
         }
 
+        if task.assignees.is_some() {
+            return Err(format!(
+                "This task can only be solved by a predefined set of assignees"
+            ));
+        }
+
         Ok(())
     }
 }

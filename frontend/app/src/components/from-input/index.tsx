@@ -7,10 +7,10 @@ import { Result } from "@utils/types";
 
 export interface IFromInputProps {
   balance: E8s;
-  amount: E8s | undefined;
+  amount: E8s;
   kind: EE8sKind;
   onKindChange: (k: Result<EE8sKind, EE8sKind>) => void;
-  onAmountChange: (a: Result<E8s | undefined, E8s | undefined>) => void;
+  onAmountChange: (a: Result<E8s, E8s>) => void;
 }
 
 export function FromInput(props: IFromInputProps) {

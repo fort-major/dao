@@ -5,6 +5,7 @@ import {
 } from "@/declarations/tasks/tasks.did";
 import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
+import { DecisionTopic } from "@components/decision-topic";
 import { EE8sKind } from "@components/e8s-widget";
 import { EIconKind } from "@components/icon";
 import { MdInput } from "@components/md-input";
@@ -12,7 +13,9 @@ import { QtyInput } from "@components/qty-input";
 import { Select } from "@components/select";
 import { TextInput } from "@components/text-input";
 import { Title } from "@components/title";
-import { useTasks } from "@store/tasks";
+import { Principal } from "@dfinity/principal";
+import { DecisionTopicId, useTasks } from "@store/tasks";
+import { useVotings } from "@store/votings";
 import { E8s } from "@utils/math";
 import { Result, TTaskId } from "@utils/types";
 import { batch, createSignal, For, onMount, Show } from "solid-js";
@@ -33,12 +36,15 @@ type FieldType =
 
 export function CreateTaskForm(props: ICreateTaskFormProps) {
   const { tasks, fetchTasks, editTask, createTask, deleteTask } = useTasks();
+  const { decisionTopics, fetchDecisionTopics } = useVotings();
 
   onMount(() => {
     if (!task() && props.id) fetchTasks([props.id]);
+    if (!decisionTopics[0]) fetchDecisionTopics();
   });
 
   const task = () => (props.id ? tasks[props.id.toString()] : undefined);
+
   const defaultTitle = () => (task() ? task()!.title : "");
   const defaultTeamOnly = () =>
     task() ? !!task()!.solver_constraints.find((it) => "TeamOnly" in it) : true;
@@ -59,6 +65,9 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     task() ? task()!.storypoints_base : E8s.zero();
   const defaultStorypointsAdditionalReward = () =>
     task() ? task()!.storypoints_ext_budget : E8s.zero();
+  const defaultDecisionTopics = () => (task() ? task()!.decision_topics : []);
+  const defaultAssignees = () =>
+    task() ? Result.Ok(task()!.assignees![0].toText()) : Result.Ok("");
   const defaultFieldTypes = () => {
     const t = task();
 
@@ -128,6 +137,10 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     createSignal<Result<E8s, E8s>>(
       Result.Ok(defaultStorypointsAdditionalReward())
     );
+  const [topics, setTopics] = createSignal(defaultDecisionTopics());
+  const [assignee, setAssignee] = createSignal<
+    Result<string | undefined, string | undefined>
+  >(defaultAssignees());
 
   const [fieldTypes, setFieldsTypes] = createSignal<
     Result<FieldType, FieldType>[]
@@ -153,7 +166,9 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       storypointsAdditionalReward().isErr() ||
       fieldTypes().some((it) => it.isErr()) ||
       fieldNames().some((it) => it.isErr()) ||
-      fieldDescriptions().some((it) => it.isErr())
+      fieldDescriptions().some((it) => it.isErr()) ||
+      assignee().isErr() ||
+      topics().length === 0
     );
   };
 
@@ -323,6 +338,8 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       });
     }
 
+    const assig = assignee().unwrapOk();
+
     if (!props.id) {
       await createTask({
         title: title().unwrapOk(),
@@ -333,6 +350,8 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         storypoints_base: storypointsBaseReward().unwrapOk(),
         storypoints_ext_budget: storypointsAdditionalReward().unwrapOk(),
         solution_fields: fields,
+        assignees: assig ? [Principal.fromText(assig)] : undefined,
+        decision_topics: topics(),
       });
     } else {
       await editTask({
@@ -345,6 +364,8 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         new_storypoints_base: storypointsBaseReward().unwrapOk(),
         new_storypoints_ext_budget: storypointsAdditionalReward().unwrapOk(),
         new_solution_fields: fields,
+        new_assignees: assig ? [Principal.fromText(assig)] : null,
+        new_decision_topics: topics(),
       });
     }
 
@@ -361,6 +382,16 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     setDisabled(true);
     await deleteTask(props.id!);
     setDisabled(false);
+  };
+
+  const handleTopicSelect = (id: DecisionTopicId) => {
+    setTopics((v) => {
+      const idx = v.indexOf(id);
+      if (idx == -1) v.push(id);
+      else v.splice(idx, 1);
+
+      return v;
+    });
   };
 
   const fieldClass = "flex flex-col gap-2";
@@ -387,6 +418,28 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
             disabled={disabled()}
           />
         </div>
+      </div>
+      <div class={fieldClass}>
+        <Title text="Topics" />
+        <div class="flex gap-3 flex-wrap">
+          <For each={Object.keys(decisionTopics).map(parseInt)}>
+            {(topicId) => (
+              <DecisionTopic
+                id={topicId}
+                selected={topics().includes(topicId)}
+                onSelect={() => handleTopicSelect(topicId)}
+              />
+            )}
+          </For>
+        </div>
+      </div>
+      <div class={fieldClass}>
+        <Title text="Assignee" />
+        <TextInput
+          value={assignee() ? assignee()!.unwrap()! : ""}
+          onChange={setAssignee}
+          validations={[{ principal: null }]}
+        />
       </div>
       <div class={fieldClass}>
         <Title text="Description" />

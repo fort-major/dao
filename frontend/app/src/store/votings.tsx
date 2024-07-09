@@ -66,12 +66,10 @@ export interface IVoting {
   duration_ns: bigint;
 }
 
-// explicit null means that the voting does not exist
-type VotingsStore = Record<TVotingIdStr, IVoting | null>;
-type DecisionTopicsStore = Record<DecisionTopicId, DecisionTopic>;
-type FollowersOfStore = Record<
-  TPrincipalStr,
-  Record<TPrincipalStr, DecisionTopicSet>
+type VotingsStore = Partial<Record<TVotingIdStr, IVoting>>;
+type DecisionTopicsStore = Partial<Record<DecisionTopicId, DecisionTopic>>;
+type FollowersOfStore = Partial<
+  Partial<Record<TPrincipalStr, Record<TPrincipalStr, DecisionTopicSet>>>
 >;
 
 export interface IVotingsStoreContext {
@@ -264,7 +262,7 @@ export function VotingsStore(props: IChildren) {
         const id = encodeVotingId(ids[i]);
 
         if (!voting) {
-          setVotings(id, null);
+          setVotings(id, undefined);
           continue;
         }
 

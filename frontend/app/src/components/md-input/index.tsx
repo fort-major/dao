@@ -70,8 +70,8 @@ export function MdInput(props: IMdInputProps) {
     props.onChange(v);
   };
 
-  const handleOnPreview = (isPreview: boolean) => {
-    setMode(isPreview ? "preview" : "edit");
+  const handleOnPreview = (isEdit: boolean) => {
+    setMode(isEdit ? "edit" : "preview");
   };
 
   const handleOnBold = () =>
@@ -298,6 +298,7 @@ export function MdInput(props: IMdInputProps) {
         classList={{ "shadow-errorRed": !!error() }}
       >
         <MdTools
+          isEdit={mode() === "edit"}
           onPreview={handleOnPreview}
           onBold={handleOnBold}
           onItalic={handleOnItalic}
