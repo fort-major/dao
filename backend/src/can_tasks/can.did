@@ -8,6 +8,7 @@ type ArchivedTaskV1 = record {
   description : text;
   created_at : nat64;
   decision_topics : vec nat32;
+  assignees : opt vec principal;
   solutions : vec record { principal; Solution };
 };
 type AttachToTaskRequest = record { id : nat64; detach : bool };
@@ -22,6 +23,7 @@ type CreateTaskRequest = record {
   team_proof : Proof;
   decision_topics : vec nat32;
   storypoints_ext_budget : nat;
+  assignees : opt vec principal;
 };
 type CreateTaskResponse = record { id : nat64 };
 type DecisionTopicSet = variant {
@@ -41,6 +43,7 @@ type EditTaskRequest = record {
   new_description_opt : opt text;
   new_decision_topics_opt : opt vec nat32;
   new_title_opt : opt text;
+  new_assignees_opt : opt opt vec principal;
   new_hours_base_opt : opt nat;
 };
 type EvaluateRequest = record {
@@ -108,6 +111,7 @@ type Task = record {
   solvers : vec principal;
   decision_topics : vec nat32;
   storypoints_ext_budget : nat;
+  assignees : opt vec principal;
   solutions : vec record { principal; Solution };
 };
 type TaskStage = variant {

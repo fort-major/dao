@@ -62,6 +62,7 @@ impl TasksState {
             req.storypoints_base,
             req.storypoints_ext_budget,
             req.decision_topics.into_iter().collect(),
+            req.assignees,
             caller,
             now,
         );
@@ -83,6 +84,7 @@ impl TasksState {
             req.new_storypoints_ext_budget_opt,
             req.new_days_to_solve_opt,
             req.new_decision_topics_opt,
+            req.new_assignees_opt,
         );
 
         EditTaskResponse {}

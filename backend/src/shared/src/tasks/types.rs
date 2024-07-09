@@ -7,10 +7,7 @@ use serde::Deserialize;
 use url::Url;
 
 use crate::{
-    e8s::E8s,
-    liquid_democracy::types::{DecisionTopicId},
-    votings::types::ONE_DAY_NS,
-    TimestampNs,
+    e8s::E8s, liquid_democracy::types::DecisionTopicId, votings::types::ONE_DAY_NS, TimestampNs,
 };
 
 pub type TaskId = u64;
@@ -29,6 +26,7 @@ pub struct Task {
     pub hours_base: E8s,
     pub storypoints_base: E8s,
     pub storypoints_ext_budget: E8s,
+    pub assignees: Option<BTreeSet<Principal>>,
     pub solvers: BTreeSet<Principal>,
     pub solutions: BTreeMap<Principal, Solution>,
     pub decision_topics: BTreeSet<DecisionTopicId>,
@@ -46,6 +44,7 @@ impl Task {
         storypoints_base: E8s,
         storypoints_ext_budget: E8s,
         decision_topics: BTreeSet<DecisionTopicId>,
+        assignees: Option<BTreeSet<Principal>>,
         caller: Principal,
         now: TimestampNs,
     ) -> Self {
@@ -62,6 +61,7 @@ impl Task {
             hours_base,
             storypoints_base,
             storypoints_ext_budget,
+            assignees,
             solvers: BTreeSet::new(),
             solutions: BTreeMap::new(),
             decision_topics,
@@ -79,6 +79,7 @@ impl Task {
         new_storypoints_ext_budget_opt: Option<E8s>,
         new_days_to_solve_opt: Option<u64>,
         new_decision_topics_opt: Option<Vec<DecisionTopicId>>,
+        new_assignees_opt: Option<Option<BTreeSet<Principal>>>,
     ) {
         if let Some(new_title) = new_title_opt {
             self.title = new_title;
@@ -114,6 +115,10 @@ impl Task {
 
         if let Some(new_decision_topics) = new_decision_topics_opt {
             self.decision_topics = new_decision_topics.into_iter().collect();
+        }
+
+        if let Some(new_assignees) = new_assignees_opt {
+            self.assignees = new_assignees;
         }
     }
 
@@ -257,6 +262,7 @@ impl Task {
             solution_fields: self.solution_fields,
             solutions: self.solutions,
             decision_topics: self.decision_topics.into_iter().collect(),
+            assignees: self.assignees.map(|it| it.into_iter().collect()),
         })
     }
 }
@@ -447,4 +453,5 @@ pub struct ArchivedTaskV1 {
     pub solution_fields: Vec<SolutionField>,
     pub solutions: BTreeMap<Principal, Solution>,
     pub decision_topics: Vec<DecisionTopicId>,
+    pub assignees: Option<Vec<Principal>>,
 }

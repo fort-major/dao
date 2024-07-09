@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use candid::{CandidType, Principal};
 use garde::Validate;
@@ -36,6 +36,8 @@ pub struct CreateTaskRequest {
     pub decision_topics: Vec<DecisionTopicId>,
     #[garde(dive)]
     pub team_proof: Proof,
+    #[garde(skip)]
+    pub assignees: Option<BTreeSet<Principal>>,
 }
 
 impl Guard<TasksState> for CreateTaskRequest {
@@ -98,6 +100,8 @@ pub struct EditTaskRequest {
     pub new_days_to_solve_opt: Option<u64>,
     #[garde(length(min = 1))]
     pub new_decision_topics_opt: Option<Vec<DecisionTopicId>>,
+    #[garde(skip)]
+    pub new_assignees_opt: Option<Option<BTreeSet<Principal>>>,
 }
 
 impl Guard<TasksState> for EditTaskRequest {
@@ -269,6 +273,14 @@ impl Guard<TasksState> for SolveTaskRequest {
 
         if task.max_solutions() == (task.solutions.len() as u32) {
             return Err(format!("Max solutions number reached"));
+        }
+
+        if let Some(assignees) = &task.assignees {
+            if !assignees.contains(&caller) {
+                return Err(format!(
+                    "This task can only be solved by the preselected assignees"
+                ));
+            }
         }
 
         if task.is_team_only() {

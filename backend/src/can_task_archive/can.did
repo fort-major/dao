@@ -9,6 +9,7 @@ type ArchivedTaskV1 = record {
   description : text;
   created_at : nat64;
   decision_topics : vec nat32;
+  assignees : opt vec principal;
   solutions : vec record { principal; Solution };
 };
 type GetArchivedTasksByIdRequest = record { ids : vec nat64 };
