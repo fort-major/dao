@@ -20,9 +20,8 @@ import {
   optUnwrap,
 } from "../utils/backend";
 import { E8s } from "../utils/math";
-import { ITotals } from "./humans";
 import { GetProfilesResponse } from "@/declarations/humans/humans.did";
-import { TransferResult } from "@/declarations/fmj/fmj.did";
+import { DecisionTopicSet } from "@/declarations/liquid_democracy/liquid_democracy.did";
 
 export interface IMyBalance {
   Hours: E8s;
@@ -38,8 +37,9 @@ export interface IProfileProof {
 
 export interface IReputationProof {
   id: Principal;
-  reputation: { balance: E8s; updated_at: TTimestamp };
+  reputation: E8s;
   reputation_total_supply: E8s;
+  followers: { id: Principal; rep: E8s; topicset: DecisionTopicSet }[];
 }
 
 export interface IAuthStoreContext {
@@ -57,7 +57,7 @@ export interface IAuthStoreContext {
   profileProofCert: Accessor<Uint8Array | undefined>;
   reputationProof: Accessor<IReputationProof | undefined>;
   reputationProofCert: Accessor<Uint8Array | undefined>;
-  editMyProfile: (name?: string, avatarSrc?: string) => Promise<void>;
+  editMyProfile: (name?: string) => Promise<void>;
   myBalance: Accessor<IMyBalance | undefined>;
   fetchMyBalance: () => Promise<void>;
 }
@@ -123,7 +123,6 @@ export function AuthStore(props: IChildren) {
         return Promise.all([
           humansActor.humans__init_once(),
           reputationActor.reputation__init_once(),
-          // TODO: add liquid democracy init_once
         ]);
       };
 
@@ -133,7 +132,7 @@ export function AuthStore(props: IChildren) {
             setReputationProofCert(new Uint8Array(cert));
           },
         }
-      )({});
+      )({ selector: { AllTopics: null } });
 
       const { entries: profiles } = await humansActor.humans__get_profiles({
         ids: [id.getPrincipal()],
@@ -145,14 +144,10 @@ export function AuthStore(props: IChildren) {
         );
 
         const name = await id.getPseudonym();
-        const avatarSrc = await id.getAvatarSrc();
 
         await humansActor.humans__register({
           name: [name],
-          avatar_src: [avatarSrc],
         });
-
-        // TODO: add liquid democracy register
       }
 
       setIdentity(id as unknown as Identity);
@@ -176,13 +171,15 @@ export function AuthStore(props: IChildren) {
 
       const reputationProofExt: IReputationProof = {
         id: reputationProof.id,
-        reputation: {
-          balance: E8s.new(reputationProof.reputation.balance),
-          updated_at: reputationProof.reputation.updated_at,
-        },
+        reputation: E8s.new(reputationProof.reputation),
         reputation_total_supply: E8s.new(
           reputationProof.reputation_total_supply
         ),
+        followers: reputationProof.followers.map(([id, [rep, topicset]]) => ({
+          id,
+          rep: E8s.new(rep),
+          topicset,
+        })),
       };
 
       logInfo("Proofs fetched successfully");
@@ -204,20 +201,15 @@ export function AuthStore(props: IChildren) {
     err(ErrorCode.AUTH, debugStringify(res));
   };
 
-  const editMyProfile: IAuthStoreContext["editMyProfile"] = async (
-    name,
-    avatarSrc
-  ) => {
+  const editMyProfile: IAuthStoreContext["editMyProfile"] = async (name) => {
     assertAuthorized();
 
     const n: [string] | [] = name ? [name] : [];
-    const a: [string] | [] = avatarSrc ? [avatarSrc] : [];
 
     const humansActor = newHumansActor(agent()!);
 
     await humansActor.humans__edit_profile({
       new_name_opt: [n],
-      new_avatar_src_opt: [a],
     });
   };
 

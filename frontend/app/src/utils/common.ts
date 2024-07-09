@@ -1,5 +1,7 @@
 import { createSignal, onCleanup } from "solid-js";
 import deepEqual from "deep-equal";
+import { Principal } from "@dfinity/principal";
+import { makeAvatarSvg } from "@fort-major/msq-shared";
 
 export const debounce = (cb: (...args: any[]) => void, timeoutMs: number) => {
   const [int, setInt] = createSignal<NodeJS.Timeout | undefined>();
@@ -55,4 +57,10 @@ export function pushAllDedup<T>(dest: T[], src: T[]): void {
       dest.push(item);
     }
   }
+}
+
+export function avatarSrcFromPrincipal(id: Principal) {
+  const svg = btoa(makeAvatarSvg(id, "#ffffff"));
+
+  return Promise.resolve(`data:image/svg+xml;base64,${svg}`);
 }

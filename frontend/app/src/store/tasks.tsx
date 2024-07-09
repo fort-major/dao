@@ -18,6 +18,7 @@ import {
 } from "../utils/backend";
 import { debugStringify } from "../utils/encoding";
 import { debouncedBatchFetch } from "@utils/common";
+import { DecisionTopicSet } from "@/declarations/votings/votings.did";
 
 export interface ISolution {
   evaluation?: E8s;
@@ -27,6 +28,8 @@ export interface ISolution {
   rejected: boolean;
   reward_storypoints?: E8s;
 }
+
+export type DecisionTopicId = number;
 
 export interface ITask {
   id: TTaskId;
@@ -43,6 +46,7 @@ export interface ITask {
   solution_fields: Array<SolutionField>;
   solver_constraints: Array<SolverConstraint>;
   solutions: Array<[Principal, ISolution]>;
+  decision_topics: DecisionTopicId[];
 }
 
 export interface IArchivedTaskV1 {
@@ -54,6 +58,7 @@ export interface IArchivedTaskV1 {
   solver_constraints: Array<SolverConstraint>;
   solution_fields: Array<SolutionField>;
   solutions: Array<[Principal, ISolution]>;
+  decision_topics: DecisionTopicId[];
 }
 
 export interface ICreateTaskArgs {
@@ -65,6 +70,7 @@ export interface ICreateTaskArgs {
   storypoints_base: E8s;
   hours_base: E8s;
   storypoints_ext_budget: E8s;
+  decision_topics: DecisionTopicId[];
 }
 
 export interface IEditTaskArgs {
@@ -77,6 +83,7 @@ export interface IEditTaskArgs {
   new_storypoints_base?: E8s;
   new_storypoints_ext_budget?: E8s;
   new_days_to_solve?: bigint;
+  new_decision_topics?: DecisionTopicId[];
 }
 
 type TTaskId = bigint;
@@ -222,6 +229,7 @@ export function TasksStore(props: IChildren) {
             solver_constraints: taskV1.solver_constraints,
             solution_fields: taskV1.solution_fields,
             solutions,
+            decision_topics: taskV1.decision_topics as number[],
           };
 
           setArchivedTasks(itask.id.toString(), itask);
@@ -264,6 +272,7 @@ export function TasksStore(props: IChildren) {
         reputation_proof_cert_raw: reputationProofCert()!,
         reputation_proof: [],
       },
+      decision_topics: args.decision_topics,
     });
 
     setTaskIds(taskIds.length, id);
@@ -310,6 +319,7 @@ export function TasksStore(props: IChildren) {
       new_storypoints_ext_budget_opt: opt(
         args.new_storypoints_ext_budget?.toBigIntRaw()
       ),
+      new_decision_topics_opt: opt(args.new_decision_topics),
     });
   };
 
@@ -495,6 +505,7 @@ export function TasksStore(props: IChildren) {
           days_to_solve: task.days_to_solve,
           solvers: task.solvers,
           solutions,
+          decision_topics: task.decision_topics as number[],
         };
 
         setTasks(itask.id.toString(), itask);
@@ -555,6 +566,7 @@ export function TasksStore(props: IChildren) {
           created_at: task.created_at,
           solver_constraints: task.solver_constraints,
           solutions,
+          decision_topics: task.decision_topics as number[],
         };
 
         setArchivedTasks(itask.id.toString(), itask);

@@ -22,7 +22,6 @@ export interface IEmployment {
 
 export interface IProfile {
   id: Principal;
-  avatar_src?: string;
   name?: string;
   registered_at: bigint;
   employment?: IEmployment;
@@ -167,7 +166,6 @@ export function HumanStore(props: IChildren) {
         const profile: IProfile = {
           id: p.id,
           name: optUnwrap(p.name),
-          avatar_src: optUnwrap(p.avatar_src),
           registered_at: p.registered_at,
           employment: e
             ? {

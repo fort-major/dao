@@ -34,6 +34,10 @@ import {
   _SERVICE as ReputationActor,
   idlFactory as ReputationIdlFactory,
 } from "../declarations/reputation/reputation.did";
+import {
+  _SERVICE as LiquidDemocracyActor,
+  idlFactory as LiquidDemocracyIdlFactory,
+} from "../declarations/liquid_democracy/liquid_democracy.did";
 import { Principal } from "@dfinity/principal";
 
 export function newBankActor(agent: Agent): BankActor {
@@ -93,6 +97,13 @@ export function newVotingsActor(agent: Agent): VotingsActor {
 export function newReputationActor(agent: Agent): ReputationActor {
   return Actor.createActor(ReputationIdlFactory, {
     canisterId: import.meta.env.VITE_REPUTATION_CANISTER_ID,
+    agent,
+  });
+}
+
+export function newLiquidDemocracyActor(agent: Agent): LiquidDemocracyActor {
+  return Actor.createActor(LiquidDemocracyIdlFactory, {
+    canisterId: import.meta.env.VITE_LIQUID_DEMOCRACY_CANISTER_ID,
     agent,
   });
 }

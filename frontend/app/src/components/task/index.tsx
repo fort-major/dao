@@ -149,8 +149,10 @@ export function TaskMini(props: ITaskProps) {
 export function Task(props: ITaskProps) {
   const { tasks, fetchTasks, attachToTask } = useTasks();
   const { identity, isAuthorized, profileProof, authorize } = useAuth();
-  const { createTasksFinishEditVoting, createTasksEvaluateVoting } =
-    useVotings();
+  const {
+    createTasksStartSolveVoting: createTasksFinishEditVoting,
+    createTasksEvaluateVoting,
+  } = useVotings();
 
   const [showSolveModal, setShowSolveModal] = createSignal(false);
   const [disabled, setDisabled] = createSignal(false);
@@ -339,13 +341,13 @@ export function Task(props: ITaskProps) {
     const t = task();
 
     if (!t || t.solutions.length == 0) return undefined;
-   
+
     const me = identity()?.getPrincipal();
 
     if (!me) return undefined;
 
     return t.solutions.find(([solver, _]) => solver.compareTo(me) === "eq");
-  }
+  };
 
   const canEdit = () => {
     const t = task();

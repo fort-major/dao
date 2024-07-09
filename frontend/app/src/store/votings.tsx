@@ -1,6 +1,6 @@
 import { createContext, useContext } from "solid-js";
 import { Store, createStore } from "solid-js/store";
-import { IChildren, TTaskId, TTimestamp } from "../utils/types";
+import { IChildren, TPrincipalStr, TTaskId, TTimestamp } from "../utils/types";
 import { ErrorCode, err } from "../utils/error";
 import { Principal } from "@dfinity/principal";
 import { useAuth } from "./auth";
@@ -12,9 +12,20 @@ import {
   VotingKind,
   VotingStage,
 } from "../declarations/votings/votings.did";
-import { newVotingsActor, opt, optUnwrap } from "../utils/backend";
+import {
+  newLiquidDemocracyActor,
+  newVotingsActor,
+  opt,
+  optUnwrap,
+} from "../utils/backend";
 import { decodeVotingId, encodeVotingId } from "../utils/encoding";
 import { debouncedBatchFetch } from "@utils/common";
+import { DecisionTopicId } from "./tasks";
+import {
+  DecisionTopic,
+  DecisionTopicSet,
+  GetFollowersOfRequest,
+} from "@/declarations/liquid_democracy/liquid_democracy.did";
 
 export type TVotingIdStr = string;
 
@@ -27,7 +38,7 @@ export type TVotingKind =
     }
   | { HumansUnemploy: { team_member: Principal } }
   | { EvaluateTask: { task_id: bigint; solutions: Array<Principal> } }
-  | { FinishEditTask: { task_id: bigint } }
+  | { StartSolveTask: { task_id: bigint } }
   | {
       BankSetExchangeRate: {
         from: SwapFrom;
@@ -57,6 +68,11 @@ export interface IVoting {
 
 // explicit null means that the voting does not exist
 type VotingsStore = Record<TVotingIdStr, IVoting | null>;
+type DecisionTopicsStore = Record<DecisionTopicId, DecisionTopic>;
+type FollowersOfStore = Record<
+  TPrincipalStr,
+  Record<TPrincipalStr, DecisionTopicSet>
+>;
 
 export interface IVotingsStoreContext {
   votings: Store<VotingsStore>;
@@ -72,12 +88,18 @@ export interface IVotingsStoreContext {
   ) => Promise<VotingId>;
   createHumansUnemployVoting: (teamMember: Principal) => Promise<VotingId>;
   createTasksEvaluateVoting: (taskId: TTaskId) => Promise<VotingId>;
-  createTasksFinishEditVoting: (taskId: TTaskId) => Promise<VotingId>;
+  createTasksStartSolveVoting: (taskId: TTaskId) => Promise<VotingId>;
   createBankSetExchangeRateVoting: (
     from: SwapFrom,
     into: SwapInto,
     newRate: E8s
   ) => Promise<VotingId>;
+  decisionTopics: Store<DecisionTopicsStore>;
+  fetchDecisionTopics: () => Promise<void>;
+  followersOf: Store<FollowersOfStore>;
+  fetchFollowersOf: (ids: Principal[]) => Promise<void>;
+  follow: (id: Principal, topicset: DecisionTopicSet) => Promise<void>;
+  unfollow: (id: Principal) => Promise<void>;
 }
 
 const VotingsContext = createContext<IVotingsStoreContext>();
@@ -106,6 +128,9 @@ export function VotingsStore(props: IChildren) {
   } = useAuth();
 
   const [votings, setVotings] = createStore<VotingsStore>();
+  const [decisionTopics, setDecisionTopics] =
+    createStore<DecisionTopicsStore>();
+  const [followersOf, setFollowersOf] = createStore<FollowersOfStore>();
 
   const fetchVotings: IVotingsStoreContext["fetchVotings"] = async (
     ids: VotingId[]
@@ -131,7 +156,7 @@ export function VotingsStore(props: IChildren) {
 
     const repProof = reputationProof()!;
 
-    if (repProof.reputation.balance.isZero()) {
+    if (repProof.reputation.isZero()) {
       err(ErrorCode.AUTH, "You need at least some reputation to cast a vote");
     }
 
@@ -178,11 +203,11 @@ export function VotingsStore(props: IChildren) {
       return startVoting({ EvaluateTask: { task_id: taskId, solutions: [] } });
     };
 
-  const createTasksFinishEditVoting: IVotingsStoreContext["createTasksFinishEditVoting"] =
+  const createTasksStartSolveVoting: IVotingsStoreContext["createTasksStartSolveVoting"] =
     async (taskId) => {
-      assertVotingCanBeCreated(encodeVotingId({ FinishEditTask: taskId }));
+      assertVotingCanBeCreated(encodeVotingId({ StartSolveTask: taskId }));
 
-      return startVoting({ FinishEditTask: { task_id: taskId } });
+      return startVoting({ StartSolveTask: { task_id: taskId } });
     };
 
   const createBankSetExchangeRateVoting: IVotingsStoreContext["createBankSetExchangeRateVoting"] =
@@ -307,6 +332,75 @@ export function VotingsStore(props: IChildren) {
     (reason) => err(ErrorCode.NETWORK, `Unable to fetch votings: ${reason}`)
   );
 
+  const fetchDecisionTopics: IVotingsStoreContext["fetchDecisionTopics"] =
+    async () => {
+      assertReadyToFetch();
+
+      const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
+
+      const { entries: topics } =
+        await liquidDemocracyActor.liquid_democracy__get_decision_topics({});
+
+      for (let topic of topics) {
+        setDecisionTopics(topic.id, topic);
+      }
+    };
+
+  const liquidDemocracyGetFollowersOf = debouncedBatchFetch(
+    (req: GetFollowersOfRequest) => {
+      const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
+      return liquidDemocracyActor.liquid_democracy__get_followers_of(req);
+    },
+    ({ entries: followersOf }, req) => {
+      for (let i = 0; i < req.ids.length; i++) {
+        for (let [follower, topicset] of followersOf[i]) {
+          setFollowersOf(req.ids[i].toText(), follower.toText(), topicset);
+        }
+      }
+    },
+    (e) => err(ErrorCode.NETWORK, `Unable to fetch followers of: ${e}`)
+  );
+
+  const fetchFollowersOf: IVotingsStoreContext["fetchFollowersOf"] = async (
+    ids
+  ) => {
+    assertReadyToFetch();
+
+    liquidDemocracyGetFollowersOf({ ids });
+  };
+
+  const follow: IVotingsStoreContext["follow"] = async (id, topicset) => {
+    assertWithProofs();
+
+    const actor = newLiquidDemocracyActor(agent()!);
+    await actor.liquid_democracy__follow({
+      followee: id,
+      topics: [topicset],
+      proof: {
+        profile_proofs_cert_raw: profileProofCert()!,
+        profile_proof: [],
+        reputation_proof_cert_raw: reputationProofCert()!,
+        reputation_proof: [],
+      },
+    });
+  };
+
+  const unfollow: IVotingsStoreContext["unfollow"] = async (id) => {
+    assertWithProofs();
+
+    const actor = newLiquidDemocracyActor(agent()!);
+    await actor.liquid_democracy__follow({
+      followee: id,
+      topics: [],
+      proof: {
+        profile_proofs_cert_raw: profileProofCert()!,
+        profile_proof: [],
+        reputation_proof_cert_raw: reputationProofCert()!,
+        reputation_proof: [],
+      },
+    });
+  };
+
   return (
     <VotingsContext.Provider
       value={{
@@ -316,8 +410,14 @@ export function VotingsStore(props: IChildren) {
         createHumansEmployVoting,
         createHumansUnemployVoting,
         createTasksEvaluateVoting,
-        createTasksFinishEditVoting,
+        createTasksStartSolveVoting: createTasksStartSolveVoting,
         createBankSetExchangeRateVoting,
+        decisionTopics,
+        fetchDecisionTopics,
+        followersOf,
+        fetchFollowersOf,
+        follow,
+        unfollow,
       }}
     >
       {props.children}
