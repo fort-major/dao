@@ -4,9 +4,19 @@ use ic_stable_structures::{storable::Bound, Storable};
 use num_bigint::BigUint;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, votings::types::ONE_WEEK_NS, TimestampNs};
+use std::collections::BTreeMap;
+
+use crate::{
+    e8s::E8s, liquid_democracy::types::DecisionTopicSet, votings::types::ONE_WEEK_NS, TimestampNs,
+};
 
 pub const REPUTATION_PROOF_MARKER: &str = "FMJ REPUTATION CANISTER GET REPUTATION PROOF RESPONSE";
+
+#[derive(CandidType, Deserialize, Validate, Clone, Copy)]
+pub enum LiquidDemocracySelector {
+    OnlyMe,
+    AllTopics,
+}
 
 #[derive(CandidType, Deserialize, Validate, Clone, Debug, Default)]
 pub struct RepBalanceEntry {
@@ -97,7 +107,9 @@ pub struct ReputationProof {
     #[garde(skip)]
     pub id: Principal,
     #[garde(skip)]
-    pub reputation: RepBalanceEntry,
+    pub reputation: E8s,
     #[garde(skip)]
     pub reputation_total_supply: E8s,
+    #[garde(skip)]
+    pub followers: BTreeMap<Principal, (E8s, DecisionTopicSet)>,
 }

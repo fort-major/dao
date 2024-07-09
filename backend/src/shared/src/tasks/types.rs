@@ -6,7 +6,12 @@ use garde::Validate;
 use serde::Deserialize;
 use url::Url;
 
-use crate::{e8s::E8s, votings::types::ONE_DAY_NS, TimestampNs};
+use crate::{
+    e8s::E8s,
+    liquid_democracy::types::{DecisionTopicId},
+    votings::types::ONE_DAY_NS,
+    TimestampNs,
+};
 
 pub type TaskId = u64;
 
@@ -26,6 +31,7 @@ pub struct Task {
     pub storypoints_ext_budget: E8s,
     pub solvers: BTreeSet<Principal>,
     pub solutions: BTreeMap<Principal, Solution>,
+    pub decision_topics: BTreeSet<DecisionTopicId>,
 }
 
 impl Task {
@@ -39,6 +45,7 @@ impl Task {
         hours_base: E8s,
         storypoints_base: E8s,
         storypoints_ext_budget: E8s,
+        decision_topics: BTreeSet<DecisionTopicId>,
         caller: Principal,
         now: TimestampNs,
     ) -> Self {
@@ -57,6 +64,7 @@ impl Task {
             storypoints_ext_budget,
             solvers: BTreeSet::new(),
             solutions: BTreeMap::new(),
+            decision_topics,
         }
     }
 
@@ -70,6 +78,7 @@ impl Task {
         new_storypoints_base_opt: Option<E8s>,
         new_storypoints_ext_budget_opt: Option<E8s>,
         new_days_to_solve_opt: Option<u64>,
+        new_decision_topics_opt: Option<Vec<DecisionTopicId>>,
     ) {
         if let Some(new_title) = new_title_opt {
             self.title = new_title;
@@ -102,9 +111,17 @@ impl Task {
         if let Some(new_days_to_solve) = new_days_to_solve_opt {
             self.days_to_solve = new_days_to_solve;
         }
+
+        if let Some(new_decision_topics) = new_decision_topics_opt {
+            self.decision_topics = new_decision_topics.into_iter().collect();
+        }
     }
 
-    pub fn finish_edit(&mut self, now: TimestampNs) {
+    pub fn finish_edit(&mut self) {
+        self.stage = TaskStage::PreSolve;
+    }
+
+    pub fn finish_pre_solve(&mut self, now: TimestampNs) {
         let until_timestamp = now + ONE_DAY_NS * self.days_to_solve;
 
         self.stage = TaskStage::Solve { until_timestamp };
@@ -206,6 +223,10 @@ impl Task {
         matches!(self.stage, TaskStage::Edit)
     }
 
+    pub fn can_approve_to_solve(&self) -> bool {
+        matches!(self.stage, TaskStage::PreSolve)
+    }
+
     pub fn can_solve(&self) -> bool {
         matches!(self.stage, TaskStage::Solve { until_timestamp: _ })
     }
@@ -235,6 +256,7 @@ impl Task {
             solver_constraints: self.solver_constraints,
             solution_fields: self.solution_fields,
             solutions: self.solutions,
+            decision_topics: self.decision_topics.into_iter().collect(),
         })
     }
 }
@@ -242,6 +264,7 @@ impl Task {
 #[derive(CandidType, Deserialize, Clone, Copy)]
 pub enum TaskStage {
     Edit,
+    PreSolve,
     Solve { until_timestamp: TimestampNs },
     Evaluate,
 }
@@ -423,4 +446,5 @@ pub struct ArchivedTaskV1 {
     pub solver_constraints: BTreeSet<SolverConstraint>,
     pub solution_fields: Vec<SolutionField>,
     pub solutions: BTreeMap<Principal, Solution>,
+    pub decision_topics: Vec<DecisionTopicId>,
 }

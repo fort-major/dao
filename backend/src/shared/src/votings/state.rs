@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, LinkedList};
 use candid::{CandidType, Principal};
 use serde::Deserialize;
 
-use crate::TimestampNs;
+use crate::{liquid_democracy::types::DecisionTopicId, TimestampNs};
 
 use super::{
     api::{
@@ -34,6 +34,7 @@ impl VotingsState {
     pub fn start_voting(
         &mut self,
         req: StartVotingRequest,
+        topics: Vec<DecisionTopicId>,
         caller: Principal,
         now: TimestampNs,
     ) -> (StartVotingResponse, VotingTimer) {
@@ -43,6 +44,7 @@ impl VotingsState {
                 .expect("The proof is not computed")
                 .reputation_total_supply,
             req.kind,
+            topics,
             caller,
             now,
         );
@@ -72,18 +74,22 @@ impl VotingsState {
         req: CastVoteRequest,
         caller: Principal,
     ) -> (CastVoteResponse, Option<CallToExecute>) {
+        let rep_proof = req
+            .proof
+            .reputation_proof
+            .expect("The proof is not computed");
+
+        let mut votes = vec![(caller, rep_proof.reputation)];
+
         let voting = self.votings.get_mut(&req.id).unwrap();
 
-        let result = voting.cast_vote(
-            req.option_idx,
-            req.normalized_approval_level,
-            req.proof
-                .reputation_proof
-                .expect("The proof is not computed")
-                .reputation
-                .balance,
-            caller,
-        );
+        for (follower, (rep, decision_topicset)) in rep_proof.followers {
+            if decision_topicset.matches(&voting.topics) {
+                votes.push((follower, rep));
+            }
+        }
+
+        let result = voting.cast_vote(req.option_idx, req.normalized_approval_level, votes, caller);
 
         match result {
             Ok(o) => (

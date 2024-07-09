@@ -1,0 +1,39 @@
+type DecisionTopic = record { id : nat32; name : text; description : text };
+type DecisionTopicSet = variant {
+  It : nat32;
+  Or : record { DecisionTopicSet; DecisionTopicSet };
+  And : record { DecisionTopicSet; DecisionTopicSet };
+  Not : DecisionTopicSet;
+};
+type FollowRequest = record {
+  followee : principal;
+  topics : opt DecisionTopicSet;
+  proof : Proof;
+};
+type GetDecisionTopicsResponse = record { entries : vec DecisionTopic };
+type GetFollowersOfRequest = record { ids : vec principal };
+type GetFollowersOfResponse = record {
+  entries : vec vec record { principal; DecisionTopicSet };
+};
+type ProfileProof = record { id : principal; is_team_member : bool };
+type Proof = record {
+  profile_proofs_cert_raw : blob;
+  profile_proof : opt ProfileProof;
+  reputation_proof : opt ReputationProof;
+  reputation_proof_cert_raw : blob;
+};
+type ReputationProof = record {
+  id : principal;
+  reputation : nat;
+  followers : vec record { principal; record { nat; DecisionTopicSet } };
+  reputation_total_supply : nat;
+};
+service : () -> {
+  liquid_democracy__follow : (FollowRequest) -> (record {});
+  liquid_democracy__get_decision_topics : (record {}) -> (
+      GetDecisionTopicsResponse,
+    ) query;
+  liquid_democracy__get_followers_of : (GetFollowersOfRequest) -> (
+      GetFollowersOfResponse,
+    ) query;
+}

@@ -2,7 +2,8 @@ use candid::{CandidType, Principal};
 
 use env::{
     CAN_BANK_CANISTER_ID, CAN_FMJ_CANISTER_ID, CAN_HUMANS_CANISTER_ID, CAN_ICP_CANISTER_ID,
-    CAN_REPUTATION_CANISTER_ID, CAN_ROOT_KEY, CAN_TASKS_CANISTER_ID, CAN_VOTINGS_CANISTER_ID,
+    CAN_LIQUID_DEMOCRACY_CANISTER_ID, CAN_REPUTATION_CANISTER_ID, CAN_ROOT_KEY,
+    CAN_TASKS_CANISTER_ID, CAN_VOTINGS_CANISTER_ID,
 };
 use lazy_static::lazy_static;
 use serde::Deserialize;
@@ -41,6 +42,7 @@ pub struct EnvVarsState {
     pub humans_canister_id: Principal,
     pub votings_canister_id: Principal,
     pub reputation_canister_id: Principal,
+    pub liquid_democracy_canister_id: Principal,
     pub tasks_canister_id: Principal,
     pub bank_canister_id: Principal,
     pub fmj_canister_id: Principal,
@@ -54,6 +56,8 @@ impl EnvVarsState {
             humans_canister_id: Principal::from_text(CAN_HUMANS_CANISTER_ID).unwrap(),
             votings_canister_id: Principal::from_text(CAN_VOTINGS_CANISTER_ID).unwrap(),
             reputation_canister_id: Principal::from_text(CAN_REPUTATION_CANISTER_ID).unwrap(),
+            liquid_democracy_canister_id: Principal::from_text(CAN_LIQUID_DEMOCRACY_CANISTER_ID)
+                .unwrap(),
             tasks_canister_id: Principal::from_text(CAN_TASKS_CANISTER_ID).unwrap(),
             bank_canister_id: Principal::from_text(CAN_BANK_CANISTER_ID).unwrap(),
             fmj_canister_id: Principal::from_text(CAN_FMJ_CANISTER_ID).unwrap(),

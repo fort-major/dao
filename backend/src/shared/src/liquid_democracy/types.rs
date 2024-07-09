@@ -1,16 +1,15 @@
-use candid::{CandidType, Deserialize, Principal};
-use garde::Validate;
+use candid::{CandidType, Deserialize};
 
 pub type DecisionTopicId = u32;
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Clone, Debug)]
 pub struct DecisionTopic {
     pub id: DecisionTopicId,
     pub name: String,
     pub description: String,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Clone, Debug)]
 pub enum DecisionTopicSet {
     It(DecisionTopicId),
     Not(Box<DecisionTopicSet>),

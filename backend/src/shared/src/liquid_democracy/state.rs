@@ -4,14 +4,24 @@ use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 use crate::btreemap;
 
 use super::{
-    api::{FollowRequest, FollowResponse, GetFollowersOfRequest, GetFollowersOfResponse},
+    api::{
+        FollowRequest, FollowResponse, GetDecisionTopicsRequest, GetDecisionTopicsResponse,
+        GetFollowersOfRequest, GetFollowersOfResponse,
+    },
     types::{DecisionTopic, DecisionTopicId, DecisionTopicSet},
 };
+
+pub const GENERAL_TOPIC_ID: DecisionTopicId = 0;
+pub const DEVELOPMENT_TOPIC_ID: DecisionTopicId = 1;
+pub const MARKETING_TOPIC_ID: DecisionTopicId = 2;
+pub const DESIGN_TOPIC_ID: DecisionTopicId = 3;
+pub const FMJ_TOPIC_ID: DecisionTopicId = 4;
+pub const MSQ_TOPIC_ID: DecisionTopicId = 5;
 
 #[derive(CandidType, Deserialize)]
 pub struct LiquidDemocracyState {
     pub decision_topic_id_counter: DecisionTopicId,
-    pub decision_topic: BTreeMap<DecisionTopicId, DecisionTopic>,
+    pub decision_topics: BTreeMap<DecisionTopicId, DecisionTopic>,
     pub i_follow: BTreeMap<Principal, BTreeSet<Principal>>,
     pub my_followers: BTreeMap<Principal, BTreeMap<Principal, DecisionTopicSet>>,
 }
@@ -19,31 +29,31 @@ pub struct LiquidDemocracyState {
 impl LiquidDemocracyState {
     pub fn new() -> Self {
         let general_topic = DecisionTopic {
-            id: 0,
+            id: GENERAL_TOPIC_ID,
             name: String::from("Governance"),
             description: String::from("Runtime parameters. For example, what tokens are whitelisted in MSQ, what exchange rates are we using in FMJ swaps, etc."),
         };
 
         let development_topic = DecisionTopic {
-            id: 1,
+            id: DEVELOPMENT_TOPIC_ID,
             name: String::from("Development"),
             description: String::from("Everything about the code. Probably GitHub-related."),
         };
 
         let marketing_topic = DecisionTopic {
-            id: 2,
+            id: MARKETING_TOPIC_ID,
             name: String::from("Marketing"),
             description: String::from("Everything about public presence. Tasks of this topic are usually about making some kind of content for the public."),
         };
 
         let design_topic = DecisionTopic {
-            id: 3,
+            id: DESIGN_TOPIC_ID,
             name: String::from("Design"),
             description: String::from("Everything about the UX and visuals. Figma and others."),
         };
 
         let fmj_topic = DecisionTopic {
-            id: 4,
+            id: FMJ_TOPIC_ID,
             name: String::from("Fort Major"),
             description: String::from(
                 "Decisions related exclusively to the Fort Major organization itself.",
@@ -51,20 +61,20 @@ impl LiquidDemocracyState {
         };
 
         let msq_topic = DecisionTopic {
-            id: 5,
+            id: MSQ_TOPIC_ID,
             name: String::from("MSQ"),
             description: String::from("Decision related exclusively to the MSQ project."),
         };
 
         Self {
             decision_topic_id_counter: 6,
-            decision_topic: btreemap! {
-                0 => general_topic,
-                1 => development_topic,
-                2 => marketing_topic,
-                3 => design_topic,
-                4 => fmj_topic,
-                5 => msq_topic,
+            decision_topics: btreemap! {
+                GENERAL_TOPIC_ID => general_topic,
+                DEVELOPMENT_TOPIC_ID => development_topic,
+                MARKETING_TOPIC_ID => marketing_topic,
+                DESIGN_TOPIC_ID => design_topic,
+                FMJ_TOPIC_ID => fmj_topic,
+                MSQ_TOPIC_ID => msq_topic,
             },
             i_follow: BTreeMap::new(),
             my_followers: BTreeMap::new(),
@@ -114,7 +124,7 @@ impl LiquidDemocracyState {
             .ids
             .into_iter()
             .map(|id| {
-                let mut result = BTreeSet::new();
+                let mut result = BTreeMap::new();
                 self.followers_of(&id, &mut result);
 
                 result
@@ -124,6 +134,12 @@ impl LiquidDemocracyState {
         GetFollowersOfResponse { entries }
     }
 
+    pub fn get_decision_topics(&self, _req: GetDecisionTopicsRequest) -> GetDecisionTopicsResponse {
+        let entries = self.decision_topics.values().cloned().collect();
+
+        GetDecisionTopicsResponse { entries }
+    }
+
     fn generate_id(&mut self) -> DecisionTopicId {
         let id = self.decision_topic_id_counter;
         self.decision_topic_id_counter += 1;
@@ -131,14 +147,14 @@ impl LiquidDemocracyState {
         id
     }
 
-    fn followers_of(&self, of: &Principal, result: &mut BTreeSet<Principal>) {
+    fn followers_of(&self, of: &Principal, result: &mut BTreeMap<Principal, DecisionTopicSet>) {
         if let Some(followers) = self.my_followers.get(of) {
-            for follower in followers.keys() {
-                if result.contains(follower) {
+            for (follower, topicset) in followers {
+                if result.contains_key(follower) {
                     continue;
                 }
 
-                result.insert(*follower);
+                result.insert(*follower, topicset.clone());
                 self.followers_of(follower, result); // recursive invocation
             }
         }

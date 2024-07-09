@@ -18,7 +18,8 @@ use super::{
         DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
         EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
         FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
-        GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+        GetTasksResponse, SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest,
+        StartSolveTaskResponse,
     },
     types::{ArchivedTask, RewardEntry, Task, TaskId},
 };
@@ -60,6 +61,7 @@ impl TasksState {
             req.hours_base,
             req.storypoints_base,
             req.storypoints_ext_budget,
+            req.decision_topics.into_iter().collect(),
             caller,
             now,
         );
@@ -80,20 +82,28 @@ impl TasksState {
             req.new_storypoints_base_opt,
             req.new_storypoints_ext_budget_opt,
             req.new_days_to_solve_opt,
+            req.new_decision_topics_opt,
         );
 
         EditTaskResponse {}
     }
 
-    pub fn finish_edit_task(
-        &mut self,
-        req: FinishEditTaskRequest,
-        now: TimestampNs,
-    ) -> FinishEditTaskResponse {
+    pub fn finish_edit_task(&mut self, req: FinishEditTaskRequest) -> FinishEditTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
-        task.finish_edit(now);
+        task.finish_edit();
 
         FinishEditTaskResponse {}
+    }
+
+    pub fn start_solve_task(
+        &mut self,
+        req: StartSolveTaskRequest,
+        now: TimestampNs,
+    ) -> StartSolveTaskResponse {
+        let task = self.tasks.get_mut(&req.id).unwrap();
+        task.finish_pre_solve(now);
+
+        StartSolveTaskResponse {}
     }
 
     pub fn attach_to_task(

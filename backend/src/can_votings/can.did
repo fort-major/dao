@@ -10,6 +10,12 @@ type CastVoteRequest = record {
   proof : Proof;
 };
 type CastVoteResponse = record { decision_made : bool };
+type DecisionTopicSet = variant {
+  It : nat32;
+  Or : record { DecisionTopicSet; DecisionTopicSet };
+  And : record { DecisionTopicSet; DecisionTopicSet };
+  Not : DecisionTopicSet;
+};
 type GetVotingEventsResponse = record { events : vec VotingEvent };
 type GetVotingsRequest = record { ids : vec VotingId };
 type GetVotingsResponse = record { entries : vec opt VotingExt };
@@ -20,10 +26,10 @@ type Proof = record {
   reputation_proof : opt ReputationProof;
   reputation_proof_cert_raw : blob;
 };
-type RepBalanceEntry = record { updated_at : nat64; balance : nat };
 type ReputationProof = record {
   id : principal;
-  reputation : RepBalanceEntry;
+  reputation : nat;
+  followers : vec record { principal; record { nat; DecisionTopicSet } };
   reputation_total_supply : nat;
 };
 type StartVotingRequest = record { kind : VotingKind; proof : Proof };
@@ -32,6 +38,7 @@ type SwapFrom = variant { Hour; Storypoint };
 type SwapInto = variant { FMJ; ICP };
 type Vote = record {
   normalized_approval_level : opt nat;
+  placed_by_owner : bool;
   total_voter_reputation : nat;
 };
 type VotingEvent = variant { V0001 : VotingEventV1 };
@@ -69,8 +76,8 @@ type VotingExt = record {
 type VotingId = variant {
   HumansEmploy : principal;
   HumansUnemploy : principal;
+  StartSolveTask : nat64;
   EvaluateTask : nat64;
-  FinishEditTask : nat64;
   BankSetExchangeRate : record { SwapFrom; SwapInto };
 };
 type VotingKind = variant {
@@ -79,8 +86,8 @@ type VotingKind = variant {
     candidate : principal;
   };
   HumansUnemploy : record { team_member : principal };
+  StartSolveTask : record { task_id : nat64 };
   EvaluateTask : record { task_id : nat64; solutions : vec principal };
-  FinishEditTask : record { task_id : nat64 };
   BankSetExchangeRate : record {
     from : SwapFrom;
     into : SwapInto;

@@ -7,6 +7,7 @@ type ArchivedTaskV1 = record {
   solver_constraints : vec SolverConstraint;
   description : text;
   created_at : nat64;
+  decision_topics : vec nat32;
   solutions : vec record { principal; Solution };
 };
 type AttachToTaskRequest = record { id : nat64; detach : bool };
@@ -19,9 +20,16 @@ type CreateTaskRequest = record {
   hours_base : nat;
   description : text;
   team_proof : Proof;
+  decision_topics : vec nat32;
   storypoints_ext_budget : nat;
 };
 type CreateTaskResponse = record { id : nat64 };
+type DecisionTopicSet = variant {
+  It : nat32;
+  Or : record { DecisionTopicSet; DecisionTopicSet };
+  And : record { DecisionTopicSet; DecisionTopicSet };
+  Not : DecisionTopicSet;
+};
 type DeleteRequest = record { id : nat64 };
 type EditTaskRequest = record {
   id : nat64;
@@ -31,6 +39,7 @@ type EditTaskRequest = record {
   new_solver_constraints_opt : opt vec SolverConstraint;
   new_storypoints_ext_budget_opt : opt nat;
   new_description_opt : opt text;
+  new_decision_topics_opt : opt vec nat32;
   new_title_opt : opt text;
   new_hours_base_opt : opt nat;
 };
@@ -57,10 +66,10 @@ type Proof = record {
   reputation_proof : opt ReputationProof;
   reputation_proof_cert_raw : blob;
 };
-type RepBalanceEntry = record { updated_at : nat64; balance : nat };
 type ReputationProof = record {
   id : principal;
-  reputation : RepBalanceEntry;
+  reputation : nat;
+  followers : vec record { principal; record { nat; DecisionTopicSet } };
   reputation_total_supply : nat;
 };
 type Solution = record {
@@ -97,12 +106,14 @@ type Task = record {
   created_at : nat64;
   stage : TaskStage;
   solvers : vec principal;
+  decision_topics : vec nat32;
   storypoints_ext_budget : nat;
   solutions : vec record { principal; Solution };
 };
 type TaskStage = variant {
   Solve : record { until_timestamp : nat64 };
   Edit;
+  PreSolve;
   Evaluate;
 };
 type URLKind = variant {
@@ -129,4 +140,5 @@ service : (InitRequest) -> {
   tasks__get_task_ids : (record {}) -> (GetTaskIdsResponse) query;
   tasks__get_tasks : (GetTasksRequest) -> (GetTasksResponse) query;
   tasks__solve_task : (SolveTaskRequest) -> (record {});
+  tasks__start_solve_task : (DeleteRequest) -> (record {});
 }

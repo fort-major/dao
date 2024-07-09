@@ -7,6 +7,7 @@ use ic_cdk::{
     update,
 };
 use shared::{
+    liquid_democracy::{state::GENERAL_TOPIC_ID, types::DecisionTopicId},
     tasks::{api::GetTasksRequest, client::TasksCanisterClient},
     votings::{
         api::{
@@ -58,12 +59,12 @@ async fn votings__start_voting(mut req: StartVotingRequest) -> StartVotingRespon
     });
 
     // validate the entity a voting is trying to mutate
-    validate_voting_related_entity(&mut req.kind)
+    let topics = validate_voting_related_entity(&mut req.kind)
         .await
         .expect("Invalid voting");
 
     // start a voting
-    let (response, timer) = with_state_mut(|s| s.start_voting(req, caller(), time()));
+    let (response, timer) = with_state_mut(|s| s.start_voting(req, topics, caller(), time()));
 
     start_voting_timer(timer, time());
 
@@ -163,9 +164,11 @@ fn process_voting_result(voting_id: VotingId, call_to_exec_opt: Option<CallToExe
     }
 }
 
-async fn validate_voting_related_entity(kind: &mut VotingKind) -> Result<(), String> {
+async fn validate_voting_related_entity(
+    kind: &mut VotingKind,
+) -> Result<Vec<DecisionTopicId>, String> {
     match kind {
-        VotingKind::FinishEditTask { task_id } => {
+        VotingKind::StartSolveTask { task_id } => {
             let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
             let response = tasks_canister
                 .tasks__get_tasks(GetTasksRequest {
@@ -181,9 +184,11 @@ async fn validate_voting_related_entity(kind: &mut VotingKind) -> Result<(), Str
                 .as_ref()
                 .ok_or(format!("Task {} not found", task_id))?;
 
-            if !task.can_edit() {
+            if !task.can_approve_to_solve() {
                 return Err(format!("The task is in invalid state"));
             }
+
+            Ok(task.decision_topics.clone().into_iter().collect())
         }
         VotingKind::EvaluateTask { task_id, solutions } => {
             let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
@@ -207,13 +212,20 @@ async fn validate_voting_related_entity(kind: &mut VotingKind) -> Result<(), Str
 
             // setting the solutions to what's inside the actual task, instead of relying on what the user has provided
             *solutions = task.solutions.keys().copied().collect();
-        }
-        _ => {
-            // no validations for others
-        }
-    }
 
-    Ok(())
+            Ok(task.decision_topics.clone().into_iter().collect())
+        }
+        VotingKind::HumansEmploy {
+            candidate: _,
+            hours_a_week_commitment: _,
+        } => Ok(vec![GENERAL_TOPIC_ID]),
+        VotingKind::HumansUnemploy { team_member: _ } => Ok(vec![GENERAL_TOPIC_ID]),
+        VotingKind::BankSetExchangeRate {
+            from: _,
+            into: _,
+            new_rate: _,
+        } => Ok(vec![GENERAL_TOPIC_ID]),
+    }
 }
 
 thread_local! {

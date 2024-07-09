@@ -22,6 +22,7 @@ echo "CAN_HUMANS_CANISTER_ID=\"$(dfx canister --network=$network id humans)\"" >
 echo "CAN_TASKS_CANISTER_ID=\"$(dfx canister --network=$network id tasks)\"" >> $file_backend
 echo "CAN_VOTINGS_CANISTER_ID=\"$(dfx canister --network=$network id votings)\"" >> $file_backend
 echo "CAN_REPUTATION_CANISTER_ID=\"$(dfx canister --network=$network id reputation)\"" >> $file_backend
+echo "CAN_LIQUID_DEMOCRACY_CANISTER_ID=\"$(dfx canister --network=$network id liquid_democracy)\"" >> $file_backend
 echo "CAN_FMJ_CANISTER_ID=\"$(dfx canister --network=$network id fmj)\"" >> $file_backend
 echo "CAN_ICP_CANISTER_ID=\"ryjl3-tyaaa-aaaaa-aaaba-cai\"" >> $file_backend
 echo "CAN_ROOT_KEY=\"$(dfx ping $network | grep -oP '(?<="root_key": )\[.*\]')\"" >> $file_backend
@@ -42,6 +43,7 @@ echo "VITE_HUMANS_CANISTER_ID=\"$(dfx canister --network=$network id humans)\"" 
 echo "VITE_TASKS_CANISTER_ID=\"$(dfx canister --network=$network id tasks)\"" >> $file_frontend
 echo "VITE_VOTINGS_CANISTER_ID=\"$(dfx canister --network=$network id votings)\"" >> $file_frontend
 echo "VITE_REPUTATION_CANISTER_ID=\"$(dfx canister --network=$network id reputation)\"" >> $file_frontend
+echo "VITE_LIQUID_DEMOCRACY_CANISTER_ID=\"$(dfx canister --network=$network id liquid_democracy)\"" >> $file_frontend
 echo "VITE_FMJ_CANISTER_ID=\"$(dfx canister --network=$network id fmj)\"" >> $file_frontend
 echo "VITE_ICP_CANISTER_ID=\"ryjl3-tyaaa-aaaaa-aaaba-cai\"" >> $file_frontend
 echo "VITE_ROOT_KEY=\"$(dfx ping $network | grep -oP '(?<="root_key": )\[.*\]')\"" >> $file_frontend

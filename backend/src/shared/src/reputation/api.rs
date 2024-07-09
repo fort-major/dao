@@ -6,7 +6,7 @@ use crate::{e8s::E8s, Guard, ENV_VARS};
 
 use super::{
     state::ReputationState,
-    types::{RepBalanceEntry, ReputationProof},
+    types::{LiquidDemocracySelector, RepBalanceEntry, ReputationProof},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -78,8 +78,11 @@ pub struct GetTotalSupplyResponse {
     pub total_supply: E8s,
 }
 
-#[derive(CandidType, Deserialize, Validate)]
-pub struct GetRepProofRequest {}
+#[derive(CandidType, Deserialize, Validate, Clone)]
+pub struct GetRepProofRequest {
+    #[garde(skip)]
+    pub selector: LiquidDemocracySelector,
+}
 
 impl Guard<ReputationState> for GetRepProofRequest {
     fn validate_and_escape(

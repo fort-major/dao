@@ -1,17 +1,28 @@
+type DecisionTopicSet = variant {
+  It : nat32;
+  Or : record { DecisionTopicSet; DecisionTopicSet };
+  And : record { DecisionTopicSet; DecisionTopicSet };
+  Not : DecisionTopicSet;
+};
 type GetBalanceRequest = record { ids : vec principal };
 type GetBalanceResponse = record { entries : vec RepBalanceEntry };
+type GetRepProofRequest = record { selector : LiquidDemocracySelector };
 type GetRepProofResponse = record { marker : text; proof : ReputationProof };
 type GetTotalSupplyResponse = record { total_supply : nat };
+type LiquidDemocracySelector = variant { AllTopics; OnlyMe };
 type MintRepRequest = record { entries : vec record { principal; nat } };
 type RepBalanceEntry = record { updated_at : nat64; balance : nat };
 type ReputationProof = record {
   id : principal;
-  reputation : RepBalanceEntry;
+  reputation : nat;
+  followers : vec record { principal; record { nat; DecisionTopicSet } };
   reputation_total_supply : nat;
 };
 service : () -> {
   reputation__get_balance : (GetBalanceRequest) -> (GetBalanceResponse) query;
-  reputation__get_reputation_proof : (record {}) -> (GetRepProofResponse);
+  reputation__get_reputation_proof : (GetRepProofRequest) -> (
+      GetRepProofResponse,
+    );
   reputation__get_total_supply : (record {}) -> (GetTotalSupplyResponse) query;
   reputation__init_once : () -> ();
   reputation__mint : (MintRepRequest) -> (record {});

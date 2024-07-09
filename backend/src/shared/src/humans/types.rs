@@ -9,7 +9,6 @@ pub const PROFILE_PROOFS_MARKER: &str = "FMJ HUMANS CANISTER GET PROFILE PROOFS 
 pub struct Profile {
     pub id: Principal,
     pub name: Option<String>,
-    pub avatar_src: Option<String>,
     pub registered_at: TimestampNs,
     pub hours_balance: E8s,
     pub storypoints_balance: E8s,
@@ -19,16 +18,10 @@ pub struct Profile {
 }
 
 impl Profile {
-    pub fn new(
-        id: Principal,
-        name: Option<String>,
-        avatar_src: Option<String>,
-        now: TimestampNs,
-    ) -> Self {
+    pub fn new(id: Principal, name: Option<String>, now: TimestampNs) -> Self {
         Self {
             id,
             name,
-            avatar_src,
             registered_at: now,
             hours_balance: E8s::zero(),
             storypoints_balance: E8s::zero(),
@@ -38,17 +31,9 @@ impl Profile {
         }
     }
 
-    pub fn edit_profile(
-        &mut self,
-        new_name_opt: Option<Option<String>>,
-        new_avatar_src_opt: Option<Option<String>>,
-    ) {
+    pub fn edit_profile(&mut self, new_name_opt: Option<Option<String>>) {
         if let Some(new_name) = new_name_opt {
             self.name = new_name;
-        }
-
-        if let Some(new_avatar_src) = new_avatar_src_opt {
-            self.avatar_src = new_avatar_src;
         }
     }
 

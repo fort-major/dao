@@ -1,7 +1,4 @@
-type EditProfileRequest = record {
-  new_name_opt : opt opt text;
-  new_avatar_src_opt : opt opt text;
-};
+type EditProfileRequest = record { new_name_opt : opt opt text };
 type EmployRequest = record {
   hours_a_week_commitment : nat;
   candidate : principal;
@@ -20,7 +17,6 @@ type MintRewardsRequest = record { rewards : vec RewardEntry };
 type Profile = record {
   id : principal;
   earned_hours : nat;
-  avatar_src : opt text;
   name : opt text;
   hours_balance : nat;
   storypoints_balance : nat;
@@ -34,7 +30,7 @@ type RefundRewardsRequest = record {
   storypoints : nat;
   spender : principal;
 };
-type RegisterRequest = record { avatar_src : opt text; name : opt text };
+type RegisterRequest = record { name : opt text };
 type RewardEntry = record {
   solver : principal;
   reward_hours : nat;

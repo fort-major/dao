@@ -30,6 +30,11 @@
       "package": "reputation",
       "type": "rust"
     },
+    "liquid_democracy": {
+      "candid": "backend/src/can_liquid_democracy/can.did",
+      "package": "liquid_democracy",
+      "type": "rust"
+    },
     "fmj": {
       "candid": "backend/src/can_fmj/can.did",
       "wasm": "backend/src/can_fmj/fmj.wasm",

@@ -1,11 +1,14 @@
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 
 use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 
 use crate::{proof::Proof, Guard};
 
-use super::{state::LiquidDemocracyState, types::DecisionTopicSet};
+use super::{
+    state::LiquidDemocracyState,
+    types::{DecisionTopic, DecisionTopicSet},
+};
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct FollowRequest {
@@ -43,7 +46,7 @@ impl Guard<LiquidDemocracyState> for FollowRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct FollowResponse {}
 
-#[derive(CandidType, Deserialize, Validate)]
+#[derive(CandidType, Deserialize, Validate, Clone)]
 pub struct GetFollowersOfRequest {
     #[garde(length(min = 1))]
     pub ids: Vec<Principal>,
@@ -52,9 +55,9 @@ pub struct GetFollowersOfRequest {
 impl Guard<LiquidDemocracyState> for GetFollowersOfRequest {
     fn validate_and_escape(
         &mut self,
-        state: &LiquidDemocracyState,
-        caller: Principal,
-        now: crate::TimestampNs,
+        _state: &LiquidDemocracyState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())
     }
@@ -63,5 +66,25 @@ impl Guard<LiquidDemocracyState> for GetFollowersOfRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetFollowersOfResponse {
     #[garde(skip)]
-    pub entries: Vec<BTreeSet<Principal>>,
+    pub entries: Vec<BTreeMap<Principal, DecisionTopicSet>>,
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetDecisionTopicsRequest {}
+
+impl Guard<LiquidDemocracyState> for GetDecisionTopicsRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &LiquidDemocracyState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetDecisionTopicsResponse {
+    #[garde(skip)]
+    pub entries: Vec<DecisionTopic>,
 }

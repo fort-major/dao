@@ -4,7 +4,10 @@ use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, escape_script_tag, proof::Proof, Guard, ENV_VARS};
+use crate::{
+    e8s::E8s, escape_script_tag, liquid_democracy::types::DecisionTopicId, proof::Proof, Guard,
+    ENV_VARS,
+};
 
 use super::{
     state::TasksState,
@@ -29,6 +32,8 @@ pub struct CreateTaskRequest {
     pub storypoints_base: E8s,
     #[garde(skip)]
     pub storypoints_ext_budget: E8s,
+    #[garde(length(min = 1))]
+    pub decision_topics: Vec<DecisionTopicId>,
     #[garde(dive)]
     pub team_proof: Proof,
 }
@@ -91,6 +96,8 @@ pub struct EditTaskRequest {
     pub new_storypoints_ext_budget_opt: Option<E8s>,
     #[garde(range(max = 90))]
     pub new_days_to_solve_opt: Option<u64>,
+    #[garde(length(min = 1))]
+    pub new_decision_topics_opt: Option<Vec<DecisionTopicId>>,
 }
 
 impl Guard<TasksState> for EditTaskRequest {
@@ -159,7 +166,7 @@ impl Guard<TasksState> for FinishEditTaskRequest {
             .get(&self.id)
             .ok_or(format!("Task {} not found", self.id))?;
 
-        match (task.can_edit(), caller == ENV_VARS.votings_canister_id) {
+        match (task.can_edit(), caller == task.creator) {
             (true, true) => Ok(()),
             _ => Err(format!("Access denied")),
         }
@@ -168,6 +175,36 @@ impl Guard<TasksState> for FinishEditTaskRequest {
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct FinishEditTaskResponse {}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct StartSolveTaskRequest {
+    #[garde(skip)]
+    pub id: TaskId,
+}
+
+impl Guard<TasksState> for StartSolveTaskRequest {
+    fn validate_and_escape(
+        &mut self,
+        state: &TasksState,
+        caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())?;
+
+        let task = state
+            .tasks
+            .get(&self.id)
+            .ok_or(format!("Task {} not found", self.id))?;
+
+        match (task.can_edit(), caller == ENV_VARS.votings_canister_id) {
+            (true, true) => Ok(()),
+            _ => Err(format!("Access denied")),
+        }
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct StartSolveTaskResponse {}
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct AttachToTaskRequest {

@@ -8,7 +8,7 @@ use super::api::{
     DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
     EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
     FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest, GetTasksResponse,
-    SolveTaskRequest, SolveTaskResponse,
+    SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest, StartSolveTaskResponse,
 };
 
 pub struct TasksCanisterClient {
@@ -43,6 +43,16 @@ impl TasksCanisterClient {
         req: FinishEditTaskRequest,
     ) -> CallResult<FinishEditTaskResponse> {
         call(self.canister_id, "tasks__finish_edit_task", (req,))
+            .await
+            .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
+    pub async fn tasks__start_solve_task(
+        &self,
+        req: StartSolveTaskRequest,
+    ) -> CallResult<StartSolveTaskResponse> {
+        call(self.canister_id, "tasks__start_solve_task", (req,))
             .await
             .map(|(it,)| it)
     }

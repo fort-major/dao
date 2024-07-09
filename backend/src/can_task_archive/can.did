@@ -8,6 +8,7 @@ type ArchivedTaskV1 = record {
   solver_constraints : vec SolverConstraint;
   description : text;
   created_at : nat64;
+  decision_topics : vec nat32;
   solutions : vec record { principal; Solution };
 };
 type GetArchivedTasksByIdRequest = record { ids : vec nat64 };

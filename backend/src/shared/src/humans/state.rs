@@ -31,7 +31,7 @@ impl HumansState {
         caller: Principal,
         now: TimestampNs,
     ) -> RegisterResponse {
-        let profile = Profile::new(caller, req.name, req.avatar_src, now);
+        let profile = Profile::new(caller, req.name, now);
         self.profiles.insert(caller, profile);
 
         RegisterResponse {}
@@ -44,7 +44,7 @@ impl HumansState {
     ) -> EditProfileResponse {
         let profile = self.profiles.get_mut(&caller).unwrap();
 
-        profile.edit_profile(req.new_name_opt, req.new_avatar_src_opt);
+        profile.edit_profile(req.new_name_opt);
 
         EditProfileResponse {}
     }
@@ -153,7 +153,6 @@ impl HumansState {
         self.register(
             RegisterRequest {
                 name: Some("Fort Major Creator".to_string()),
-                avatar_src: None,
             },
             caller,
             now,

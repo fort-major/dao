@@ -18,7 +18,8 @@ use shared::{
             DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
             EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
             FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
-            GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+            GetTasksResponse, SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest,
+            StartSolveTaskResponse,
         },
         state::TasksState,
     },
@@ -83,7 +84,18 @@ fn tasks__finish_edit_task(mut req: FinishEditTaskRequest) -> FinishEditTaskResp
         req.validate_and_escape(s, caller(), time())
             .expect("Unable to finish editing task");
 
-        s.finish_edit_task(req, time())
+        s.finish_edit_task(req)
+    })
+}
+
+#[update]
+#[allow(non_snake_case)]
+fn tasks__start_solve_task(mut req: StartSolveTaskRequest) -> StartSolveTaskResponse {
+    with_state_mut(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to start solving task");
+
+        s.start_solve_task(req, time())
     })
 }
 

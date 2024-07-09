@@ -13,8 +13,6 @@ use super::{
 pub struct RegisterRequest {
     #[garde(length(graphemes, min = 2, max = 64))]
     pub name: Option<String>,
-    #[garde(length(bytes, max = 5120))]
-    pub avatar_src: Option<String>,
 }
 
 impl Guard<HumansState> for RegisterRequest {
@@ -34,10 +32,6 @@ impl Guard<HumansState> for RegisterRequest {
             *name = escape_script_tag(&name);
         }
 
-        if let Some(avatar_src) = &mut self.avatar_src {
-            *avatar_src = escape_script_tag(&avatar_src);
-        }
-
         Ok(())
     }
 }
@@ -49,8 +43,6 @@ pub struct RegisterResponse {}
 pub struct EditProfileRequest {
     #[garde(length(graphemes, min = 2, max = 64))]
     pub new_name_opt: Option<Option<String>>,
-    #[garde(length(bytes, max = 5120))]
-    pub new_avatar_src_opt: Option<Option<String>>,
 }
 
 impl Guard<HumansState> for EditProfileRequest {
@@ -69,12 +61,6 @@ impl Guard<HumansState> for EditProfileRequest {
         if let Some(new_name) = &mut self.new_name_opt {
             if let Some(name) = new_name {
                 *name = escape_script_tag(&name);
-            }
-        }
-
-        if let Some(new_avatar_src) = &mut self.new_avatar_src_opt {
-            if let Some(avatar_src) = new_avatar_src {
-                *avatar_src = escape_script_tag(&avatar_src);
             }
         }
 

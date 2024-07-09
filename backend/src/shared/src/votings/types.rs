@@ -13,8 +13,9 @@ use crate::{
     },
     e8s::E8s,
     humans::api::{EmployRequest, UnemployRequest},
+    liquid_democracy::types::DecisionTopicId,
     tasks::{
-        api::{EvaluateRequest, FinishEditTaskRequest},
+        api::{EvaluateRequest, StartSolveTaskRequest},
         types::TaskId,
     },
     DurationNs, TimestampNs, ENV_VARS,
@@ -27,7 +28,7 @@ pub const ONE_MONTH_NS: u64 = ONE_WEEK_NS * 30;
 
 #[derive(CandidType, Deserialize, Validate, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum VotingId {
-    FinishEditTask(#[garde(skip)] TaskId),
+    StartSolveTask(#[garde(skip)] TaskId),
     EvaluateTask(#[garde(skip)] TaskId),
     BankSetExchangeRate(#[garde(skip)] (SwapFrom, SwapInto)),
     HumansEmploy(#[garde(skip)] Principal),
@@ -40,12 +41,19 @@ pub struct Voting {
     pub base: VotingBase,
     pub kind: VotingKind,
     pub stage: VotingStage,
+    pub topics: Vec<DecisionTopicId>,
 }
 
 impl Voting {
-    pub fn new(total_supply: E8s, kind: VotingKind, caller: Principal, now: TimestampNs) -> Self {
+    pub fn new(
+        total_supply: E8s,
+        kind: VotingKind,
+        topics: Vec<DecisionTopicId>,
+        caller: Principal,
+        now: TimestampNs,
+    ) -> Self {
         let (duration_ns, quorum, consensus_normalized, finish_early, num_options) = match &kind {
-            VotingKind::FinishEditTask { task_id: _ } => (
+            VotingKind::StartSolveTask { task_id: _ } => (
                 ONE_WEEK_NS,
                 &total_supply * E8s::f0_2(),
                 E8s::f0_5(),
@@ -110,6 +118,7 @@ impl Voting {
             base,
             kind,
             stage: VotingStage::InProgress,
+            topics,
         }
     }
 
@@ -117,22 +126,30 @@ impl Voting {
         &mut self,
         option_idx: u32,
         normalized_approval_level: Option<E8s>,
-        voter_reputation: E8s,
+        votes: Vec<(Principal, E8s)>,
         caller: Principal,
     ) -> Result<Option<CallToExecute>, VotingEvent> {
-        let vote = Vote {
-            normalized_approval_level,
-            total_voter_reputation: voter_reputation,
-        };
-
         let option_votes = self
             .base
             .votes_per_option
             .get_mut(option_idx as usize)
             .unwrap();
 
-        option_votes.revert_prev_vote(&caller);
-        option_votes.cast_vote(caller, vote);
+        for (vote_owner, voter_rep) in votes {
+            let can_cast = option_votes.revert_prev_vote(&vote_owner, &caller);
+
+            if !can_cast {
+                continue;
+            }
+
+            let vote = Vote {
+                placed_by_owner: vote_owner == caller,
+                normalized_approval_level: normalized_approval_level.clone(),
+                total_voter_reputation: voter_rep,
+            };
+
+            option_votes.cast_vote(vote_owner, vote);
+        }
 
         if !self.base.is_finish_early_reached_for_all_options() {
             return Ok(None);
@@ -214,7 +231,7 @@ pub enum VotingStage {
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
 pub enum VotingKind {
-    FinishEditTask {
+    StartSolveTask {
         #[garde(skip)]
         task_id: TaskId,
     },
@@ -248,7 +265,7 @@ pub enum VotingKind {
 impl VotingKind {
     pub fn get_id(&self) -> VotingId {
         match self {
-            VotingKind::FinishEditTask { task_id } => VotingId::FinishEditTask(*task_id),
+            VotingKind::StartSolveTask { task_id } => VotingId::StartSolveTask(*task_id),
             VotingKind::EvaluateTask {
                 task_id,
                 solutions: _,
@@ -268,18 +285,18 @@ impl VotingKind {
 
     pub fn generate_resulting_call(&self, base: &VotingBase) -> Option<CallToExecute> {
         let result = match self {
-            VotingKind::FinishEditTask { task_id } => {
+            VotingKind::StartSolveTask { task_id } => {
                 let result = base.calc_binary_results()[0];
 
                 if !result {
                     return None;
                 }
 
-                let req = FinishEditTaskRequest { id: *task_id };
+                let req = StartSolveTaskRequest { id: *task_id };
 
                 CallToExecute::new(
                     ENV_VARS.tasks_canister_id,
-                    "tasks__finish_edit_task".into(),
+                    "tasks__start_solve_task".into(),
                     (req,),
                 )
             }
@@ -461,6 +478,7 @@ impl VotingBase {
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Vote {
+    pub placed_by_owner: bool,
     // None means "Reject"
     pub normalized_approval_level: Option<E8s>,
     pub total_voter_reputation: E8s,
@@ -568,8 +586,12 @@ pub struct OptionVotes {
 }
 
 impl OptionVotes {
-    pub fn revert_prev_vote(&mut self, caller: &Principal) {
-        if let Some(prev_vote) = self.votes.get(&caller) {
+    pub fn revert_prev_vote(&mut self, vote_owner: &Principal, caller: &Principal) -> bool {
+        if let Some(prev_vote) = self.votes.get(&vote_owner) {
+            if prev_vote.placed_by_owner && vote_owner != caller {
+                return false;
+            }
+
             self.total_voted -= &prev_vote.total_voter_reputation;
 
             if let Some(approval) = &prev_vote.approval_level() {
@@ -578,9 +600,11 @@ impl OptionVotes {
                 self.reject -= &prev_vote.total_voter_reputation;
             }
         }
+
+        return true;
     }
 
-    pub fn cast_vote(&mut self, caller: Principal, vote: Vote) {
+    pub fn cast_vote(&mut self, vote_owner: Principal, vote: Vote) {
         self.total_voted += &vote.total_voter_reputation;
 
         if let Some(approval) = &vote.approval_level() {
@@ -589,7 +613,7 @@ impl OptionVotes {
             self.reject += &vote.total_voter_reputation;
         }
 
-        self.votes.insert(caller, vote);
+        self.votes.insert(vote_owner, vote);
     }
 
     pub fn get_normalized_results(&self) -> (E8s, E8s, E8s) {
