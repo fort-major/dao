@@ -6,7 +6,8 @@ use crate::btreemap;
 use super::{
     api::{
         FollowRequest, FollowResponse, GetDecisionTopicsRequest, GetDecisionTopicsResponse,
-        GetFollowersOfRequest, GetFollowersOfResponse,
+        GetFolloweesOfRequest, GetFolloweesOfResponse, GetFollowersOfRequest,
+        GetFollowersOfResponse,
     },
     types::{DecisionTopic, DecisionTopicId, DecisionTopicSet},
 };
@@ -134,6 +135,21 @@ impl LiquidDemocracyState {
         GetFollowersOfResponse { entries }
     }
 
+    pub fn get_followees_of(&self, req: GetFolloweesOfRequest) -> GetFolloweesOfResponse {
+        let entries = req
+            .ids
+            .into_iter()
+            .map(|id| {
+                let mut result = BTreeMap::new();
+                self.followees_of(&id, &mut result);
+
+                result
+            })
+            .collect();
+
+        GetFolloweesOfResponse { entries }
+    }
+
     pub fn get_decision_topics(&self, _req: GetDecisionTopicsRequest) -> GetDecisionTopicsResponse {
         let entries = self.decision_topics.values().cloned().collect();
 
@@ -156,6 +172,22 @@ impl LiquidDemocracyState {
 
                 result.insert(*follower, topicset.clone());
                 self.followers_of(follower, result); // recursive invocation
+            }
+        }
+    }
+
+    fn followees_of(&self, of: &Principal, result: &mut BTreeMap<Principal, DecisionTopicSet>) {
+        if let Some(followees) = self.i_follow.get(of) {
+            for followee in followees {
+                let topicset = self
+                    .my_followers
+                    .get(followee)
+                    .expect("Unreacheable: followee followers list should not be empty")
+                    .get(of)
+                    .expect("Unreacheable: followee topicset should not be empty")
+                    .clone();
+
+                result.insert(*followee, topicset);
             }
         }
     }

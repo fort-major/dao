@@ -10,7 +10,8 @@ use shared::{
     liquid_democracy::{
         api::{
             FollowRequest, FollowResponse, GetDecisionTopicsRequest, GetDecisionTopicsResponse,
-            GetFollowersOfRequest, GetFollowersOfResponse,
+            GetFolloweesOfRequest, GetFolloweesOfResponse, GetFollowersOfRequest,
+            GetFollowersOfResponse,
         },
         state::LiquidDemocracyState,
     },
@@ -36,6 +37,17 @@ fn liquid_democracy__get_followers_of(mut req: GetFollowersOfRequest) -> GetFoll
             .expect("Unable to get followers of");
 
         s.get_followers_of(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn liquid_democracy__get_followees_of(mut req: GetFolloweesOfRequest) -> GetFolloweesOfResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get followees of");
+
+        s.get_followees_of(req)
     })
 }
 

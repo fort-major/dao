@@ -32,7 +32,7 @@ export function DecisionTopic(props: IDecisionTopicProps) {
 
   return (
     <div
-      class="flex py-2 px-4 gap-1"
+      class="flex py-2 px-4 gap-1 rounded-md font-primary font-bold text-xs"
       style={{ "background-color": PALETTE[props.id % PALETTE.length] }}
       classList={{
         "cursor-pointer": !!props.onSelect,

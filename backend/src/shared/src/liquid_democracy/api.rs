@@ -69,6 +69,29 @@ pub struct GetFollowersOfResponse {
     pub entries: Vec<BTreeMap<Principal, DecisionTopicSet>>,
 }
 
+#[derive(CandidType, Deserialize, Validate, Clone)]
+pub struct GetFolloweesOfRequest {
+    #[garde(length(min = 1))]
+    pub ids: Vec<Principal>,
+}
+
+impl Guard<LiquidDemocracyState> for GetFolloweesOfRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &LiquidDemocracyState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetFolloweesOfResponse {
+    #[garde(skip)]
+    pub entries: Vec<BTreeMap<Principal, DecisionTopicSet>>,
+}
+
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetDecisionTopicsRequest {}
 

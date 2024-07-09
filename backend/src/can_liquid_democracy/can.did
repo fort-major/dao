@@ -11,8 +11,8 @@ type FollowRequest = record {
   proof : Proof;
 };
 type GetDecisionTopicsResponse = record { entries : vec DecisionTopic };
-type GetFollowersOfRequest = record { ids : vec principal };
-type GetFollowersOfResponse = record {
+type GetFolloweesOfRequest = record { ids : vec principal };
+type GetFolloweesOfResponse = record {
   entries : vec vec record { principal; DecisionTopicSet };
 };
 type ProfileProof = record { id : principal; is_team_member : bool };
@@ -33,7 +33,10 @@ service : () -> {
   liquid_democracy__get_decision_topics : (record {}) -> (
       GetDecisionTopicsResponse,
     ) query;
-  liquid_democracy__get_followers_of : (GetFollowersOfRequest) -> (
-      GetFollowersOfResponse,
+  liquid_democracy__get_followees_of : (GetFolloweesOfRequest) -> (
+      GetFolloweesOfResponse,
+    ) query;
+  liquid_democracy__get_followers_of : (GetFolloweesOfRequest) -> (
+      GetFolloweesOfResponse,
     ) query;
 }
