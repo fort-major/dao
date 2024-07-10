@@ -90,7 +90,7 @@ impl Storable for RepBalanceEntry {
 
     const BOUND: Bound = Bound::Bounded {
         max_size: 41, // 8 bytes timestamp, 32 bytes balance, 1 byte balance len
-        is_fixed_size: true,
+        is_fixed_size: false,
     };
 }
 

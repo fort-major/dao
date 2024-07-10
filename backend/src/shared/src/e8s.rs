@@ -294,6 +294,6 @@ impl Storable for E8s {
 
     const BOUND: Bound = Bound::Bounded {
         max_size: 33, // 32 bytes balance, 1 byte balance len
-        is_fixed_size: true,
+        is_fixed_size: false,
     };
 }

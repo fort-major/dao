@@ -14,6 +14,8 @@ export interface IE8sWidgetProps extends IClass {
   minValue: E8s;
   maxValue?: E8s;
   kind: EE8sKind;
+  white?: boolean;
+  disallowEmptyTail?: boolean;
 }
 
 export function E8sWidget(props: IE8sWidgetProps) {
@@ -30,17 +32,21 @@ export function E8sWidget(props: IE8sWidgetProps) {
     if (props.maxValue) {
       return `from ${props.minValue.toPrecision(
         4,
-        true
-      )} to ${props.maxValue.toPrecision(4, true)}`;
+        !props.disallowEmptyTail
+      )} to ${props.maxValue.toPrecision(4, !props.disallowEmptyTail)}`;
     } else {
-      return props.minValue.toPrecision(4, true);
+      return props.minValue.toPrecision(4, !props.disallowEmptyTail);
     }
   };
 
   return (
     <div class={`flex items-center gap-1 ${props.class ? props.class : ""}`}>
       <Icon kind={iconKind()} />
-      <MetricWidget primary={value()} secondary={props.kind} />
+      <MetricWidget
+        white={props.white}
+        primary={value()}
+        secondary={props.kind}
+      />
     </div>
   );
 }

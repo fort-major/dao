@@ -9,7 +9,7 @@ export function Footer(props: IFooterProps) {
 
   return (
     <footer
-      class={`flex relative w-full bg-white h-12 items-center justify-center self-end ${
+      class={`flex relative w-full bg-white h-12 items-center justify-center self-end border-t-[1px] border-t-gray-190 ${
         props.class ? props.class : ""
       }`}
     >

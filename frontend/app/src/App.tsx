@@ -10,7 +10,6 @@ import { debugStringify } from "./utils/encoding";
 import { TasksStore } from "./store/tasks";
 import { VotingsStore } from "./store/votings";
 import { BankStore } from "./store/bank";
-import { Portal } from "solid-js/web";
 import { Header } from "@components/header";
 import { Footer } from "@components/footer";
 
@@ -29,7 +28,7 @@ const AppRoot = (props: IChildren) => (
             <TasksStore>
               <BankStore>
                 <Header />
-                <main class="flex flex-col flex-grow self-stretch pt-[100px]">
+                <main class="flex flex-col flex-grow self-stretch pt-[100px] pb-16">
                   {props.children}
                 </main>
                 <Footer />

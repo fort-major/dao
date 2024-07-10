@@ -6,12 +6,18 @@ export interface IMetricWidgetProps {
   primary: string;
   secondary?: string;
   onEdit?: (value: string) => void;
+  white?: boolean;
 }
 
 export function MetricWidget(props: IMetricWidgetProps) {
   return (
     <div class="flex items-baseline gap-[2px] font-primary">
-      <p class="text-sm text-black font-medium">{props.primary}</p>
+      <p
+        class="text-sm text-black font-medium"
+        classList={{ "text-white": !!props.white }}
+      >
+        {props.primary}
+      </p>
       <Show when={props.secondary}>
         <span class="text-xs text-gray-150 font-normal">{props.secondary}</span>
       </Show>

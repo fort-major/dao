@@ -16,8 +16,9 @@ export interface IHeaderProps {
 }
 
 export function Header(props: IHeaderProps) {
-  const { isAuthorized, authorize, identity, myBalance, profileProof } =
-    useAuth();
+  const { isAuthorized, authorize, identity, myBalance } = useAuth();
+
+  const linkClass = "font-primary font-normal text-white text-xl";
 
   return (
     <header
@@ -26,30 +27,26 @@ export function Header(props: IHeaderProps) {
     >
       <Logo />
       <div class="flex gap-9 px-24 flex-grow items-center">
-        <A
-          activeClass="underline"
-          class="font-primary font-normal text-white text-2xl"
-          href={ROOT.path}
-        >
+        <A activeClass="underline" class={linkClass} href={ROOT.path}>
           Home
         </A>
         <A
           activeClass="underline"
-          class="font-primary font-normal text-white text-2xl"
+          class={linkClass}
           href={ROOT["/"].tasks.path}
         >
           Tasks
         </A>
         <A
           activeClass="underline"
-          class="font-primary font-normal text-white text-2xl"
+          class={linkClass}
           href={ROOT["/"].decisions.path}
         >
           Decisions
         </A>
         <A
           activeClass="underline"
-          class="font-primary font-normal text-white text-2xl"
+          class={linkClass}
           href={ROOT["/"].stats.path}
         >
           Stats
@@ -65,21 +62,33 @@ export function Header(props: IHeaderProps) {
           />
         </Match>
         <Match when={isAuthorized()}>
-          <div class="flex gap-2 items-center">
-            <E8sWidget
-              kind={EE8sKind.FMJ}
-              minValue={myBalance() ? myBalance()!.FMJ : E8s.zero()}
-            />
-            <E8sWidget
-              kind={EE8sKind.Hours}
-              minValue={myBalance() ? myBalance()!.Hours : E8s.zero()}
-            />
-            <E8sWidget
-              kind={EE8sKind.Storypoints}
-              minValue={myBalance() ? myBalance()!.Storypoints : E8s.zero()}
-            />
+          <A href={ROOT["/"].me.path} class="flex gap-2 items-center">
+            <div class="min-w-24">
+              <E8sWidget
+                white
+                kind={EE8sKind.FMJ}
+                minValue={myBalance() ? myBalance()!.FMJ : E8s.zero()}
+                disallowEmptyTail
+              />
+            </div>
+            <div class="min-w-24">
+              <E8sWidget
+                white
+                kind={EE8sKind.Hours}
+                minValue={myBalance() ? myBalance()!.Hours : E8s.zero()}
+                disallowEmptyTail
+              />
+            </div>
+            <div class="min-w-24">
+              <E8sWidget
+                white
+                kind={EE8sKind.Storypoints}
+                minValue={myBalance() ? myBalance()!.Storypoints : E8s.zero()}
+                disallowEmptyTail
+              />
+            </div>
             <ProfileMicro id={identity()?.getPrincipal()} avatarSize="md" />
-          </div>
+          </A>
         </Match>
       </Switch>
     </header>

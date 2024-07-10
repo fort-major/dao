@@ -2,6 +2,7 @@ import { createSignal, onCleanup } from "solid-js";
 import deepEqual from "deep-equal";
 import { Principal } from "@dfinity/principal";
 import { makeAvatarSvg } from "@fort-major/msq-shared";
+import { COLORS } from "./colors";
 
 export const debounce = (cb: (...args: any[]) => void, timeoutMs: number) => {
   const [int, setInt] = createSignal<NodeJS.Timeout | undefined>();
@@ -60,7 +61,7 @@ export function pushAllDedup<T>(dest: T[], src: T[]): void {
 }
 
 export function avatarSrcFromPrincipal(id: Principal) {
-  const svg = btoa(makeAvatarSvg(id, "#ffffff"));
+  const svg = btoa(makeAvatarSvg(id, COLORS.black));
 
   return `data:image/svg+xml;base64,${svg}`;
 }

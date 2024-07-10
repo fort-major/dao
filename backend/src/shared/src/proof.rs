@@ -163,6 +163,8 @@ impl LiquidDemocracyProof {
     pub fn assert_valid_for(&mut self, caller: Principal, now: TimestampNs) -> Result<(), String> {
         let cert = self.get_cert()?;
 
+        println!("{:?}", cert);
+
         // verify that the certificate indeed comes from an IC's canister
         cert.verify(
             ENV_VARS.liquid_democracy_canister_id.as_slice(),
