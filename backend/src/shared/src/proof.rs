@@ -8,11 +8,15 @@ use serde::Deserialize;
 use crate::{
     humans::{
         api::GetProfileProofsResponse,
-        types::{ProfileProof, PROFILE_PROOFS_MARKER},
+        types::{ProfileProofBody, PROFILE_PROOFS_MARKER},
+    },
+    liquid_democracy::{
+        api::GetLiquidDemocracyProofResponse,
+        types::{DelegationTreeNode, LIQUID_DEMOCRACY_PROOF_MARKER},
     },
     reputation::{
         api::GetRepProofResponse,
-        types::{ReputationProof, REPUTATION_PROOF_MARKER},
+        types::{ReputationProofBody, REPUTATION_PROOF_MARKER},
     },
     votings::types::ONE_HOUR_NS,
     DurationNs, TimestampNs, ENV_VARS,
@@ -21,30 +25,18 @@ use crate::{
 const PROOF_TTL_NS: DurationNs = ONE_HOUR_NS * 8;
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct Proof {
+pub struct ReputationProof {
     #[garde(skip)]
-    pub profile_proofs_cert_raw: Vec<u8>,
+    pub cert_raw: Vec<u8>,
     #[garde(skip)]
-    pub profile_proof: Option<ProfileProof>,
-    #[garde(skip)]
-    pub reputation_proof_cert_raw: Vec<u8>,
-    #[garde(skip)]
-    pub reputation_proof: Option<ReputationProof>,
+    pub body: Option<ReputationProofBody>,
 }
 
-impl Proof {
+impl ReputationProof {
     pub fn assert_valid_for(&mut self, caller: Principal, now: TimestampNs) -> Result<(), String> {
-        let profile_proof_cert = self.get_profile_proofs_cert()?;
-        let reputation_proof_cert = self.get_reputation_proof_cert()?;
+        let reputation_proof_cert = self.get_cert()?;
 
         // verify that the certificate indeed comes from an IC's canister
-        profile_proof_cert
-            .verify(
-                ENV_VARS.humans_canister_id.as_slice(),
-                &ENV_VARS.ic_root_key,
-            )
-            .map_err(|e| e.to_string())?;
-
         reputation_proof_cert
             .verify(
                 ENV_VARS.reputation_canister_id.as_slice(),
@@ -53,16 +45,6 @@ impl Proof {
             .map_err(|e| e.to_string())?;
 
         // verify that the certificate is not expired
-        if let LookupResult::Found(mut date_bytes) = profile_proof_cert.tree.lookup_path(&["time"])
-        {
-            let timestamp_nanos =
-                leb128::read::unsigned(&mut date_bytes).map_err(|e| e.to_string())?;
-
-            if now > timestamp_nanos && (now - timestamp_nanos) >= PROOF_TTL_NS {
-                return Err(format!("The profile proof has expired"));
-            }
-        }
-
         if let LookupResult::Found(mut date_bytes) =
             reputation_proof_cert.tree.lookup_path(&["time"])
         {
@@ -75,19 +57,6 @@ impl Proof {
         }
 
         // verify that the certificate contains the expected response
-        let get_profile_proof_response = match profile_proof_cert.tree.lookup_path([b"reply"]) {
-            LookupResult::Found(blob) => {
-                decode_args::<(GetProfileProofsResponse,)>(blob)
-                    .map_err(|e| e.to_string())?
-                    .0
-            }
-            _ => return Err(format!("Unable to find profile proof in the reply")),
-        };
-
-        if get_profile_proof_response.marker != PROFILE_PROOFS_MARKER {
-            return Err(format!("Invalid profile proof marker"));
-        }
-
         let get_reputation_proof_response = match reputation_proof_cert.tree.lookup_path([b"reply"])
         {
             LookupResult::Found(blob) => {
@@ -103,27 +72,145 @@ impl Proof {
         }
 
         // verify that the response is about the caller
-        if get_profile_proof_response.proof.id != caller {
-            return Err(format!("The caller is not the owner of the profile proof"));
-        }
-
-        if get_reputation_proof_response.proof.id != caller {
+        if get_reputation_proof_response
+            .proof
+            .reputation_delegation_tree
+            .id
+            != caller
+        {
             return Err(format!(
                 "The caller is not the owner of the reputation proof"
             ));
         }
 
-        self.profile_proof = Some(get_profile_proof_response.proof);
-        self.reputation_proof = Some(get_reputation_proof_response.proof);
+        self.body = Some(get_reputation_proof_response.proof);
 
         Ok(())
     }
 
-    fn get_profile_proofs_cert(&self) -> Result<Certificate, String> {
-        Certificate::from_cbor(&self.profile_proofs_cert_raw).map_err(|e| e.to_string())
+    fn get_cert(&self) -> Result<Certificate, String> {
+        Certificate::from_cbor(&self.cert_raw).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct ProfileProof {
+    #[garde(skip)]
+    pub cert_raw: Vec<u8>,
+    #[garde(skip)]
+    pub body: Option<ProfileProofBody>,
+}
+
+impl ProfileProof {
+    pub fn assert_valid_for(&mut self, caller: Principal, now: TimestampNs) -> Result<(), String> {
+        let cert = self.get_cert()?;
+
+        // verify that the certificate indeed comes from an IC's canister
+        cert.verify(
+            ENV_VARS.humans_canister_id.as_slice(),
+            &ENV_VARS.ic_root_key,
+        )
+        .map_err(|e| e.to_string())?;
+
+        // verify that the certificate is not expired
+        if let LookupResult::Found(mut date_bytes) = cert.tree.lookup_path(&["time"]) {
+            let timestamp_nanos =
+                leb128::read::unsigned(&mut date_bytes).map_err(|e| e.to_string())?;
+
+            if now > timestamp_nanos && (now - timestamp_nanos) >= PROOF_TTL_NS {
+                return Err(format!("The profile proof has expired"));
+            }
+        }
+
+        // verify that the certificate contains the expected response
+        let get_proof_response = match cert.tree.lookup_path([b"reply"]) {
+            LookupResult::Found(blob) => {
+                decode_args::<(GetProfileProofsResponse,)>(blob)
+                    .map_err(|e| e.to_string())?
+                    .0
+            }
+            _ => return Err(format!("Unable to find profile proof in the reply")),
+        };
+
+        if get_proof_response.marker != PROFILE_PROOFS_MARKER {
+            return Err(format!("Invalid profile proof marker"));
+        }
+
+        // verify that the response is about the caller
+        if get_proof_response.proof.id != caller {
+            return Err(format!("The caller is not the owner of the profile proof"));
+        }
+
+        self.body = Some(get_proof_response.proof);
+
+        Ok(())
     }
 
-    fn get_reputation_proof_cert(&self) -> Result<Certificate, String> {
-        Certificate::from_cbor(&self.reputation_proof_cert_raw).map_err(|e| e.to_string())
+    fn get_cert(&self) -> Result<Certificate, String> {
+        Certificate::from_cbor(&self.cert_raw).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate, Clone, Debug)]
+pub struct LiquidDemocracyProof {
+    #[garde(skip)]
+    pub cert_raw: Vec<u8>,
+    #[garde(skip)]
+    pub body: Option<DelegationTreeNode>,
+}
+
+impl LiquidDemocracyProof {
+    pub fn assert_valid_for(&mut self, caller: Principal, now: TimestampNs) -> Result<(), String> {
+        let cert = self.get_cert()?;
+
+        // verify that the certificate indeed comes from an IC's canister
+        cert.verify(
+            ENV_VARS.liquid_democracy_canister_id.as_slice(),
+            &ENV_VARS.ic_root_key,
+        )
+        .map_err(|e| e.to_string())?;
+
+        // verify that the certificate is not expired
+        if let LookupResult::Found(mut date_bytes) = cert.tree.lookup_path(&["time"]) {
+            let timestamp_nanos =
+                leb128::read::unsigned(&mut date_bytes).map_err(|e| e.to_string())?;
+
+            if now > timestamp_nanos && (now - timestamp_nanos) >= PROOF_TTL_NS {
+                return Err(format!("The liquid democracy proof has expired"));
+            }
+        }
+
+        // verify that the certificate contains the expected response
+        let get_proof_response = match cert.tree.lookup_path([b"reply"]) {
+            LookupResult::Found(blob) => {
+                decode_args::<(GetLiquidDemocracyProofResponse,)>(blob)
+                    .map_err(|e| e.to_string())?
+                    .0
+            }
+            _ => {
+                return Err(format!(
+                    "Unable to find liquid democracy proof in the reply"
+                ))
+            }
+        };
+
+        if get_proof_response.marker != LIQUID_DEMOCRACY_PROOF_MARKER {
+            return Err(format!("Invalid liquid democracy proof marker"));
+        }
+
+        // verify that the response is about the caller
+        if get_proof_response.tree_root.id != caller {
+            return Err(format!(
+                "The caller is not the owner of the liquid democracy proof"
+            ));
+        }
+
+        self.body = Some(get_proof_response.tree_root);
+
+        Ok(())
+    }
+
+    fn get_cert(&self) -> Result<Certificate, String> {
+        Certificate::from_cbor(&self.cert_raw).map_err(|e| e.to_string())
     }
 }

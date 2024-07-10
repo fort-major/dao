@@ -39,8 +39,8 @@ impl VotingsState {
         now: TimestampNs,
     ) -> (StartVotingResponse, VotingTimer) {
         let voting = Voting::new(
-            req.proof
-                .reputation_proof
+            req.reputation_proof
+                .body
                 .expect("The proof is not computed")
                 .reputation_total_supply,
             req.kind,
@@ -72,24 +72,16 @@ impl VotingsState {
     pub fn cast_vote(
         &mut self,
         req: CastVoteRequest,
-        caller: Principal,
+        _caller: Principal,
     ) -> (CastVoteResponse, Option<CallToExecute>) {
-        let rep_proof = req
-            .proof
-            .reputation_proof
-            .expect("The proof is not computed");
-
-        let mut votes = vec![(caller, rep_proof.reputation)];
-
+        let rep_proof = req.proof.body.expect("The proof is not computed");
         let voting = self.votings.get_mut(&req.id).unwrap();
 
-        for (follower, (rep, decision_topicset)) in rep_proof.followers {
-            if decision_topicset.matches(&voting.topics) {
-                votes.push((follower, rep));
-            }
-        }
-
-        let result = voting.cast_vote(req.option_idx, req.normalized_approval_level, votes, caller);
+        let result = voting.cast_vote(
+            req.option_idx,
+            req.normalized_approval_level,
+            rep_proof.reputation_delegation_tree,
+        );
 
         match result {
             Ok(o) => (

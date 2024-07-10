@@ -11,7 +11,8 @@ use shared::{
         api::{
             FollowRequest, FollowResponse, GetDecisionTopicsRequest, GetDecisionTopicsResponse,
             GetFolloweesOfRequest, GetFolloweesOfResponse, GetFollowersOfRequest,
-            GetFollowersOfResponse,
+            GetFollowersOfResponse, GetLiquidDemocracyProofRequest,
+            GetLiquidDemocracyProofResponse,
         },
         state::LiquidDemocracyState,
     },
@@ -61,6 +62,19 @@ fn liquid_democracy__get_decision_topics(
             .expect("Unable to get decision topics");
 
         s.get_decision_topics(req)
+    })
+}
+
+#[update]
+#[allow(non_snake_case)]
+fn liquid_democracy__get_liquid_democracy_proof(
+    mut req: GetLiquidDemocracyProofRequest,
+) -> GetLiquidDemocracyProofResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get proof");
+
+        s.get_liquid_democracy_proof(req, caller())
     })
 }
 

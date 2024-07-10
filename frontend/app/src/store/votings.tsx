@@ -24,7 +24,7 @@ import { DecisionTopicId } from "./tasks";
 import {
   DecisionTopic,
   DecisionTopicSet,
-  GetFollowersOfRequest,
+  GetFolloweesOfRequest,
 } from "@/declarations/liquid_democracy/liquid_democracy.did";
 
 export type TVotingIdStr = string;
@@ -96,6 +96,8 @@ export interface IVotingsStoreContext {
   fetchDecisionTopics: () => Promise<void>;
   followersOf: Store<FollowersOfStore>;
   fetchFollowersOf: (ids: Principal[]) => Promise<void>;
+  followeesOf: Store<FollowersOfStore>;
+  fetchFolloweesOf: (ids: Principal[]) => Promise<void>;
   follow: (id: Principal, topicset: DecisionTopicSet) => Promise<void>;
   unfollow: (id: Principal) => Promise<void>;
 }
@@ -129,6 +131,7 @@ export function VotingsStore(props: IChildren) {
   const [decisionTopics, setDecisionTopics] =
     createStore<DecisionTopicsStore>();
   const [followersOf, setFollowersOf] = createStore<FollowersOfStore>();
+  const [followeesOf, setFolloweesOf] = createStore<FollowersOfStore>();
 
   const fetchVotings: IVotingsStoreContext["fetchVotings"] = async (
     ids: VotingId[]
@@ -345,7 +348,7 @@ export function VotingsStore(props: IChildren) {
     };
 
   const liquidDemocracyGetFollowersOf = debouncedBatchFetch(
-    (req: GetFollowersOfRequest) => {
+    (req: GetFolloweesOfRequest) => {
       const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
       return liquidDemocracyActor.liquid_democracy__get_followers_of(req);
     },
@@ -359,12 +362,35 @@ export function VotingsStore(props: IChildren) {
     (e) => err(ErrorCode.NETWORK, `Unable to fetch followers of: ${e}`)
   );
 
+  const liquidDemocracyGetFolloweesOf = debouncedBatchFetch(
+    (req: GetFolloweesOfRequest) => {
+      const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
+      return liquidDemocracyActor.liquid_democracy__get_followees_of(req);
+    },
+    ({ entries: followeesOf }, req) => {
+      for (let i = 0; i < req.ids.length; i++) {
+        for (let [followee, topicset] of followeesOf[i]) {
+          setFolloweesOf(req.ids[i].toText(), followee.toText(), topicset);
+        }
+      }
+    },
+    (e) => err(ErrorCode.NETWORK, `Unable to fetch followees of: ${e}`)
+  );
+
   const fetchFollowersOf: IVotingsStoreContext["fetchFollowersOf"] = async (
     ids
   ) => {
     assertReadyToFetch();
 
     liquidDemocracyGetFollowersOf({ ids });
+  };
+
+  const fetchFolloweesOf: IVotingsStoreContext["fetchFolloweesOf"] = async (
+    ids
+  ) => {
+    assertReadyToFetch();
+
+    liquidDemocracyGetFolloweesOf({ ids });
   };
 
   const follow: IVotingsStoreContext["follow"] = async (id, topicset) => {
@@ -414,6 +440,8 @@ export function VotingsStore(props: IChildren) {
         fetchDecisionTopics,
         followersOf,
         fetchFollowersOf,
+        followeesOf,
+        fetchFolloweesOf,
         follow,
         unfollow,
       }}

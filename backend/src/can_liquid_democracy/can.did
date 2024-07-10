@@ -5,28 +5,49 @@ type DecisionTopicSet = variant {
   And : record { DecisionTopicSet; DecisionTopicSet };
   Not : DecisionTopicSet;
 };
+type DelegationTreeNode = record {
+  id : principal;
+  topicset : DecisionTopicSet;
+  followers : Vec;
+};
 type FollowRequest = record {
   followee : principal;
   topics : opt DecisionTopicSet;
-  proof : Proof;
+  proof : ReputationProof;
 };
 type GetDecisionTopicsResponse = record { entries : vec DecisionTopic };
 type GetFolloweesOfRequest = record { ids : vec principal };
 type GetFolloweesOfResponse = record {
   entries : vec vec record { principal; DecisionTopicSet };
 };
-type ProfileProof = record { id : principal; is_team_member : bool };
-type Proof = record {
-  profile_proofs_cert_raw : blob;
-  profile_proof : opt ProfileProof;
-  reputation_proof : opt ReputationProof;
-  reputation_proof_cert_raw : blob;
+type GetFollowersOfResponse = record { entries : vec DelegationTreeNode };
+type GetLiquidDemocracyProofResponse = record {
+  marker : text;
+  tree_root : DelegationTreeNode;
 };
-type ReputationProof = record {
+type ReputationDelegationTreeNode = record {
   id : principal;
   reputation : nat;
-  followers : vec record { principal; record { nat; DecisionTopicSet } };
+  topicset : DecisionTopicSet;
+  followers : vec ReputationDelegationTreeNode;
+};
+type ReputationProof = record {
+  cert_raw : blob;
+  body : opt ReputationProofBody;
+};
+type ReputationProofBody = record {
+  reputation_delegation_tree : ReputationDelegationTreeNode;
   reputation_total_supply : nat;
+};
+type Vec = vec record {
+  id : principal;
+  topicset : variant {
+    It : nat32;
+    Or : record { DecisionTopicSet; DecisionTopicSet };
+    And : record { DecisionTopicSet; DecisionTopicSet };
+    Not : DecisionTopicSet;
+  };
+  followers : Vec;
 };
 service : () -> {
   liquid_democracy__follow : (FollowRequest) -> (record {});
@@ -37,6 +58,9 @@ service : () -> {
       GetFolloweesOfResponse,
     ) query;
   liquid_democracy__get_followers_of : (GetFolloweesOfRequest) -> (
-      GetFolloweesOfResponse,
+      GetFollowersOfResponse,
     ) query;
+  liquid_democracy__get_liquid_democracy_proof : (record {}) -> (
+      GetLiquidDemocracyProofResponse,
+    );
 }

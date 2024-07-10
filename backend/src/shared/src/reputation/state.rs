@@ -1,19 +1,10 @@
-use std::collections::BTreeMap;
-
 use candid::Principal;
 use ic_stable_structures::{
     memory_manager::VirtualMemory, Cell, DefaultMemoryImpl, StableBTreeMap,
 };
 
 use crate::{
-    e8s::E8s,
-    liquid_democracy::{
-        api::{GetFollowersOfRequest, GetFollowersOfResponse},
-        client::LiquidDemocracyCanisterClient,
-        types::DecisionTopicSet,
-    },
-    votings::types::ONE_HOUR_NS,
-    TimestampNs, ENV_VARS,
+    e8s::E8s, liquid_democracy::types::DelegationTreeNode, votings::types::ONE_HOUR_NS, TimestampNs,
 };
 
 use super::{
@@ -21,7 +12,9 @@ use super::{
         GetBalanceRequest, GetBalanceResponse, GetRepProofRequest, GetRepProofResponse,
         GetTotalSupplyRequest, GetTotalSupplyResponse, MintRepRequest, MintRepResponse,
     },
-    types::{LiquidDemocracySelector, RepBalanceEntry, ReputationProof, REPUTATION_PROOF_MARKER},
+    types::{
+        RepBalanceEntry, ReputationDelegationTreeNode, ReputationProofBody, REPUTATION_PROOF_MARKER,
+    },
 };
 
 pub type Memory = VirtualMemory<DefaultMemoryImpl>;
@@ -32,8 +25,6 @@ pub struct ReputationState {
     pub total_supply: Cell<E8s, Memory>,
     pub decay_start_key: Cell<Option<Principal>, Memory>,
     pub initialized: Cell<bool, Memory>,
-    pub my_followers_cache:
-        BTreeMap<Principal, (BTreeMap<Principal, DecisionTopicSet>, TimestampNs)>,
 }
 
 impl ReputationState {
@@ -152,74 +143,41 @@ impl ReputationState {
         }
     }
 
-    pub fn update_follower_cache(
-        &mut self,
-        req: GetFollowersOfRequest,
-        resp: GetFollowersOfResponse,
-        now: TimestampNs,
-    ) {
-        for (idx, entry) in resp.entries.into_iter().enumerate() {
-            self.my_followers_cache.insert(req.ids[idx], (entry, now));
-        }
-    }
+    pub fn get_rep_proof(&self, req: GetRepProofRequest) -> GetRepProofResponse {
+        let cur_ld_node = req.liquid_democracy_proof.body.expect("UNREACHEABLE");
+        let rep_root = self.map_ld_proof(cur_ld_node);
 
-    pub fn get_rep_proof_part_1(
-        &self,
-        req: GetRepProofRequest,
-        caller: Principal,
-        now: TimestampNs,
-    ) -> Result<(), (LiquidDemocracyCanisterClient, GetFollowersOfRequest)> {
-        if let LiquidDemocracySelector::OnlyMe = req.selector {
-            return Ok(());
-        }
-
-        if let Some((_cached, cache_timestamp)) = self.my_followers_cache.get(&caller) {
-            if now - cache_timestamp <= CACHE_TTL_NS {
-                return Ok(());
-            }
-        }
-
-        let client = LiquidDemocracyCanisterClient::new(ENV_VARS.liquid_democracy_canister_id);
-        let req = GetFollowersOfRequest { ids: vec![caller] };
-
-        Err((client, req))
-    }
-
-    pub fn get_rep_proof_part_2(
-        &self,
-        req: GetRepProofRequest,
-        caller: Principal,
-    ) -> GetRepProofResponse {
-        let reputation = self.balances.get(&caller).unwrap_or_default().balance;
         let reputation_total_supply = self.total_supply.get().clone();
 
-        let follower_balances = if let LiquidDemocracySelector::OnlyMe = req.selector {
-            BTreeMap::new()
-        } else {
-            (&self
-                .my_followers_cache
-                .get(&caller)
-                .expect("No follower info is found in the cache")
-                .0)
-                .iter()
-                .map(|(k, v)| {
-                    let balance = self.balances.get(&k).unwrap_or_default().balance;
-
-                    (*k, (balance, v.clone()))
-                })
-                .collect()
-        };
-
-        let proof = ReputationProof {
-            id: caller,
-            reputation,
+        let rep_proof = ReputationProofBody {
             reputation_total_supply,
-            followers: follower_balances,
+            reputation_delegation_tree: rep_root,
         };
 
         GetRepProofResponse {
             marker: REPUTATION_PROOF_MARKER.to_string(),
-            proof,
+            proof: rep_proof,
+        }
+    }
+
+    fn map_ld_proof(&self, ld_proof_node: DelegationTreeNode) -> ReputationDelegationTreeNode {
+        let reputation = self
+            .balances
+            .get(&ld_proof_node.id)
+            .unwrap_or_default()
+            .balance;
+
+        let followers = ld_proof_node
+            .followers
+            .into_iter()
+            .map(|it| self.map_ld_proof(it))
+            .collect();
+
+        ReputationDelegationTreeNode {
+            id: ld_proof_node.id,
+            topicset: ld_proof_node.topicset,
+            reputation,
+            followers,
         }
     }
 }

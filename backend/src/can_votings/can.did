@@ -7,7 +7,7 @@ type CastVoteRequest = record {
   id : VotingId;
   normalized_approval_level : opt nat;
   option_idx : nat32;
-  proof : Proof;
+  proof : ReputationProof;
 };
 type CastVoteResponse = record { decision_made : bool };
 type DecisionTopicSet = variant {
@@ -19,27 +19,34 @@ type DecisionTopicSet = variant {
 type GetVotingEventsResponse = record { events : vec VotingEvent };
 type GetVotingsRequest = record { ids : vec VotingId };
 type GetVotingsResponse = record { entries : vec opt VotingExt };
-type ProfileProof = record { id : principal; is_team_member : bool };
-type Proof = record {
-  profile_proofs_cert_raw : blob;
-  profile_proof : opt ProfileProof;
-  reputation_proof : opt ReputationProof;
-  reputation_proof_cert_raw : blob;
-};
-type ReputationProof = record {
+type ProfileProof = record { cert_raw : blob; body : opt ProfileProofBody };
+type ProfileProofBody = record { id : principal; is_team_member : bool };
+type ReputationDelegationTreeNode = record {
   id : principal;
   reputation : nat;
-  followers : vec record { principal; record { nat; DecisionTopicSet } };
+  topicset : DecisionTopicSet;
+  followers : vec ReputationDelegationTreeNode;
+};
+type ReputationProof = record {
+  cert_raw : blob;
+  body : opt ReputationProofBody;
+};
+type ReputationProofBody = record {
+  reputation_delegation_tree : ReputationDelegationTreeNode;
   reputation_total_supply : nat;
 };
-type StartVotingRequest = record { kind : VotingKind; proof : Proof };
+type StartVotingRequest = record {
+  profile_proof : ProfileProof;
+  reputation_proof : ReputationProof;
+  kind : VotingKind;
+};
 type StartVotingResponse = record { id : VotingId };
 type SwapFrom = variant { Hour; Storypoint };
 type SwapInto = variant { FMJ; ICP };
 type Vote = record {
   normalized_approval_level : opt nat;
-  placed_by_owner : bool;
   total_voter_reputation : nat;
+  depth : nat32;
 };
 type VotingEvent = variant { V0001 : VotingEventV1 };
 type VotingEventV1 = variant {

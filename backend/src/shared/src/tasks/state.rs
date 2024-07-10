@@ -14,12 +14,12 @@ use crate::{
 
 use super::{
     api::{
-        AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
-        DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
-        EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
-        FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
-        GetTasksResponse, SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest,
-        StartSolveTaskResponse,
+        AttachToTaskRequest, AttachToTaskResponse, BackToEditTaskRequest, BackToEditTaskResponse,
+        CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
+        EditTaskResponse, EvaluateRequest, EvaluateResponse, FinishEditTaskRequest,
+        FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
+        GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+        StartSolveTaskRequest, StartSolveTaskResponse,
     },
     types::{ArchivedTask, RewardEntry, Task, TaskId},
 };
@@ -103,9 +103,16 @@ impl TasksState {
         now: TimestampNs,
     ) -> StartSolveTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
-        task.finish_pre_solve(now);
+        task.start_solve(now);
 
         StartSolveTaskResponse {}
+    }
+
+    pub fn back_to_edit_task(&mut self, req: BackToEditTaskRequest) -> BackToEditTaskResponse {
+        let task = self.tasks.get_mut(&req.id).unwrap();
+        task.back_to_edit();
+
+        BackToEditTaskResponse {}
     }
 
     pub fn attach_to_task(

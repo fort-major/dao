@@ -2,11 +2,11 @@ use candid::{CandidType, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, Guard, ENV_VARS};
+use crate::{e8s::E8s, proof::LiquidDemocracyProof, Guard, ENV_VARS};
 
 use super::{
     state::ReputationState,
-    types::{LiquidDemocracySelector, RepBalanceEntry, ReputationProof},
+    types::{RepBalanceEntry, ReputationProofBody},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -80,18 +80,20 @@ pub struct GetTotalSupplyResponse {
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
 pub struct GetRepProofRequest {
-    #[garde(skip)]
-    pub selector: LiquidDemocracySelector,
+    #[garde(dive)]
+    pub liquid_democracy_proof: LiquidDemocracyProof,
 }
 
 impl Guard<ReputationState> for GetRepProofRequest {
     fn validate_and_escape(
         &mut self,
         _state: &ReputationState,
-        _caller: Principal,
-        _now: crate::TimestampNs,
+        caller: Principal,
+        now: crate::TimestampNs,
     ) -> Result<(), String> {
-        self.validate(&()).map_err(|e| e.to_string())
+        self.validate(&()).map_err(|e| e.to_string())?;
+
+        self.liquid_democracy_proof.assert_valid_for(caller, now)
     }
 }
 
@@ -100,5 +102,5 @@ pub struct GetRepProofResponse {
     #[garde(skip)]
     pub marker: String,
     #[garde(skip)]
-    pub proof: ReputationProof,
+    pub proof: ReputationProofBody,
 }

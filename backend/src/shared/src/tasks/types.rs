@@ -126,10 +126,14 @@ impl Task {
         self.stage = TaskStage::PreSolve;
     }
 
-    pub fn finish_pre_solve(&mut self, now: TimestampNs) {
+    pub fn start_solve(&mut self, now: TimestampNs) {
         let until_timestamp = now + ONE_DAY_NS * self.days_to_solve;
 
         self.stage = TaskStage::Solve { until_timestamp };
+    }
+
+    pub fn back_to_edit(&mut self) {
+        self.stage = TaskStage::Edit;
     }
 
     pub fn solve(

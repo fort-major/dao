@@ -13,7 +13,7 @@ use super::{
         RefundRewardsResponse, RegisterRequest, RegisterResponse, SpendRewardsRequest,
         SpendRewardsResponse, UnemployRequest, UnemployResponse,
     },
-    types::{Profile, ProfileProof, PROFILE_PROOFS_MARKER},
+    types::{Profile, ProfileProofBody, PROFILE_PROOFS_MARKER},
 };
 
 #[derive(CandidType, Deserialize, Default)]
@@ -125,7 +125,7 @@ impl HumansState {
     ) -> GetProfileProofsResponse {
         let profile = self.profiles.get(&caller).unwrap();
 
-        let proof = ProfileProof {
+        let proof = ProfileProofBody {
             id: caller,
             is_team_member: profile.is_employed(),
         };

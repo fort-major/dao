@@ -3,11 +3,11 @@ use std::collections::BTreeMap;
 use candid::{CandidType, Deserialize, Principal};
 use garde::Validate;
 
-use crate::{proof::Proof, Guard};
+use crate::{proof::ReputationProof, Guard};
 
 use super::{
     state::LiquidDemocracyState,
-    types::{DecisionTopic, DecisionTopicSet},
+    types::{DecisionTopic, DecisionTopicSet, DelegationTreeNode},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -17,7 +17,7 @@ pub struct FollowRequest {
     #[garde(skip)]
     pub topics: Option<DecisionTopicSet>,
     #[garde(skip)]
-    pub proof: Proof,
+    pub proof: ReputationProof,
 }
 
 impl Guard<LiquidDemocracyState> for FollowRequest {
@@ -31,11 +31,11 @@ impl Guard<LiquidDemocracyState> for FollowRequest {
 
         self.proof.assert_valid_for(caller, now)?;
 
-        if !state.i_follow.contains_key(&caller) {
+        if !state.followees_of.contains_key(&caller) {
             return Err(format!("Not registered"));
         }
 
-        if !state.i_follow.contains_key(&self.followee) {
+        if !state.followees_of.contains_key(&self.followee) {
             return Err(format!("The followee is not registered"));
         }
 
@@ -66,7 +66,7 @@ impl Guard<LiquidDemocracyState> for GetFollowersOfRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetFollowersOfResponse {
     #[garde(skip)]
-    pub entries: Vec<BTreeMap<Principal, DecisionTopicSet>>,
+    pub entries: Vec<DelegationTreeNode>,
 }
 
 #[derive(CandidType, Deserialize, Validate, Clone)]
@@ -110,4 +110,26 @@ impl Guard<LiquidDemocracyState> for GetDecisionTopicsRequest {
 pub struct GetDecisionTopicsResponse {
     #[garde(skip)]
     pub entries: Vec<DecisionTopic>,
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetLiquidDemocracyProofRequest {}
+
+impl Guard<LiquidDemocracyState> for GetLiquidDemocracyProofRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &LiquidDemocracyState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetLiquidDemocracyProofResponse {
+    #[garde(skip)]
+    pub marker: String,
+    #[garde(dive)]
+    pub tree_root: DelegationTreeNode,
 }

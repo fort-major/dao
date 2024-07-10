@@ -7,24 +7,25 @@ use super::{
     api::{
         FollowRequest, FollowResponse, GetDecisionTopicsRequest, GetDecisionTopicsResponse,
         GetFolloweesOfRequest, GetFolloweesOfResponse, GetFollowersOfRequest,
-        GetFollowersOfResponse,
+        GetFollowersOfResponse, GetLiquidDemocracyProofRequest, GetLiquidDemocracyProofResponse,
     },
-    types::{DecisionTopic, DecisionTopicId, DecisionTopicSet},
+    types::{
+        DecisionTopic, DecisionTopicId, DecisionTopicSet, DelegationTreeNode,
+        LIQUID_DEMOCRACY_PROOF_MARKER,
+    },
 };
 
 pub const GENERAL_TOPIC_ID: DecisionTopicId = 0;
 pub const DEVELOPMENT_TOPIC_ID: DecisionTopicId = 1;
 pub const MARKETING_TOPIC_ID: DecisionTopicId = 2;
 pub const DESIGN_TOPIC_ID: DecisionTopicId = 3;
-pub const FMJ_TOPIC_ID: DecisionTopicId = 4;
-pub const MSQ_TOPIC_ID: DecisionTopicId = 5;
 
 #[derive(CandidType, Deserialize)]
 pub struct LiquidDemocracyState {
     pub decision_topic_id_counter: DecisionTopicId,
     pub decision_topics: BTreeMap<DecisionTopicId, DecisionTopic>,
-    pub i_follow: BTreeMap<Principal, BTreeSet<Principal>>,
-    pub my_followers: BTreeMap<Principal, BTreeMap<Principal, DecisionTopicSet>>,
+    pub followees_of: BTreeMap<Principal, BTreeSet<Principal>>,
+    pub followers_of: BTreeMap<Principal, BTreeMap<Principal, DecisionTopicSet>>,
 }
 
 impl LiquidDemocracyState {
@@ -53,38 +54,34 @@ impl LiquidDemocracyState {
             description: String::from("Everything about the UX and visuals. Figma and others."),
         };
 
-        let fmj_topic = DecisionTopic {
-            id: FMJ_TOPIC_ID,
-            name: String::from("Fort Major"),
-            description: String::from(
-                "Decisions related exclusively to the Fort Major organization itself.",
-            ),
-        };
-
-        let msq_topic = DecisionTopic {
-            id: MSQ_TOPIC_ID,
-            name: String::from("MSQ"),
-            description: String::from("Decision related exclusively to the MSQ project."),
-        };
-
         Self {
-            decision_topic_id_counter: 6,
+            decision_topic_id_counter: 4,
             decision_topics: btreemap! {
                 GENERAL_TOPIC_ID => general_topic,
                 DEVELOPMENT_TOPIC_ID => development_topic,
                 MARKETING_TOPIC_ID => marketing_topic,
                 DESIGN_TOPIC_ID => design_topic,
-                FMJ_TOPIC_ID => fmj_topic,
-                MSQ_TOPIC_ID => msq_topic,
             },
-            i_follow: BTreeMap::new(),
-            my_followers: BTreeMap::new(),
+            followees_of: BTreeMap::new(),
+            followers_of: BTreeMap::new(),
         }
+    }
+
+    pub fn default_topicset() -> DecisionTopicSet {
+        use DecisionTopicSet as S;
+
+        S::or(
+            S::it(GENERAL_TOPIC_ID),
+            S::or(
+                S::it(DEVELOPMENT_TOPIC_ID),
+                S::or_it(MARKETING_TOPIC_ID, DESIGN_TOPIC_ID),
+            ),
+        )
     }
 
     pub fn follow(&mut self, req: FollowRequest, caller: Principal) -> FollowResponse {
         if let Some(topics) = req.topics {
-            match self.i_follow.entry(caller) {
+            match self.followees_of.entry(caller) {
                 Entry::Vacant(e) => {
                     let mut s = BTreeSet::new();
                     s.insert(req.followee);
@@ -96,7 +93,7 @@ impl LiquidDemocracyState {
                 }
             };
 
-            match self.my_followers.entry(req.followee) {
+            match self.followers_of.entry(req.followee) {
                 Entry::Vacant(e) => {
                     let mut s = BTreeMap::new();
                     s.insert(caller, topics);
@@ -108,11 +105,11 @@ impl LiquidDemocracyState {
                 }
             };
         } else {
-            if let Some(f) = self.i_follow.get_mut(&caller) {
+            if let Some(f) = self.followees_of.get_mut(&caller) {
                 f.remove(&req.followee);
             }
 
-            if let Some(f) = self.my_followers.get_mut(&req.followee) {
+            if let Some(f) = self.followers_of.get_mut(&req.followee) {
                 f.remove(&caller);
             }
         }
@@ -125,10 +122,18 @@ impl LiquidDemocracyState {
             .ids
             .into_iter()
             .map(|id| {
-                let mut result = BTreeMap::new();
-                self.followers_of(&id, &mut result);
+                let mut root = DelegationTreeNode {
+                    id,
+                    topicset: Self::default_topicset(),
+                    followers: Vec::new(),
+                };
 
-                result
+                let mut loop_check = BTreeSet::new();
+                loop_check.insert(id);
+
+                self.followers_of(&id, &mut root, &mut loop_check);
+
+                root
             })
             .collect();
 
@@ -150,6 +155,28 @@ impl LiquidDemocracyState {
         GetFolloweesOfResponse { entries }
     }
 
+    pub fn get_liquid_democracy_proof(
+        &self,
+        _req: GetLiquidDemocracyProofRequest,
+        caller: Principal,
+    ) -> GetLiquidDemocracyProofResponse {
+        let mut root = DelegationTreeNode {
+            id: caller,
+            topicset: Self::default_topicset(),
+            followers: Vec::new(),
+        };
+
+        let mut loop_check = BTreeSet::new();
+        loop_check.insert(caller);
+
+        self.followers_of(&caller, &mut root, &mut loop_check);
+
+        GetLiquidDemocracyProofResponse {
+            marker: LIQUID_DEMOCRACY_PROOF_MARKER.to_string(),
+            tree_root: root,
+        }
+    }
+
     pub fn get_decision_topics(&self, _req: GetDecisionTopicsRequest) -> GetDecisionTopicsResponse {
         let entries = self.decision_topics.values().cloned().collect();
 
@@ -163,24 +190,37 @@ impl LiquidDemocracyState {
         id
     }
 
-    fn followers_of(&self, of: &Principal, result: &mut BTreeMap<Principal, DecisionTopicSet>) {
-        if let Some(followers) = self.my_followers.get(of) {
+    fn followers_of(
+        &self,
+        of: &Principal,
+        parent: &mut DelegationTreeNode,
+        loop_check: &mut BTreeSet<Principal>,
+    ) {
+        if let Some(followers) = self.followers_of.get(of) {
             for (follower, topicset) in followers {
-                if result.contains_key(follower) {
+                if loop_check.contains(follower) {
                     continue;
                 }
 
-                result.insert(*follower, topicset.clone());
-                self.followers_of(follower, result); // recursive invocation
+                loop_check.insert(*follower);
+
+                let mut child = DelegationTreeNode {
+                    id: *follower,
+                    topicset: topicset.clone(),
+                    followers: Vec::new(),
+                };
+                self.followers_of(follower, &mut child, loop_check); // recursive invocation
+
+                parent.followers.push(child);
             }
         }
     }
 
     fn followees_of(&self, of: &Principal, result: &mut BTreeMap<Principal, DecisionTopicSet>) {
-        if let Some(followees) = self.i_follow.get(of) {
+        if let Some(followees) = self.followees_of.get(of) {
             for followee in followees {
                 let topicset = self
-                    .my_followers
+                    .followers_of
                     .get(followee)
                     .expect("Unreacheable: followee followers list should not be empty")
                     .get(of)

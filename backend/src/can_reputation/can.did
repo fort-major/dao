@@ -4,18 +4,35 @@ type DecisionTopicSet = variant {
   And : record { DecisionTopicSet; DecisionTopicSet };
   Not : DecisionTopicSet;
 };
+type DelegationTreeNode = record {
+  id : principal;
+  topicset : DecisionTopicSet;
+  followers : vec DelegationTreeNode;
+};
 type GetBalanceRequest = record { ids : vec principal };
 type GetBalanceResponse = record { entries : vec RepBalanceEntry };
-type GetRepProofRequest = record { selector : LiquidDemocracySelector };
-type GetRepProofResponse = record { marker : text; proof : ReputationProof };
+type GetRepProofRequest = record {
+  liquid_democracy_proof : LiquidDemocracyProof;
+};
+type GetRepProofResponse = record {
+  marker : text;
+  proof : ReputationProofBody;
+};
 type GetTotalSupplyResponse = record { total_supply : nat };
-type LiquidDemocracySelector = variant { AllTopics; OnlyMe };
+type LiquidDemocracyProof = record {
+  cert_raw : blob;
+  body : opt DelegationTreeNode;
+};
 type MintRepRequest = record { entries : vec record { principal; nat } };
 type RepBalanceEntry = record { updated_at : nat64; balance : nat };
-type ReputationProof = record {
+type ReputationDelegationTreeNode = record {
   id : principal;
   reputation : nat;
-  followers : vec record { principal; record { nat; DecisionTopicSet } };
+  topicset : DecisionTopicSet;
+  followers : vec ReputationDelegationTreeNode;
+};
+type ReputationProofBody = record {
+  reputation_delegation_tree : ReputationDelegationTreeNode;
   reputation_total_supply : nat;
 };
 service : () -> {

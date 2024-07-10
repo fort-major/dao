@@ -9,7 +9,10 @@ type Employment = record {
   hours_earned_during_employment : nat;
 };
 type GetProfileIdsResponse = record { ids : vec principal };
-type GetProfileProofsResponse = record { marker : text; proof : ProfileProof };
+type GetProfileProofsResponse = record {
+  marker : text;
+  proof : ProfileProofBody;
+};
 type GetProfilesRequest = record { ids : vec principal };
 type GetProfilesResponse = record { entries : vec opt Profile };
 type GetTotalsResponse = record { hours : nat; storypoints : nat };
@@ -24,7 +27,7 @@ type Profile = record {
   earned_storypoints : nat;
   registered_at : nat64;
 };
-type ProfileProof = record { id : principal; is_team_member : bool };
+type ProfileProofBody = record { id : principal; is_team_member : bool };
 type RefundRewardsRequest = record {
   hours : nat;
   storypoints : nat;

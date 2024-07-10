@@ -14,8 +14,9 @@ use crate::{
     e8s::E8s,
     humans::api::{EmployRequest, UnemployRequest},
     liquid_democracy::types::DecisionTopicId,
+    reputation::types::ReputationDelegationTreeNode,
     tasks::{
-        api::{EvaluateRequest, StartSolveTaskRequest},
+        api::{BackToEditTaskRequest, EvaluateRequest, StartSolveTaskRequest},
         types::TaskId,
     },
     DurationNs, TimestampNs, ENV_VARS,
@@ -126,8 +127,7 @@ impl Voting {
         &mut self,
         option_idx: u32,
         normalized_approval_level: Option<E8s>,
-        votes: Vec<(Principal, E8s)>,
-        caller: Principal,
+        rep_delegation_tree: ReputationDelegationTreeNode,
     ) -> Result<Option<CallToExecute>, VotingEvent> {
         let option_votes = self
             .base
@@ -135,21 +135,30 @@ impl Voting {
             .get_mut(option_idx as usize)
             .unwrap();
 
-        for (vote_owner, voter_rep) in votes {
-            let can_cast = option_votes.revert_prev_vote(&vote_owner, &caller);
+        rep_delegation_tree.traverse(
+            &mut |node, depth| {
+                if !node.topicset.matches(&self.topics) {
+                    return false;
+                }
 
-            if !can_cast {
-                continue;
-            }
+                let can_cast = option_votes.revert_prev_vote(&node.id, depth);
 
-            let vote = Vote {
-                placed_by_owner: vote_owner == caller,
-                normalized_approval_level: normalized_approval_level.clone(),
-                total_voter_reputation: voter_rep,
-            };
+                if !can_cast {
+                    return false;
+                }
 
-            option_votes.cast_vote(vote_owner, vote);
-        }
+                let vote = Vote {
+                    depth,
+                    normalized_approval_level: normalized_approval_level.clone(),
+                    total_voter_reputation: node.reputation.clone(),
+                };
+
+                option_votes.cast_vote(node.id, vote);
+
+                true
+            },
+            0,
+        );
 
         if !self.base.is_finish_early_reached_for_all_options() {
             return Ok(None);
@@ -289,16 +298,18 @@ impl VotingKind {
                 let result = base.calc_binary_results()[0];
 
                 if !result {
-                    return None;
+                    CallToExecute::new(
+                        ENV_VARS.tasks_canister_id,
+                        "tasks__back_to_edit_task".to_string(),
+                        (BackToEditTaskRequest { id: *task_id },),
+                    )
+                } else {
+                    CallToExecute::new(
+                        ENV_VARS.tasks_canister_id,
+                        "tasks__start_solve_task".into(),
+                        (StartSolveTaskRequest { id: *task_id },),
+                    )
                 }
-
-                let req = StartSolveTaskRequest { id: *task_id };
-
-                CallToExecute::new(
-                    ENV_VARS.tasks_canister_id,
-                    "tasks__start_solve_task".into(),
-                    (req,),
-                )
             }
             VotingKind::EvaluateTask { task_id, solutions } => {
                 let normalized_results = base.calc_ranged_results_normalized();
@@ -478,7 +489,10 @@ impl VotingBase {
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Vote {
-    pub placed_by_owner: bool,
+    // defines override rules for votes - the vote can only be overriden by a caster with depth <= the previous depth
+    // the lower the depth, the closer was the delegate to the voter in the tree
+    // depth 0 means that the vote was placed by the reputation owner themself
+    pub depth: u32,
     // None means "Reject"
     pub normalized_approval_level: Option<E8s>,
     pub total_voter_reputation: E8s,
@@ -586,9 +600,9 @@ pub struct OptionVotes {
 }
 
 impl OptionVotes {
-    pub fn revert_prev_vote(&mut self, vote_owner: &Principal, caller: &Principal) -> bool {
-        if let Some(prev_vote) = self.votes.get(&vote_owner) {
-            if prev_vote.placed_by_owner && vote_owner != caller {
+    pub fn revert_prev_vote(&mut self, owner: &Principal, depth: u32) -> bool {
+        if let Some(prev_vote) = self.votes.get(&owner) {
+            if prev_vote.depth < depth {
                 return false;
             }
 

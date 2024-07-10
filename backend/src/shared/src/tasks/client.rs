@@ -4,11 +4,12 @@ use ic_cdk::{api::call::CallResult, call};
 use crate::task_archive::api::{GetArchivedTasksRequest, GetArchivedTasksResponse};
 
 use super::api::{
-    AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
-    DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
-    EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
-    FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest, GetTasksResponse,
-    SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest, StartSolveTaskResponse,
+    AttachToTaskRequest, AttachToTaskResponse, BackToEditTaskRequest, BackToEditTaskResponse,
+    CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
+    EditTaskResponse, EvaluateRequest, EvaluateResponse, FinishEditTaskRequest,
+    FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
+    GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
+    StartSolveTaskRequest, StartSolveTaskResponse,
 };
 
 pub struct TasksCanisterClient {
@@ -53,6 +54,16 @@ impl TasksCanisterClient {
         req: StartSolveTaskRequest,
     ) -> CallResult<StartSolveTaskResponse> {
         call(self.canister_id, "tasks__start_solve_task", (req,))
+            .await
+            .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
+    pub async fn tasks__back_to_edit_task(
+        &self,
+        req: BackToEditTaskRequest,
+    ) -> CallResult<BackToEditTaskResponse> {
+        call(self.canister_id, "tasks__back_to_edit_task", (req,))
             .await
             .map(|(it,)| it)
     }

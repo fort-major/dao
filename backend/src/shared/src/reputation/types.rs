@@ -4,19 +4,11 @@ use ic_stable_structures::{storable::Bound, Storable};
 use num_bigint::BigUint;
 use serde::Deserialize;
 
-use std::collections::BTreeMap;
-
 use crate::{
     e8s::E8s, liquid_democracy::types::DecisionTopicSet, votings::types::ONE_WEEK_NS, TimestampNs,
 };
 
 pub const REPUTATION_PROOF_MARKER: &str = "FMJ REPUTATION CANISTER GET REPUTATION PROOF RESPONSE";
-
-#[derive(CandidType, Deserialize, Validate, Clone, Copy)]
-pub enum LiquidDemocracySelector {
-    OnlyMe,
-    AllTopics,
-}
 
 #[derive(CandidType, Deserialize, Validate, Clone, Debug, Default)]
 pub struct RepBalanceEntry {
@@ -103,13 +95,33 @@ impl Storable for RepBalanceEntry {
 }
 
 #[derive(CandidType, Deserialize, Clone, Debug, Validate)]
-pub struct ReputationProof {
+pub struct ReputationDelegationTreeNode {
     #[garde(skip)]
     pub id: Principal,
     #[garde(skip)]
+    pub topicset: DecisionTopicSet,
+    #[garde(skip)]
     pub reputation: E8s,
+    #[garde(dive)]
+    pub followers: Vec<ReputationDelegationTreeNode>,
+}
+
+impl ReputationDelegationTreeNode {
+    pub fn traverse<F: FnMut(&Self, u32) -> bool>(&self, f: &mut F, depth: u32) {
+        if !f(&self, depth) {
+            return;
+        }
+
+        for _follower in self.followers.iter() {
+            self.traverse(f, depth + 1);
+        }
+    }
+}
+
+#[derive(CandidType, Deserialize, Clone, Debug, Validate)]
+pub struct ReputationProofBody {
     #[garde(skip)]
     pub reputation_total_supply: E8s,
-    #[garde(skip)]
-    pub followers: BTreeMap<Principal, (E8s, DecisionTopicSet)>,
+    #[garde(dive)]
+    pub reputation_delegation_tree: ReputationDelegationTreeNode,
 }

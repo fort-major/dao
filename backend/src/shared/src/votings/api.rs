@@ -2,7 +2,11 @@ use candid::CandidType;
 use garde::Validate;
 use serde::Deserialize;
 
-use crate::{e8s::E8s, proof::Proof, Guard};
+use crate::{
+    e8s::E8s,
+    proof::{ProfileProof, ReputationProof},
+    Guard,
+};
 
 use super::{
     state::VotingsState,
@@ -14,7 +18,9 @@ pub struct StartVotingRequest {
     #[garde(dive)]
     pub kind: VotingKind,
     #[garde(dive)]
-    pub proof: Proof,
+    pub profile_proof: ProfileProof,
+    #[garde(dive)]
+    pub reputation_proof: ReputationProof,
 }
 
 impl Guard<VotingsState> for StartVotingRequest {
@@ -25,11 +31,12 @@ impl Guard<VotingsState> for StartVotingRequest {
         now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.proof.assert_valid_for(caller, now)?;
+        self.profile_proof.assert_valid_for(caller, now)?;
+        self.reputation_proof.assert_valid_for(caller, now)?;
 
         if !self
-            .proof
             .profile_proof
+            .body
             .as_ref()
             .expect("UNREACHEABLE")
             .is_team_member
@@ -58,7 +65,7 @@ pub struct CastVoteRequest {
     #[garde(skip)]
     pub id: VotingId,
     #[garde(skip)]
-    pub proof: Proof,
+    pub proof: ReputationProof,
     #[garde(skip)]
     pub option_idx: u32,
     #[garde(skip)]

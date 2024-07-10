@@ -14,12 +14,12 @@ use shared::{
     task_archive::api::{GetArchivedTasksRequest, GetArchivedTasksResponse},
     tasks::{
         api::{
-            AttachToTaskRequest, AttachToTaskResponse, CreateTaskRequest, CreateTaskResponse,
-            DeleteRequest, DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest,
-            EvaluateResponse, FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest,
-            FinishSolveResponse, GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest,
-            GetTasksResponse, SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest,
-            StartSolveTaskResponse,
+            AttachToTaskRequest, AttachToTaskResponse, BackToEditTaskRequest,
+            BackToEditTaskResponse, CreateTaskRequest, CreateTaskResponse, DeleteRequest,
+            DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest, EvaluateResponse,
+            FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse,
+            GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest, GetTasksResponse,
+            SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest, StartSolveTaskResponse,
         },
         state::TasksState,
     },
@@ -96,6 +96,17 @@ fn tasks__start_solve_task(mut req: StartSolveTaskRequest) -> StartSolveTaskResp
             .expect("Unable to start solving task");
 
         s.start_solve_task(req, time())
+    })
+}
+
+#[update]
+#[allow(non_snake_case)]
+fn tasks__back_to_edit_task(mut req: BackToEditTaskRequest) -> BackToEditTaskResponse {
+    with_state_mut(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to revert task to edit stage");
+
+        s.back_to_edit_task(req)
     })
 }
 

@@ -4,6 +4,7 @@ use ic_cdk::{api::call::CallResult, call};
 use super::api::{
     FollowRequest, FollowResponse, GetDecisionTopicsRequest, GetDecisionTopicsResponse,
     GetFolloweesOfRequest, GetFolloweesOfResponse, GetFollowersOfRequest, GetFollowersOfResponse,
+    GetLiquidDemocracyProofRequest, GetLiquidDemocracyProofResponse,
 };
 
 pub struct LiquidDemocracyCanisterClient {
@@ -58,6 +59,20 @@ impl LiquidDemocracyCanisterClient {
         call(
             self.canister_id,
             "liquid_democracy__get_decision_topics",
+            (req,),
+        )
+        .await
+        .map(|(it,)| it)
+    }
+
+    #[allow(non_snake_case)]
+    pub async fn liquid_democracy__get_liquid_democracy_proof(
+        &self,
+        req: GetLiquidDemocracyProofRequest,
+    ) -> CallResult<GetLiquidDemocracyProofResponse> {
+        call(
+            self.canister_id,
+            "liquid_democracy__get_liquid_democracy_proof",
             (req,),
         )
         .await

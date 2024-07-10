@@ -90,7 +90,7 @@ impl Employment {
 }
 
 #[derive(CandidType, Deserialize, Clone, Debug, Validate)]
-pub struct ProfileProof {
+pub struct ProfileProofBody {
     #[garde(skip)]
     pub id: Principal,
     #[garde(skip)]

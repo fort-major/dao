@@ -12,26 +12,21 @@ type ArchivedTaskV1 = record {
   solutions : vec record { principal; Solution };
 };
 type AttachToTaskRequest = record { id : nat64; detach : bool };
+type BackToEditTaskRequest = record { id : nat64 };
 type CreateTaskRequest = record {
   solution_fields : vec SolutionField;
   title : text;
   solver_constraints : vec SolverConstraint;
+  profile_proof : ProfileProof;
   storypoints_base : nat;
   days_to_solve : nat64;
   hours_base : nat;
   description : text;
-  team_proof : Proof;
   decision_topics : vec nat32;
   storypoints_ext_budget : nat;
   assignees : opt vec principal;
 };
 type CreateTaskResponse = record { id : nat64 };
-type DecisionTopicSet = variant {
-  It : nat32;
-  Or : record { DecisionTopicSet; DecisionTopicSet };
-  And : record { DecisionTopicSet; DecisionTopicSet };
-  Not : DecisionTopicSet;
-};
 type DeleteRequest = record { id : nat64 };
 type EditTaskRequest = record {
   id : nat64;
@@ -50,7 +45,7 @@ type EvaluateRequest = record {
   id : nat64;
   evaluation_per_solution : vec record { principal; opt nat };
 };
-type FinishSolveRequest = record { id : nat64; proof : Proof };
+type FinishSolveRequest = record { id : nat64; profile_proof : ProfileProof };
 type GetArchivedTasksRequest = record { pagination : PageRequest };
 type GetArchivedTasksResponse = record {
   pagination : PageResponse;
@@ -62,19 +57,8 @@ type GetTasksResponse = record { entries : vec opt Task };
 type InitRequest = record { task_archive_canister_id : principal };
 type PageRequest = record { skip : nat32; take : nat32; reversed : bool };
 type PageResponse = record { left : nat32; next : opt principal };
-type ProfileProof = record { id : principal; is_team_member : bool };
-type Proof = record {
-  profile_proofs_cert_raw : blob;
-  profile_proof : opt ProfileProof;
-  reputation_proof : opt ReputationProof;
-  reputation_proof_cert_raw : blob;
-};
-type ReputationProof = record {
-  id : principal;
-  reputation : nat;
-  followers : vec record { principal; record { nat; DecisionTopicSet } };
-  reputation_total_supply : nat;
-};
+type ProfileProof = record { cert_raw : blob; body : opt ProfileProofBody };
+type ProfileProofBody = record { id : principal; is_team_member : bool };
 type Solution = record {
   evaluation : opt nat;
   attached_at : nat64;
@@ -92,8 +76,8 @@ type SolutionField = record {
 type SolutionFieldKind = variant { Md; Url : record { kind : URLKind } };
 type SolveTaskRequest = record {
   id : nat64;
+  profile_proof : ProfileProof;
   filled_in_fields_opt : opt vec opt text;
-  proof : opt Proof;
 };
 type SolverConstraint = variant { MaxSolutions : nat32; TeamOnly };
 type Task = record {
@@ -135,6 +119,7 @@ service : (InitRequest) -> {
       GetArchivedTasksResponse,
     ) query;
   tasks__attach_to_task : (AttachToTaskRequest) -> (record {});
+  tasks__back_to_edit_task : (BackToEditTaskRequest) -> (record {});
   tasks__create_task : (CreateTaskRequest) -> (CreateTaskResponse);
   tasks__delete_task : (DeleteRequest) -> (record {});
   tasks__edit_task : (EditTaskRequest) -> (record {});

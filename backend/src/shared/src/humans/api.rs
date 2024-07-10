@@ -6,7 +6,7 @@ use crate::{e8s::E8s, escape_script_tag, tasks::types::RewardEntry, Guard, ENV_V
 
 use super::{
     state::HumansState,
-    types::{Profile, ProfileProof},
+    types::{Profile, ProfileProofBody},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -318,7 +318,7 @@ pub struct GetProfileProofsResponse {
     #[garde(skip)]
     pub marker: String,
     #[garde(dive)]
-    pub proof: ProfileProof,
+    pub proof: ProfileProofBody,
 }
 
 #[derive(CandidType, Deserialize, Validate)]

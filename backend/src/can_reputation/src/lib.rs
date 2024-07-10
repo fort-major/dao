@@ -12,7 +12,7 @@ use shared::reputation::state::ReputationState;
 use shared::votings::types::ONE_MONTH_NS;
 use shared::Guard;
 use std::cell::RefCell;
-use std::collections::BTreeMap;
+
 use std::time::Duration;
 
 thread_local! {
@@ -27,7 +27,6 @@ thread_local! {
             total_supply: Cell::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1))), E8s::zero()).expect("Unable to create total supply cell"),
             decay_start_key: Cell::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(2))), None).expect("Unable to create decay start key cell"),
             initialized: Cell::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(3))), false).expect("Unable to store the initialized flag"),
-            my_followers_cache: BTreeMap::new(),
         }
     )
 }
@@ -67,24 +66,13 @@ fn reputation__get_total_supply(mut req: GetTotalSupplyRequest) -> GetTotalSuppl
 
 #[update]
 #[allow(non_snake_case)]
-async fn reputation__get_reputation_proof(mut req: GetRepProofRequest) -> GetRepProofResponse {
+fn reputation__get_reputation_proof(mut req: GetRepProofRequest) -> GetRepProofResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
-            .expect("Unable to get rep proof")
-    });
+            .expect("Unable to get rep proof");
 
-    if let Err((client, req1)) =
-        with_state(|s| s.get_rep_proof_part_1(req.clone(), caller(), time()))
-    {
-        let resp1 = client
-            .liquid_democracy__get_followers_of(req1.clone())
-            .await
-            .expect("Unable to get followers of");
-
-        with_state_mut(|s| s.update_follower_cache(req1, resp1, time()));
-    }
-
-    with_state(|s| s.get_rep_proof_part_2(req, caller()))
+        s.get_rep_proof(req)
+    })
 }
 
 #[update]
