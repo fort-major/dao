@@ -22,7 +22,7 @@ export interface ITaskProps {
   id: TTaskId;
 }
 
-type TStatus = "Edit" | "Solve" | "Evaluate" | "Archived";
+type TStatus = "Edit" | "PreSolve" | "Solve" | "Evaluate" | "Archived";
 
 export function TaskMini(props: ITaskProps) {
   const { tasks, fetchTasks } = useTasks();
@@ -69,6 +69,11 @@ export function TaskMini(props: ITaskProps) {
             creator
           </p>
         </Match>
+        <Match when={t && t.stage && "PreSolve" in t.stage}>
+          <p class={pClass}>
+            this <span class={spanClass}>draft</span> is in post-edit review
+          </p>
+        </Match>
         <Match when={t && t.stage && "Solve" in t.stage}>
           <p class={pClass}>
             accepts solutions for{" "}
@@ -99,6 +104,9 @@ export function TaskMini(props: ITaskProps) {
       <Switch fallback={<Icon kind={EIconKind.DocInfo} color={COLORS.black} />}>
         <Match when={s === "Edit"}>
           <Icon kind={EIconKind.DocEdit} color={COLORS.gray[150]} />
+        </Match>
+        <Match when={s === "PreSolve"}>
+          <Icon kind={EIconKind.DocQuestion} color={COLORS.gray[150]} />
         </Match>
         <Match when={s === "Solve"}>
           <Icon kind={EIconKind.DocQuestion} color={COLORS.green} />
@@ -155,12 +163,11 @@ export function TaskMini(props: ITaskProps) {
 }
 
 export function Task(props: ITaskProps) {
-  const { tasks, fetchTasks, attachToTask } = useTasks();
+  const { tasks, fetchTasks, attachToTask, finishEditTask, finishSolveTask } =
+    useTasks();
   const { identity, isAuthorized, profileProof, authorize } = useAuth();
-  const {
-    createTasksStartSolveVoting: createTasksFinishEditVoting,
-    createTasksEvaluateVoting,
-  } = useVotings();
+  const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
+    useVotings();
 
   const [showSolveModal, setShowSolveModal] = createSignal(false);
   const [disabled, setDisabled] = createSignal(false);
@@ -179,6 +186,10 @@ export function Task(props: ITaskProps) {
 
     if ("Edit" in t.stage) {
       return "Edit";
+    }
+
+    if ("PreSolve" in t.stage) {
+      return "PreSolve";
     }
 
     if ("Solve" in t.stage) {
@@ -204,6 +215,12 @@ export function Task(props: ITaskProps) {
         <Match when={t && t.stage && "Edit" in t.stage}>
           <p class={pClass}>
             this <span class={spanClass}>draft</span> can still be edited by the
+            creator
+          </p>
+        </Match>
+        <Match when={t && t.stage && "PreSolve" in t.stage}>
+          <p class={pClass}>
+            this <span class={spanClass}>draft</span> is in post-edit review
             creator
           </p>
         </Match>
@@ -238,6 +255,9 @@ export function Task(props: ITaskProps) {
         <Match when={s === "Edit"}>
           <Icon kind={EIconKind.DocEdit} color={COLORS.gray[150]} />
         </Match>
+        <Match when={s === "PreSolve"}>
+          <Icon kind={EIconKind.DocQuestion} color={COLORS.gray[150]} />
+        </Match>
         <Match when={s === "Solve"}>
           <Icon kind={EIconKind.DocQuestion} color={COLORS.green} />
         </Match>
@@ -261,13 +281,14 @@ export function Task(props: ITaskProps) {
 
   const handleFinishEditClick = async () => {
     const agreed = confirm(
-      "Are you sure you want to transition this task to the Solving Phase? You won't be able to edit it anymore."
+      "Are you sure you want to transition this task to the Solving Phase? You won't be able to edit it anymore, unless it fails the review."
     );
 
     if (!agreed) return;
 
     setDisabled(true);
-    await createTasksFinishEditVoting(props.id);
+    await finishEditTask(props.id);
+    await createTasksStartSolveVoting(props.id);
     setDisabled(false);
 
     alert(
@@ -283,6 +304,7 @@ export function Task(props: ITaskProps) {
     if (!agreed) return;
 
     setDisabled(true);
+    await finishSolveTask(props.id);
     await createTasksEvaluateVoting(props.id);
     setDisabled(false);
 

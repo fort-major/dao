@@ -108,6 +108,7 @@ export interface ITasksStoreContext {
   createTask: (args: ICreateTaskArgs) => Promise<TTaskId>;
   editTask: (args: IEditTaskArgs) => Promise<void>;
   deleteTask: (taskId: TTaskId) => Promise<void>;
+  finishEditTask: (taskId: TTaskId) => Promise<void>;
   attachToTask: (taskId: TTaskId) => Promise<void>;
   solveTask: (
     taskId: TTaskId,
@@ -272,11 +273,9 @@ export function TasksStore(props: IChildren) {
       hours_base: args.hours_base.toBigIntRaw(),
       storypoints_base: args.storypoints_base.toBigIntRaw(),
       storypoints_ext_budget: args.storypoints_ext_budget.toBigIntRaw(),
-      team_proof: {
-        profile_proofs_cert_raw: profileProofCert()!,
-        profile_proof: [],
-        reputation_proof_cert_raw: reputationProofCert()!,
-        reputation_proof: [],
+      profile_proof: {
+        body: [],
+        cert_raw: profileProofCert()!,
       },
       decision_topics: args.decision_topics,
       assignees: opt(args.assignees),
@@ -334,6 +333,38 @@ export function TasksStore(props: IChildren) {
           ? [[]]
           : [[args.new_assignees]],
     });
+  };
+
+  const finishEditTask: ITasksStoreContext["finishEditTask"] = async (id) => {
+    assertAuthorized();
+
+    const task = tasks[id.toString()];
+
+    if (!task) {
+      err(
+        ErrorCode.UNREACHEABLE,
+        `The task ${id.toString()} is not fetched yet`
+      );
+    }
+
+    if (!("Edit" in task.stage)) {
+      err(
+        ErrorCode.AUTH,
+        "At this stage the task can only be edited by a voting"
+      );
+    }
+
+    const principal = identity()!.getPrincipal();
+
+    if (task.creator.compareTo(principal) !== "eq") {
+      err(
+        ErrorCode.AUTH,
+        "Only the creator of the task can transition it to post-edit review"
+      );
+    }
+
+    const tasksActor = newTasksActor(agent()!);
+    await tasksActor.tasks__finish_edit_task({ id });
   };
 
   const deleteTask: ITasksStoreContext["deleteTask"] = async (taskId) => {
@@ -420,14 +451,10 @@ export function TasksStore(props: IChildren) {
     await tasksActor.tasks__solve_task({
       id: taskId,
       filled_in_fields_opt: filledInFields ? [filledInFields.map(opt)] : [],
-      proof: [
-        {
-          profile_proofs_cert_raw: profileProofCert()!,
-          profile_proof: [],
-          reputation_proof_cert_raw: reputationProofCert()!,
-          reputation_proof: [],
-        },
-      ],
+      profile_proof: {
+        body: [],
+        cert_raw: profileProofCert()!,
+      },
     });
   };
 
@@ -460,11 +487,9 @@ export function TasksStore(props: IChildren) {
     const tasksActor = newTasksActor(anonymousAgent()!);
     await tasksActor.tasks__finish_solve_task({
       id: taskId,
-      proof: {
-        profile_proofs_cert_raw: profileProofCert()!,
-        profile_proof: [],
-        reputation_proof_cert_raw: reputationProofCert()!,
-        reputation_proof: [],
+      profile_proof: {
+        body: [],
+        cert_raw: profileProofCert()!,
       },
     });
   };
@@ -606,6 +631,7 @@ export function TasksStore(props: IChildren) {
         attachToTask,
         solveTask,
         finishSolveTask,
+        finishEditTask,
       }}
     >
       {props.children}

@@ -31,6 +31,7 @@ import { avatarSrcFromPrincipal } from "@utils/common";
 export interface IProfileProps extends IClass {
   id?: Principal;
   me?: boolean;
+  avatarSize?: "sm" | "md" | "lg";
 }
 
 export function ProfileFull(props: IProfileProps) {
@@ -148,7 +149,7 @@ export function ProfileFull(props: IProfileProps) {
     <div class="flex flex-col gap-5 p-2" classList={{ "shadow-sm": !props.me }}>
       <div class="flex flex-col self-center items-center gap-2">
         <Avatar
-          size="lg"
+          size={props.avatarSize ?? "lg"}
           borderColor={
             profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]
           }
@@ -331,6 +332,7 @@ export function ProfileMini(props: IProfileProps) {
       <Avatar
         borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
         url={props.id ? avatarSrcFromPrincipal(props.id) : undefined}
+        size={props.avatarSize ?? "md"}
       />
       <div class="flex flex-col gap-1">
         <p class="font-primary text-xs font-bold">
@@ -362,7 +364,7 @@ export function ProfileMicro(props: IProfileProps) {
       <Avatar
         borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
         url={props.id ? avatarSrcFromPrincipal(props.id) : undefined}
-        size="sm"
+        size={props.avatarSize ?? "sm"}
       />
     </div>
   );

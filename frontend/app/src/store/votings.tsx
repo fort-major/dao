@@ -24,6 +24,7 @@ import { DecisionTopicId } from "./tasks";
 import {
   DecisionTopic,
   DecisionTopicSet,
+  DelegationTreeNode,
   GetFolloweesOfRequest,
 } from "@/declarations/liquid_democracy/liquid_democracy.did";
 
@@ -69,6 +70,9 @@ export interface IVoting {
 type VotingsStore = Partial<Record<TVotingIdStr, IVoting>>;
 type DecisionTopicsStore = Partial<Record<DecisionTopicId, DecisionTopic>>;
 type FollowersOfStore = Partial<
+  Partial<Record<TPrincipalStr, DelegationTreeNode>>
+>;
+type FolloweesOfStore = Partial<
   Partial<Record<TPrincipalStr, Record<TPrincipalStr, DecisionTopicSet>>>
 >;
 
@@ -96,7 +100,7 @@ export interface IVotingsStoreContext {
   fetchDecisionTopics: () => Promise<void>;
   followersOf: Store<FollowersOfStore>;
   fetchFollowersOf: (ids: Principal[]) => Promise<void>;
-  followeesOf: Store<FollowersOfStore>;
+  followeesOf: Store<FolloweesOfStore>;
   fetchFolloweesOf: (ids: Principal[]) => Promise<void>;
   follow: (id: Principal, topicset: DecisionTopicSet) => Promise<void>;
   unfollow: (id: Principal) => Promise<void>;
@@ -131,7 +135,7 @@ export function VotingsStore(props: IChildren) {
   const [decisionTopics, setDecisionTopics] =
     createStore<DecisionTopicsStore>();
   const [followersOf, setFollowersOf] = createStore<FollowersOfStore>();
-  const [followeesOf, setFolloweesOf] = createStore<FollowersOfStore>();
+  const [followeesOf, setFolloweesOf] = createStore<FolloweesOfStore>();
 
   const fetchVotings: IVotingsStoreContext["fetchVotings"] = async (
     ids: VotingId[]
@@ -155,12 +159,6 @@ export function VotingsStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, `Voting ${id} does not exist`);
     }
 
-    const repProof = reputationProof()!;
-
-    if (repProof.reputation.isZero()) {
-      err(ErrorCode.AUTH, "You need at least some reputation to cast a vote");
-    }
-
     const votingsActor = newVotingsActor(agent()!);
 
     const { decision_made } = await votingsActor.votings__cast_vote({
@@ -168,10 +166,8 @@ export function VotingsStore(props: IChildren) {
       normalized_approval_level: opt(normalizedApprovalLevel?.toBigIntRaw()),
       option_idx: optionIdx,
       proof: {
-        profile_proofs_cert_raw: profileProofCert()!,
-        profile_proof: [],
-        reputation_proof_cert_raw: reputationProofCert()!,
-        reputation_proof: [],
+        body: [],
+        cert_raw: reputationProofCert()!,
       },
     });
 
@@ -226,11 +222,13 @@ export function VotingsStore(props: IChildren) {
     const votingsActor = newVotingsActor(agent()!);
     const { id } = await votingsActor.votings__start_voting({
       kind,
-      proof: {
-        profile_proofs_cert_raw: profileProofCert()!,
-        profile_proof: [],
-        reputation_proof_cert_raw: reputationProofCert()!,
-        reputation_proof: [],
+      profile_proof: {
+        body: [],
+        cert_raw: profileProofCert()!,
+      },
+      reputation_proof: {
+        body: [],
+        cert_raw: reputationProofCert()!,
       },
     });
 
@@ -354,9 +352,7 @@ export function VotingsStore(props: IChildren) {
     },
     ({ entries: followersOf }, req) => {
       for (let i = 0; i < req.ids.length; i++) {
-        for (let [follower, topicset] of followersOf[i]) {
-          setFollowersOf(req.ids[i].toText(), follower.toText(), topicset);
-        }
+        setFollowersOf(req.ids[i].toText(), followersOf[i]);
       }
     },
     (e) => err(ErrorCode.NETWORK, `Unable to fetch followers of: ${e}`)
@@ -401,10 +397,8 @@ export function VotingsStore(props: IChildren) {
       followee: id,
       topics: [topicset],
       proof: {
-        profile_proofs_cert_raw: profileProofCert()!,
-        profile_proof: [],
-        reputation_proof_cert_raw: reputationProofCert()!,
-        reputation_proof: [],
+        body: [],
+        cert_raw: reputationProofCert()!,
       },
     });
   };
@@ -417,10 +411,8 @@ export function VotingsStore(props: IChildren) {
       followee: id,
       topics: [],
       proof: {
-        profile_proofs_cert_raw: profileProofCert()!,
-        profile_proof: [],
-        reputation_proof_cert_raw: reputationProofCert()!,
-        reputation_proof: [],
+        body: [],
+        cert_raw: reputationProofCert()!,
       },
     });
   };

@@ -8,6 +8,7 @@ export interface IBtnProps {
   iconColor?: string;
   disabled?: boolean;
   onClick?: () => void;
+  class?: string;
 }
 
 export function Btn(props: IBtnProps) {
@@ -19,6 +20,7 @@ export function Btn(props: IBtnProps) {
       classList={{
         "shadow-none": props.disabled,
         "bg-gray-190": props.disabled,
+        [props.class!]: !!props.class,
       }}
       disabled={props.disabled}
       onClick={handleClick}

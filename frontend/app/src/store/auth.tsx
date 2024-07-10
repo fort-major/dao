@@ -1,5 +1,6 @@
 import {
   Accessor,
+  batch,
   createContext,
   createSignal,
   onMount,
@@ -16,12 +17,14 @@ import {
   newFmjActor,
   newHumansActor,
   newIcpActor,
+  newLiquidDemocracyActor,
   newReputationActor,
   optUnwrap,
 } from "../utils/backend";
 import { E8s } from "../utils/math";
 import { GetProfilesResponse } from "@/declarations/humans/humans.did";
 import { DecisionTopicSet } from "@/declarations/liquid_democracy/liquid_democracy.did";
+import { ReputationDelegationTreeNode } from "@/declarations/votings/votings.did";
 
 export interface IMyBalance {
   Hours: E8s;
@@ -35,11 +38,27 @@ export interface IProfileProof {
   is_team_member: boolean;
 }
 
-export interface IReputationProof {
+export interface IReputationDelegationTreeNode {
   id: Principal;
   reputation: E8s;
+  topicset: DecisionTopicSet;
+  followers: Array<IReputationDelegationTreeNode>;
+}
+
+function repDelegationTreeMap(
+  node: ReputationDelegationTreeNode
+): IReputationDelegationTreeNode {
+  return {
+    id: node.id,
+    reputation: E8s.new(node.reputation),
+    topicset: node.topicset,
+    followers: node.followers.map(repDelegationTreeMap),
+  };
+}
+
+export interface IReputationProof {
   reputation_total_supply: E8s;
-  followers: { id: Principal; rep: E8s; topicset: DecisionTopicSet }[];
+  reputation_delegation_tree: IReputationDelegationTreeNode;
 }
 
 export interface IAuthStoreContext {
@@ -57,6 +76,7 @@ export interface IAuthStoreContext {
   profileProofCert: Accessor<Uint8Array | undefined>;
   reputationProof: Accessor<IReputationProof | undefined>;
   reputationProofCert: Accessor<Uint8Array | undefined>;
+  fetchProofs: () => Promise<void>;
   editMyProfile: (name?: string) => Promise<void>;
   myBalance: Accessor<IMyBalance | undefined>;
   fetchMyBalance: () => Promise<void>;
@@ -97,6 +117,66 @@ export function AuthStore(props: IChildren) {
     setAnonymousAgent(await makeAnonymousAgent());
   });
 
+  const fetchProofs = async () => {
+    assertAuthorized();
+
+    setProfileProofCert();
+    setReputationProofCert();
+
+    const a = agent()!;
+
+    const humansActor = newHumansActor(a);
+    const liquidDemocracyActor = newLiquidDemocracyActor(a);
+    const reputationActor = newReputationActor(a);
+
+    const reputationProofPromise = new Promise<Uint8Array>((res) => {
+      liquidDemocracyActor.liquid_democracy__get_liquid_democracy_proof.withOptions(
+        {
+          onRawCertificatePolled: (cert) => {
+            const c = new Uint8Array(cert);
+
+            reputationActor.reputation__get_reputation_proof
+              .withOptions({
+                onRawCertificatePolled: (cert) => res(new Uint8Array(cert)),
+              })({ liquid_democracy_proof: { cert_raw: c, body: [] } })
+              .then((response) => {
+                let iproof: IReputationProof = {
+                  reputation_total_supply: E8s.new(
+                    response.proof.reputation_total_supply
+                  ),
+                  reputation_delegation_tree: repDelegationTreeMap(
+                    response.proof.reputation_delegation_tree
+                  ),
+                };
+
+                setReputationProof(iproof);
+              });
+          },
+        }
+      )({});
+    });
+
+    const profileProofPromise = new Promise<Uint8Array>((res) => {
+      humansActor.humans__get_profile_proofs
+        .withOptions({
+          onRawCertificatePolled: (cert) => res(new Uint8Array(cert)),
+        })({})
+        .then((resp) => setProfileProof(resp.proof));
+    });
+
+    const [repCert, profileCert] = await Promise.all([
+      reputationProofPromise,
+      profileProofPromise,
+    ]);
+
+    batch(() => {
+      setReputationProofCert(repCert);
+      setProfileProofCert(profileCert);
+    });
+
+    logInfo("Proofs fetched successfully");
+  };
+
   const authorize: IAuthStoreContext["authorize"] = async () => {
     const msq = msqClient();
 
@@ -126,14 +206,6 @@ export function AuthStore(props: IChildren) {
         ]);
       };
 
-      const pRep = reputationActor.reputation__get_reputation_proof.withOptions(
-        {
-          onRawCertificatePolled(cert) {
-            setReputationProofCert(new Uint8Array(cert));
-          },
-        }
-      )({ selector: { AllTopics: null } });
-
       const { entries: profiles } = await humansActor.humans__get_profiles({
         ids: [id.getPrincipal()],
       });
@@ -155,37 +227,7 @@ export function AuthStore(props: IChildren) {
 
       logInfo("Login successful");
 
-      const pProf = humansActor.humans__get_profile_proofs.withOptions({
-        onRawCertificatePolled(cert) {
-          setProfileProofCert(new Uint8Array(cert));
-        },
-      })({});
-
-      const [{ proof: reputationProof }, { proof: profileProof }] =
-        await Promise.all([pRep, pProf]);
-
-      const profileProofExt: IProfileProof = {
-        id: profileProof.id,
-        is_team_member: profileProof.is_team_member,
-      };
-
-      const reputationProofExt: IReputationProof = {
-        id: reputationProof.id,
-        reputation: E8s.new(reputationProof.reputation),
-        reputation_total_supply: E8s.new(
-          reputationProof.reputation_total_supply
-        ),
-        followers: reputationProof.followers.map(([id, [rep, topicset]]) => ({
-          id,
-          rep: E8s.new(rep),
-          topicset,
-        })),
-      };
-
-      logInfo("Proofs fetched successfully");
-
-      setProfileProof(profileProofExt);
-      setReputationProof(reputationProofExt);
+      fetchProofs();
 
       return true;
     }
@@ -254,6 +296,17 @@ export function AuthStore(props: IChildren) {
     return !!anonymousAgent();
   };
 
+  const areProofsFetched = () => {
+    if (
+      !profileProof() ||
+      !profileProofCert() ||
+      !reputationProof() ||
+      !reputationProofCert()
+    )
+      return false;
+    else return true;
+  };
+
   const assertReadyToFetch = () => {
     if (!isReadyToFetch()) {
       err(ErrorCode.UNREACHEABLE, "Not ready to fetch");
@@ -267,12 +320,7 @@ export function AuthStore(props: IChildren) {
   };
 
   const assertWithProofs = () => {
-    if (
-      !profileProof() ||
-      !profileProofCert() ||
-      !reputationProof() ||
-      !reputationProofCert()
-    ) {
+    if (!areProofsFetched()) {
       err(ErrorCode.UNREACHEABLE, "Proofs are not fetched");
     }
   };
@@ -294,6 +342,7 @@ export function AuthStore(props: IChildren) {
         profileProofCert,
         reputationProof,
         reputationProofCert,
+        fetchProofs,
         editMyProfile,
         myBalance,
         fetchMyBalance,

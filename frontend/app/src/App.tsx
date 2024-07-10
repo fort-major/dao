@@ -11,6 +11,8 @@ import { TasksStore } from "./store/tasks";
 import { VotingsStore } from "./store/votings";
 import { BankStore } from "./store/bank";
 import { Portal } from "solid-js/web";
+import { Header } from "@components/header";
+import { Footer } from "@components/footer";
 
 const AppRoot = (props: IChildren) => (
   <>
@@ -25,7 +27,13 @@ const AppRoot = (props: IChildren) => (
         <VotingsStore>
           <HumanStore>
             <TasksStore>
-              <BankStore>{props.children}</BankStore>
+              <BankStore>
+                <Header />
+                <main class="flex flex-col flex-grow self-stretch pt-[100px]">
+                  {props.children}
+                </main>
+                <Footer />
+              </BankStore>
             </TasksStore>
           </HumanStore>
         </VotingsStore>
