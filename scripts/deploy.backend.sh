@@ -5,8 +5,13 @@ if [[ -z "$1" ]]; then
     exit 1
 fi
 
-network=$1
-file_name="./backend/.env.$network"
+mode=$1
+if [ $mode = "dev" ]; then 
+    network="local" 
+else 
+    network=$mode
+fi
+file_name="./backend/.env.$mode"
 
 source $file_name
 

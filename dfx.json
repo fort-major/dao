@@ -47,14 +47,6 @@
       "packtool": ""
     }
   },
-  "networks": {  
-    "dev": {  
-      "providers": [
-        "http://localhost:8080"
-      ],
-      "type": "ephemeral"
-    }  
-  },
   "output_env_file": ".env",
   "version": 1
 }
