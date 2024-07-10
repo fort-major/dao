@@ -1,8 +1,9 @@
-import { createSignal, onCleanup } from "solid-js";
+import { Accessor, createSignal, onCleanup, Setter } from "solid-js";
 import deepEqual from "deep-equal";
 import { Principal } from "@dfinity/principal";
 import { makeAvatarSvg } from "@fort-major/msq-shared";
 import { COLORS } from "./colors";
+import { bytesToHex, hexToBytes } from "./encoding";
 
 export const debounce = (cb: (...args: any[]) => void, timeoutMs: number) => {
   const [int, setInt] = createSignal<NodeJS.Timeout | undefined>();
@@ -64,4 +65,28 @@ export function avatarSrcFromPrincipal(id: Principal) {
   const svg = btoa(makeAvatarSvg(id, COLORS.black));
 
   return `data:image/svg+xml;base64,${svg}`;
+}
+
+export function createLocalStorageSignal<T extends unknown>(
+  key: string
+): [Accessor<T>, Setter<T>] {
+  const storage = window.localStorage;
+  const initialValue: T = JSON.parse(storage.getItem(key) ?? "{}").value;
+
+  const [value, setValue] = createSignal<T>(initialValue);
+
+  const newSetValue = (newValue: T | ((v: T) => T)): T => {
+    const _val: T =
+      typeof newValue === "function"
+        ? // @ts-expect-error
+          newValue(value())
+        : newValue;
+
+    setValue(_val as any);
+    storage.setItem(key, JSON.stringify({ value: _val }));
+
+    return _val;
+  };
+
+  return [value, newSetValue as Setter<T>];
 }

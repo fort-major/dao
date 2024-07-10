@@ -6,11 +6,16 @@ import {
   onMount,
   useContext,
 } from "solid-js";
-import { IChildren, TTimestamp } from "../utils/types";
+import { IChildren, ONE_MIN_NS } from "../utils/types";
 import { ErrorCode, err, logInfo } from "../utils/error";
 import { Identity, Agent } from "@dfinity/agent";
 import { MsqClient, MsqIdentity } from "@fort-major/msq-client";
-import { Principal, debugStringify } from "../utils/encoding";
+import {
+  Principal,
+  bytesToHex,
+  debugStringify,
+  hexToBytes,
+} from "../utils/encoding";
 import {
   makeAgent,
   makeAnonymousAgent,
@@ -25,6 +30,8 @@ import { E8s } from "../utils/math";
 import { GetProfilesResponse } from "@/declarations/humans/humans.did";
 import { DecisionTopicSet } from "@/declarations/liquid_democracy/liquid_democracy.did";
 import { ReputationDelegationTreeNode } from "@/declarations/votings/votings.did";
+
+const PROOF_TTL_MS = Number((ONE_MIN_NS * 450n) / 1000_000n);
 
 export interface IMyBalance {
   Hours: E8s;
@@ -65,19 +72,22 @@ export interface IAuthStoreContext {
   authorize: () => Promise<boolean>;
   identity: Accessor<Identity | undefined>;
   msqClient: Accessor<MsqClient | undefined>;
+
   agent: Accessor<Agent | undefined>;
   anonymousAgent: Accessor<Agent | undefined>;
+
   isAuthorized: Accessor<boolean>;
   isReadyToFetch: Accessor<boolean>;
   assertReadyToFetch: () => never | void;
   assertAuthorized: () => never | void;
-  assertWithProofs: () => never | void;
-  profileProof: Accessor<IProfileProof | undefined>;
-  profileProofCert: Accessor<Uint8Array | undefined>;
-  reputationProof: Accessor<IReputationProof | undefined>;
-  reputationProofCert: Accessor<Uint8Array | undefined>;
-  fetchProofs: () => Promise<void>;
+
+  profileProof: () => Promise<IProfileProof>;
+  profileProofCert: () => Promise<Uint8Array>;
+  reputationProof: () => Promise<IReputationProof>;
+  reputationProofCert: () => Promise<Uint8Array>;
+
   editMyProfile: (name?: string) => Promise<void>;
+
   myBalance: Accessor<IMyBalance | undefined>;
   fetchMyBalance: () => Promise<void>;
 }
@@ -99,83 +109,68 @@ export function AuthStore(props: IChildren) {
   const [msqClient, setMsqClient] = createSignal<MsqClient | undefined>();
   const [agent, setAgent] = createSignal<Agent | undefined>();
   const [anonymousAgent, setAnonymousAgent] = createSignal<Agent | undefined>();
-  const [profileProof, setProfileProof] = createSignal<
-    IProfileProof | undefined
-  >();
-  const [profileProofCert, setProfileProofCert] = createSignal<
-    Uint8Array | undefined
-  >();
-  const [reputationProof, setReputationProof] = createSignal<
-    IReputationProof | undefined
-  >();
-  const [reputationProofCert, setReputationProofCert] = createSignal<
-    Uint8Array | undefined
-  >();
   const [myBalance, setMyBalance] = createSignal<IMyBalance | undefined>();
+  const [profileProof, profileProofCert] = createProofSignal<IProfileProof>(
+    "fmj-profile-proof",
+    async () => {
+      const a = agent()!;
+      const humansActor = newHumansActor(a);
+
+      let cert: Uint8Array | undefined = undefined;
+
+      const p = await humansActor.humans__get_profile_proofs.withOptions({
+        onRawCertificatePolled: (c) => {
+          cert = new Uint8Array(c);
+        },
+      })({});
+
+      return [cert!, p.proof];
+    }
+  );
+  const [reputationProof, reputationProofCert] =
+    createProofSignal<IReputationProof>("fmj-reputation-proof", async () => {
+      const a = agent()!;
+      const liquidDemocracyActor = newLiquidDemocracyActor(a);
+
+      let cert1: Uint8Array | undefined = undefined;
+      await liquidDemocracyActor.liquid_democracy__get_liquid_democracy_proof.withOptions(
+        {
+          onRawCertificatePolled: (c) => {
+            cert1 = new Uint8Array(c);
+          },
+        }
+      )({});
+
+      const reputationActor = newReputationActor(a);
+
+      let cert2: Uint8Array | undefined = undefined;
+      const response =
+        await reputationActor.reputation__get_reputation_proof.withOptions({
+          onRawCertificatePolled: (c) => {
+            cert2 = new Uint8Array(c);
+          },
+        })({
+          liquid_democracy_proof: {
+            body: [],
+            cert_raw: new Uint8Array(cert1!),
+          },
+        });
+
+      let iproof: IReputationProof = {
+        reputation_total_supply: E8s.new(
+          response.proof.reputation_total_supply
+        ),
+        reputation_delegation_tree: repDelegationTreeMap(
+          response.proof.reputation_delegation_tree
+        ),
+      };
+
+      return [cert2!, iproof];
+    });
 
   onMount(async () => {
     setAnonymousAgent(await makeAnonymousAgent());
   });
-
-  const fetchProofs = async () => {
-    assertAuthorized();
-
-    setProfileProofCert();
-    setReputationProofCert();
-
-    const a = agent()!;
-
-    const humansActor = newHumansActor(a);
-    const liquidDemocracyActor = newLiquidDemocracyActor(a);
-    const reputationActor = newReputationActor(a);
-
-    const reputationProofPromise = new Promise<Uint8Array>((res) => {
-      liquidDemocracyActor.liquid_democracy__get_liquid_democracy_proof.withOptions(
-        {
-          onRawCertificatePolled: (cert) => {
-            const c = new Uint8Array(cert);
-
-            reputationActor.reputation__get_reputation_proof
-              .withOptions({
-                onRawCertificatePolled: (cert) => res(new Uint8Array(cert)),
-              })({ liquid_democracy_proof: { cert_raw: c, body: [] } })
-              .then((response) => {
-                let iproof: IReputationProof = {
-                  reputation_total_supply: E8s.new(
-                    response.proof.reputation_total_supply
-                  ),
-                  reputation_delegation_tree: repDelegationTreeMap(
-                    response.proof.reputation_delegation_tree
-                  ),
-                };
-
-                setReputationProof(iproof);
-              });
-          },
-        }
-      )({});
-    });
-
-    const profileProofPromise = new Promise<Uint8Array>((res) => {
-      humansActor.humans__get_profile_proofs
-        .withOptions({
-          onRawCertificatePolled: (cert) => res(new Uint8Array(cert)),
-        })({})
-        .then((resp) => setProfileProof(resp.proof));
-    });
-
-    const [repCert, profileCert] = await Promise.all([
-      reputationProofPromise,
-      profileProofPromise,
-    ]);
-
-    batch(() => {
-      setReputationProofCert(repCert);
-      setProfileProofCert(profileCert);
-    });
-
-    logInfo("Proofs fetched successfully");
-  };
 
   const authorize: IAuthStoreContext["authorize"] = async () => {
     const msq = msqClient();
@@ -227,8 +222,6 @@ export function AuthStore(props: IChildren) {
 
       logInfo("Login successful");
 
-      fetchProofs();
-
       return true;
     }
 
@@ -256,8 +249,6 @@ export function AuthStore(props: IChildren) {
   };
 
   const fetchMyBalance = async () => {
-    assertWithProofs();
-
     const humansActor = newHumansActor(agent()!);
     const icpActor = newIcpActor(agent()!);
     const fmjActor = newFmjActor(agent()!);
@@ -296,17 +287,6 @@ export function AuthStore(props: IChildren) {
     return !!anonymousAgent();
   };
 
-  const areProofsFetched = () => {
-    if (
-      !profileProof() ||
-      !profileProofCert() ||
-      !reputationProof() ||
-      !reputationProofCert()
-    )
-      return false;
-    else return true;
-  };
-
   const assertReadyToFetch = () => {
     if (!isReadyToFetch()) {
       err(ErrorCode.UNREACHEABLE, "Not ready to fetch");
@@ -316,12 +296,6 @@ export function AuthStore(props: IChildren) {
   const assertAuthorized = () => {
     if (!isAuthorized()) {
       err(ErrorCode.UNREACHEABLE, "Not authorized");
-    }
-  };
-
-  const assertWithProofs = () => {
-    if (!areProofsFetched()) {
-      err(ErrorCode.UNREACHEABLE, "Proofs are not fetched");
     }
   };
 
@@ -337,12 +311,10 @@ export function AuthStore(props: IChildren) {
         isReadyToFetch,
         assertReadyToFetch,
         assertAuthorized,
-        assertWithProofs: assertWithProofs,
         profileProof,
         profileProofCert,
         reputationProof,
         reputationProofCert,
-        fetchProofs,
         editMyProfile,
         myBalance,
         fetchMyBalance,
@@ -351,4 +323,118 @@ export function AuthStore(props: IChildren) {
       {props.children}
     </AuthContext.Provider>
   );
+}
+
+interface StoredCert<T> {
+  certHex: string;
+  body: T;
+  createdAtMs: number;
+}
+
+function storeCert<T>(
+  key: string,
+  cert: Uint8Array | undefined,
+  body: T,
+  now: number
+) {
+  if (!cert) {
+    localStorage.removeItem(key);
+    return;
+  }
+
+  const p: StoredCert<T> = {
+    certHex: bytesToHex(cert),
+    body,
+    createdAtMs: now,
+  };
+
+  localStorage.setItem(key, debugStringify(p));
+}
+
+function retrieveCert<T>(key: string): [Uint8Array, T, number] | undefined {
+  const pStr = localStorage.getItem(key);
+  if (!pStr) {
+    return undefined;
+  }
+
+  const p: StoredCert<T> = JSON.parse(pStr);
+
+  return [hexToBytes(p.certHex), p.body, p.createdAtMs];
+}
+
+export function createProofSignal<T>(
+  key: string,
+  fetcher: () => Promise<[Uint8Array, T]>
+): [() => Promise<T>, () => Promise<Uint8Array>] {
+  const [createdAt, setCreatedAt] = createSignal<number | undefined>();
+  const [cert, setCert] = createSignal<Uint8Array | undefined>();
+  const [body, setBody] = createSignal<T | undefined>();
+
+  const getBody = async () => {
+    const now = Date.now();
+    const b0 = body();
+    const t0 = createdAt();
+
+    if (!b0 || !t0) {
+      const stored = retrieveCert<T>(key);
+
+      if (stored) {
+        batch(() => {
+          setCert(stored[0]);
+          setBody(stored[1] as undefined);
+          setCreatedAt(stored[2]);
+        });
+      }
+    }
+
+    const b1 = body()!;
+    const t1 = createdAt()!;
+
+    if (!b1 || !t1 || t1 + PROOF_TTL_MS <= now) {
+      const [newC, newB] = await fetcher();
+      storeCert(key, newC, newB, now);
+      batch(() => {
+        setCert(newC);
+        setBody(newB as undefined);
+        setCreatedAt(now);
+      });
+    }
+
+    return body()!;
+  };
+
+  const getCert = async () => {
+    const now = Date.now();
+    const c0 = cert();
+    const t0 = createdAt();
+
+    if (!c0 || !t0) {
+      const stored = retrieveCert<T>(key);
+
+      if (stored) {
+        batch(() => {
+          setCert(stored[0]);
+          setBody(stored[1] as undefined);
+          setCreatedAt(stored[2]);
+        });
+      }
+    }
+
+    const c1 = cert()!;
+    const t1 = createdAt()!;
+
+    if (!c1 || !t1 || t1 + PROOF_TTL_MS <= now) {
+      const [newC, newB] = await fetcher();
+      storeCert(key, newC, newB, now);
+      batch(() => {
+        setCert(newC);
+        setBody(newB as undefined);
+        setCreatedAt(now);
+      });
+    }
+
+    return cert()!;
+  };
+
+  return [getBody, getCert];
 }
