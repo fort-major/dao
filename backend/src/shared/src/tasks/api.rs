@@ -295,6 +295,8 @@ pub struct SolveTaskRequest {
     pub id: TaskId,
     #[garde(inner(inner(inner(length(graphemes, max = 512)))))]
     pub filled_in_fields_opt: Option<Vec<Option<String>>>,
+    #[garde(skip)]
+    pub want_rep: bool,
     #[garde(dive)]
     pub profile_proof: ProfileProof,
 }

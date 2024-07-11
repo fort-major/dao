@@ -160,6 +160,8 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
         entries: rewards
             .iter()
             .map(|it| it.as_reputation_mint_entry())
+            .filter(|it| it.is_some())
+            .map(|it| it.unwrap())
             .collect(),
     };
 
@@ -174,12 +176,14 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
         ));
     }
 
-    // TODO: add rescheduling
-    if let Err((code, msg)) = reputation_canister.reputation__mint(mint_rep_req).await {
-        trap(&format!(
-            "FATAL!!! Unable to mint reputation: [{:?}] {}",
-            code, msg
-        ));
+    if !mint_rep_req.entries.is_empty() {
+        // TODO: add rescheduling
+        if let Err((code, msg)) = reputation_canister.reputation__mint(mint_rep_req).await {
+            trap(&format!(
+                "FATAL!!! Unable to mint reputation: [{:?}] {}",
+                code, msg
+            ));
+        }
     }
 
     with_state_mut(|s| s.archive_task(task_id));

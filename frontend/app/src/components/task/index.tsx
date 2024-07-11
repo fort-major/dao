@@ -25,10 +25,10 @@ export interface ITaskProps {
 type TStatus = "Edit" | "PreSolve" | "Solve" | "Evaluate" | "Archived";
 
 export function TaskMini(props: ITaskProps) {
-  const { tasks, fetchTasks } = useTasks();
+  const { tasks, fetchTasksById } = useTasks();
 
   onMount(() => {
-    if (!task()) fetchTasks([props.id]);
+    if (!task()) fetchTasksById([props.id]);
   });
 
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
@@ -163,8 +163,13 @@ export function TaskMini(props: ITaskProps) {
 }
 
 export function Task(props: ITaskProps) {
-  const { tasks, fetchTasks, attachToTask, finishEditTask, finishSolveTask } =
-    useTasks();
+  const {
+    tasks,
+    fetchTasksById,
+    attachToTask,
+    finishEditTask,
+    finishSolveTask,
+  } = useTasks();
   const { identity, isAuthorized, profileProof, authorize } = useAuth();
   const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
     useVotings();
@@ -173,7 +178,7 @@ export function Task(props: ITaskProps) {
   const [disabled, setDisabled] = createSignal(false);
 
   onMount(() => {
-    if (!task()) fetchTasks([props.id]);
+    if (!task()) fetchTasksById([props.id]);
   });
 
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
@@ -418,12 +423,12 @@ export function Task(props: ITaskProps) {
     await attachToTask(props.id);
     setDisabled(false);
 
-    fetchTasks([props.id]);
+    fetchTasksById([props.id]);
   };
 
   const handleSolutionSubmit = async () => {
     setShowSolveModal(false);
-    fetchTasks([props.id]);
+    fetchTasksById([props.id]);
   };
 
   return (

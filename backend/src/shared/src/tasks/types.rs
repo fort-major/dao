@@ -139,12 +139,13 @@ impl Task {
     pub fn solve(
         &mut self,
         filled_in_fields_opt: Option<Vec<Option<String>>>,
+        want_rep: bool,
         caller: Principal,
         now: TimestampNs,
     ) {
         if let Some(filled_in_fields) = filled_in_fields_opt {
             self.solutions
-                .insert(caller, Solution::new(filled_in_fields, now));
+                .insert(caller, Solution::new(filled_in_fields, want_rep, now));
         } else {
             self.solutions.remove(&caller);
         }
@@ -182,6 +183,7 @@ impl Task {
                 solver,
                 reward_storypoints,
                 reward_hours,
+                want_rep: solution.want_rep,
             };
 
             result.push(entry);
@@ -287,11 +289,17 @@ pub struct RewardEntry {
     pub reward_hours: E8s,
     #[garde(skip)]
     pub reward_storypoints: E8s,
+    #[garde(skip)]
+    pub want_rep: bool,
 }
 
 impl RewardEntry {
-    pub fn as_reputation_mint_entry(&self) -> (Principal, E8s) {
-        (self.solver, &self.reward_hours + &self.reward_storypoints)
+    pub fn as_reputation_mint_entry(&self) -> Option<(Principal, E8s)> {
+        if self.want_rep {
+            Some((self.solver, &self.reward_hours + &self.reward_storypoints))
+        } else {
+            None
+        }
     }
 }
 
@@ -303,10 +311,11 @@ pub struct Solution {
     pub evaluation: Option<E8s>,
     pub reward_hours: Option<E8s>,
     pub reward_storypoints: Option<E8s>,
+    pub want_rep: bool,
 }
 
 impl Solution {
-    pub fn new(fields: Vec<Option<String>>, now: TimestampNs) -> Self {
+    pub fn new(fields: Vec<Option<String>>, want_rep: bool, now: TimestampNs) -> Self {
         Self {
             fields,
             attached_at: now,
@@ -314,6 +323,7 @@ impl Solution {
             evaluation: None,
             reward_hours: None,
             reward_storypoints: None,
+            want_rep,
         }
     }
 }

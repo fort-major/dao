@@ -8,7 +8,7 @@ import { debounce } from "@utils/common";
 import { E8s } from "@utils/math";
 import { eventHandler } from "@utils/security";
 import { Result, TTimestamp } from "@utils/types";
-import { createSignal } from "solid-js";
+import { createResource, createSignal } from "solid-js";
 
 export interface IVotingWidgetProps {
   id: TVotingIdStr;
@@ -40,6 +40,7 @@ export function VotingWidget(props: IVotingWidgetProps) {
   const { reputationProof } = useAuth();
   const { castVote } = useVotings();
 
+  const [repProof] = createResource(reputationProof);
   const [newVote, setNewVote] = createSignal<E8s | undefined | null>();
   const [status, setStatus] = createSignal<TVotingStatusStr>(
     stageToStatus(props.stage)
@@ -47,8 +48,8 @@ export function VotingWidget(props: IVotingWidgetProps) {
   const [hovered, setHovered] = createSignal(false);
 
   const isDisabled = () =>
-    !reputationProof() ||
-    reputationProof()!.reputation.isZero() ||
+    !repProof() ||
+    repProof()!.reputation_delegation_tree.reputation.isZero() ||
     !["ready", "debouncing"].includes(status());
 
   const handleMouseEnter = eventHandler(() => {
@@ -111,7 +112,7 @@ export function VotingWidget(props: IVotingWidgetProps) {
         totalVoted={props.totalVoted}
         quorum={props.quorum}
         finishEarly={props.finishEarly}
-        myRep={reputationProof()?.reputation}
+        myRep={repProof()?.reputation_delegation_tree.reputation}
       />
     </div>
   );

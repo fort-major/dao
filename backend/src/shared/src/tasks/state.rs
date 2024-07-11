@@ -134,7 +134,7 @@ impl TasksState {
         now: TimestampNs,
     ) -> SolveTaskResponse {
         let task = self.tasks.get_mut(&req.id).unwrap();
-        task.solve(req.filled_in_fields_opt, caller, now);
+        task.solve(req.filled_in_fields_opt, req.want_rep, caller, now);
 
         SolveTaskResponse {}
     }

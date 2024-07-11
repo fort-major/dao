@@ -14,7 +14,7 @@ import { pairToStr } from "@utils/encoding";
 import { err, ErrorCode } from "@utils/error";
 import { E8s } from "@utils/math";
 import { Result } from "@utils/types";
-import { createSignal, from, Match, Switch } from "solid-js";
+import { createResource, createSignal, from, Match, Switch } from "solid-js";
 
 export interface ITransferSwapFormProps {}
 
@@ -22,6 +22,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   const { myBalance, profileProof } = useAuth();
   const { transfer, swapRewards, exchangeRates } = useBank();
 
+  const [profProof] = createResource(profileProof);
   const [from, setFrom] = createSignal(EE8sKind.Hours);
   const [into, setInto] = createSignal(EE8sKind.FMJ);
   const [amount, setAmount] = createSignal<E8s>(E8s.zero());
@@ -176,7 +177,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
             <div class="flex justify-between items-center">
               <ExchangeRate
                 pair={pairToStr({ from: from(), into: into() })}
-                editable={profileProof()?.is_team_member}
+                editable={profProof()?.is_team_member}
               />
             </div>
             <Btn
