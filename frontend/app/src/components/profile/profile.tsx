@@ -258,13 +258,7 @@ export function ProfileFull(props: IProfileProps) {
           </div>
         </Show>
         <Switch>
-          <Match
-            when={
-              !props.me &&
-              profile()?.employment &&
-              profileProof()?.is_team_member
-            }
-          >
+          <Match when={!props.me && profile()?.employment}>
             <Btn
               text="Expel"
               icon={EIconKind.Minus}
@@ -272,13 +266,7 @@ export function ProfileFull(props: IProfileProps) {
               onClick={handleProposeExpel}
             />
           </Match>
-          <Match
-            when={
-              !props.me &&
-              !profile()?.employment &&
-              profileProof()?.is_team_member
-            }
-          >
+          <Match when={!props.me && !profile()?.employment}>
             <Btn
               text="Admit"
               icon={EIconKind.Plus}

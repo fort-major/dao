@@ -8,7 +8,7 @@ use ic_cdk::{
 };
 use shared::{
     liquid_democracy::{state::GENERAL_TOPIC_ID, types::DecisionTopicId},
-    tasks::{api::GetTasksRequest, client::TasksCanisterClient},
+    tasks::{api::GetTasksByIdRequest, client::TasksCanisterClient},
     votings::{
         api::{
             CastVoteRequest, CastVoteResponse, GetVotingEventsRequest, GetVotingEventsResponse,
@@ -171,7 +171,7 @@ async fn validate_voting_related_entity(
         VotingKind::StartSolveTask { task_id } => {
             let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
             let response = tasks_canister
-                .tasks__get_tasks(GetTasksRequest {
+                .tasks__get_tasks_by_id(GetTasksByIdRequest {
                     ids: vec![*task_id],
                 })
                 .await
@@ -193,7 +193,7 @@ async fn validate_voting_related_entity(
         VotingKind::EvaluateTask { task_id, solutions } => {
             let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
             let response = tasks_canister
-                .tasks__get_tasks(GetTasksRequest {
+                .tasks__get_tasks_by_id(GetTasksByIdRequest {
                     ids: vec![*task_id],
                 })
                 .await

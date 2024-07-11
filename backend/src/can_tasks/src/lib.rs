@@ -18,7 +18,7 @@ use shared::{
             BackToEditTaskResponse, CreateTaskRequest, CreateTaskResponse, DeleteRequest,
             DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest, EvaluateResponse,
             FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse,
-            GetTaskIdsRequest, GetTaskIdsResponse, GetTasksRequest, GetTasksResponse,
+            GetTasksByIdRequest, GetTasksByIdResponse, GetTasksRequest, GetTasksResponse,
             SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest, StartSolveTaskResponse,
         },
         state::TasksState,
@@ -200,12 +200,12 @@ fn tasks__delete_task(mut req: DeleteRequest) -> DeleteResponse {
 
 #[query]
 #[allow(non_snake_case)]
-fn tasks__get_task_ids(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
+fn tasks__get_tasks_by_id(mut req: GetTasksByIdRequest) -> GetTasksByIdResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
-            .expect("Unable to get task ids");
+            .expect("Unable to get tasks by id");
 
-        s.get_task_ids(req)
+        s.get_tasks_by_id(req)
     })
 }
 

@@ -5,7 +5,11 @@ use garde::Validate;
 use serde::Deserialize;
 
 use crate::{
-    e8s::E8s, escape_script_tag, liquid_democracy::types::DecisionTopicId, proof::ProfileProof,
+    e8s::E8s,
+    escape_script_tag,
+    liquid_democracy::types::DecisionTopicId,
+    pagination::{PageRequest, PageResponse},
+    proof::ProfileProof,
     Guard, ENV_VARS,
 };
 
@@ -472,9 +476,32 @@ impl Guard<TasksState> for EvaluateRequest {
 pub struct EvaluateResponse {}
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct GetTasksRequest {
+pub struct GetTasksByIdRequest {
     #[garde(length(min = 1, max = 100))]
     pub ids: Vec<TaskId>,
+}
+
+impl Guard<TasksState> for GetTasksByIdRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &TasksState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetTasksByIdResponse {
+    #[garde(skip)]
+    pub entries: Vec<Option<Task>>,
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetTasksRequest {
+    #[garde(dive)]
+    pub pagination: PageRequest,
 }
 
 impl Guard<TasksState> for GetTasksRequest {
@@ -491,27 +518,9 @@ impl Guard<TasksState> for GetTasksRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetTasksResponse {
     #[garde(skip)]
-    pub entries: Vec<Option<Task>>,
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct GetTaskIdsRequest {}
-
-impl Guard<TasksState> for GetTaskIdsRequest {
-    fn validate_and_escape(
-        &mut self,
-        _state: &TasksState,
-        _caller: Principal,
-        _now: crate::TimestampNs,
-    ) -> Result<(), String> {
-        self.validate(&()).map_err(|e| e.to_string())
-    }
-}
-
-#[derive(CandidType, Deserialize, Validate)]
-pub struct GetTaskIdsResponse {
-    #[garde(skip)]
-    pub ids: Vec<TaskId>,
+    pub entries: Vec<Task>,
+    #[garde(dive)]
+    pub pagination: PageResponse,
 }
 
 #[derive(CandidType, Deserialize, Validate)]

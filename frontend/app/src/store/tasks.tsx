@@ -1,4 +1,9 @@
-import { createContext, createSignal, useContext } from "solid-js";
+import {
+  createContext,
+  createEffect,
+  createSignal,
+  useContext,
+} from "solid-js";
 import { Store, createStore } from "solid-js/store";
 import { IChildren } from "../utils/types";
 import { ErrorCode, err, logErr } from "../utils/error";
@@ -19,6 +24,7 @@ import {
 import { debugStringify } from "../utils/encoding";
 import { debouncedBatchFetch } from "@utils/common";
 import { DecisionTopicSet } from "@/declarations/votings/votings.did";
+import { useHumans } from "./humans";
 
 export interface ISolution {
   evaluation?: E8s;
@@ -98,10 +104,9 @@ type ArchivedTasksStore = Partial<Record<TTaskIdStr, IArchivedTaskV1>>;
 type TaskIdsStore = TTaskId[];
 
 export interface ITasksStoreContext {
-  taskIds: Store<TaskIdsStore>;
-  fetchTaskIds: () => Promise<void>;
   tasks: Store<TasksStore>;
-  fetchTasks: (ids?: TTaskId[]) => Promise<void>;
+  fetchTasks: () => Promise<boolean>;
+  fetchTasksById: (ids: TTaskId[]) => Promise<void>;
   archivedTasks: Store<ArchivedTasksStore>;
   fetchArchivedTasks: () => Promise<boolean>;
   fetchArchivedTasksById: (ids: TTaskId[]) => Promise<void>;
@@ -134,38 +139,92 @@ export function TasksStore(props: IChildren) {
     anonymousAgent,
     assertReadyToFetch,
     assertAuthorized,
-    assertWithProofs,
     agent,
     profileProofCert,
-    reputationProofCert,
     profileProof,
     identity,
   } = useAuth();
-
   const [tasks, setTasks] = createStore<TasksStore>();
-  const [taskIds, setTaskIds] = createStore<TaskIdsStore>([]);
+  const [taskSkip, setTaskSkip] = createSignal(0);
   const [archivedTasks, setArchivedTasks] = createStore<ArchivedTasksStore>();
+  const [archivedTaskSkip, setArchivedTaskSkip] = createSignal(0);
   const [taskArchiveActor, setTaskArchiveActor] = createSignal(
     newTaskArchiveActor(anonymousAgent()!)
   );
 
-  const fetchTaskIds: ITasksStoreContext["fetchTaskIds"] = async () => {
+  const fetchTasksById: ITasksStoreContext["fetchTasksById"] = async (ids) => {
     assertReadyToFetch();
 
-    const tasksActor = newTasksActor(anonymousAgent()!);
-    const { ids } = await tasksActor.tasks__get_task_ids({});
-
-    setTaskIds(ids);
+    tasksGetTasksById({ ids });
   };
 
-  const fetchTasks: ITasksStoreContext["fetchTasks"] = async (ids) => {
+  const fetchTasks: ITasksStoreContext["fetchTasks"] = async () => {
     assertReadyToFetch();
 
-    if (!ids) {
-      ids = taskIds;
+    const tasksActor = newTasksActor(agent()!);
+
+    const { entries, pagination } = await tasksActor.tasks__get_tasks({
+      pagination: {
+        reversed: false,
+        skip: taskSkip(),
+        take: 20,
+      },
+    });
+
+    let result = true;
+    if (pagination.left === 0) {
+      result = false;
     }
 
-    tasksGetTasks({ ids });
+    setTaskSkip((v) => v + entries.length);
+
+    for (let i = 0; i < entries.length; i++) {
+      const task = entries[i];
+
+      const solutions: [Principal, ISolution][] = task.solutions.map(
+        ([solver, solution]) => {
+          const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
+          const hours = optUnwrap(solution.reward_hours.map(E8s.new));
+          const storypoints = optUnwrap(
+            solution.reward_storypoints.map(E8s.new)
+          );
+
+          const sol: ISolution = {
+            fields: solution.fields.map((it) => optUnwrap(it) ?? ""),
+            attached_at: solution.attached_at,
+            rejected: solution.rejected,
+            evaluation,
+            reward_hours: hours,
+            reward_storypoints: storypoints,
+          };
+
+          return [solver, sol];
+        }
+      );
+
+      const itask: ITask = {
+        id: task.id,
+        solution_fields: task.solution_fields,
+        title: task.title,
+        description: task.description,
+        creator: task.creator,
+        created_at: task.created_at,
+        stage: task.stage,
+        solver_constraints: task.solver_constraints,
+        storypoints_base: E8s.new(task.storypoints_base),
+        storypoints_ext_budget: E8s.new(task.storypoints_ext_budget),
+        hours_base: E8s.new(task.hours_base),
+        days_to_solve: task.days_to_solve,
+        solvers: task.solvers,
+        solutions,
+        decision_topics: task.decision_topics as number[],
+        assignees: optUnwrap(task.assignees),
+      };
+
+      setTasks(itask.id.toString(), itask);
+    }
+
+    return result;
   };
 
   const fetchArchivedTasksById: ITasksStoreContext["fetchArchivedTasksById"] =
@@ -183,7 +242,7 @@ export function TasksStore(props: IChildren) {
         await tasksActor.task_archive__get_archived_tasks({
           pagination: {
             reversed: false,
-            skip: Object.keys(archivedTasks).length,
+            skip: archivedTaskSkip(),
             take: 20,
           },
         });
@@ -198,6 +257,8 @@ export function TasksStore(props: IChildren) {
           result = false;
         }
       }
+
+      setArchivedTaskSkip((v) => v + entries.length);
 
       for (let i = 0; i < entries.length; i++) {
         const task = entries[i];
@@ -255,9 +316,8 @@ export function TasksStore(props: IChildren) {
 
   const createTask: ITasksStoreContext["createTask"] = async (args) => {
     assertAuthorized();
-    assertWithProofs();
 
-    const proof = profileProof()!;
+    const proof = await profileProof();
 
     if (!proof.is_team_member) {
       err(ErrorCode.AUTH, "Only team members can create new tasks");
@@ -275,14 +335,13 @@ export function TasksStore(props: IChildren) {
       storypoints_ext_budget: args.storypoints_ext_budget.toBigIntRaw(),
       profile_proof: {
         body: [],
-        cert_raw: profileProofCert()!,
+        cert_raw: await profileProofCert(),
       },
       decision_topics: args.decision_topics,
       assignees: opt(args.assignees),
     });
 
-    setTaskIds(taskIds.length, id);
-    fetchTasks([id]);
+    fetchTasksById([id]);
 
     return id;
   };
@@ -425,7 +484,6 @@ export function TasksStore(props: IChildren) {
     filledInFields
   ) => {
     assertAuthorized();
-    assertWithProofs();
 
     const task = tasks[taskId.toString()];
 
@@ -440,11 +498,20 @@ export function TasksStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, "The task can no longer be solved");
     }
 
+    const proof = await profileProof();
+
     if (
       task.solver_constraints.find((it) => "TeamOnly" in it) &&
-      !profileProof()!.is_team_member
+      !proof.is_team_member
     ) {
       err(ErrorCode.AUTH, "This task can only be solved by a team member");
+    }
+
+    if (task.assignees && !task.assignees.includes(proof.id)) {
+      err(
+        ErrorCode.AUTH,
+        "This task can only be solved by a pre-defined set of assignees"
+      );
     }
 
     const tasksActor = newTasksActor(agent()!);
@@ -453,7 +520,7 @@ export function TasksStore(props: IChildren) {
       filled_in_fields_opt: filledInFields ? [filledInFields.map(opt)] : [],
       profile_proof: {
         body: [],
-        cert_raw: profileProofCert()!,
+        cert_raw: await profileProofCert(),
       },
     });
   };
@@ -462,7 +529,6 @@ export function TasksStore(props: IChildren) {
     taskId
   ) => {
     assertAuthorized();
-    assertWithProofs();
 
     const task = tasks[taskId.toString()];
 
@@ -477,7 +543,9 @@ export function TasksStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, "The task can no longer be solved");
     }
 
-    if (!profileProof()!.is_team_member) {
+    const proof = await profileProof();
+
+    if (!proof.is_team_member) {
       err(
         ErrorCode.AUTH,
         "Only team members can transition the task to the evaluation stage"
@@ -489,15 +557,15 @@ export function TasksStore(props: IChildren) {
       id: taskId,
       profile_proof: {
         body: [],
-        cert_raw: profileProofCert()!,
+        cert_raw: await profileProofCert(),
       },
     });
   };
 
-  const tasksGetTasks = debouncedBatchFetch(
+  const tasksGetTasksById = debouncedBatchFetch(
     (req: { ids: TTaskId[] }) => {
       const tasksActor = newTasksActor(anonymousAgent()!);
-      return tasksActor.tasks__get_tasks(req);
+      return tasksActor.tasks__get_tasks_by_id(req);
     },
     ({ entries: tasks }, { ids }) => {
       for (let i = 0; i < tasks.length; i++) {
@@ -620,8 +688,7 @@ export function TasksStore(props: IChildren) {
       value={{
         tasks,
         fetchTasks,
-        taskIds,
-        fetchTaskIds,
+        fetchTasksById,
         archivedTasks,
         fetchArchivedTasks,
         fetchArchivedTasksById,

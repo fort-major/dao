@@ -124,11 +124,9 @@ export function VotingsStore(props: IChildren) {
     assertReadyToFetch,
     profileProofCert,
     profileProof,
-    reputationProof,
     reputationProofCert,
     agent,
     assertAuthorized,
-    assertWithProofs,
   } = useAuth();
 
   const [votings, setVotings] = createStore<VotingsStore>();
@@ -151,7 +149,6 @@ export function VotingsStore(props: IChildren) {
     normalizedApprovalLevel
   ) => {
     assertAuthorized();
-    assertWithProofs();
 
     const voting = votings[id];
 
@@ -167,7 +164,7 @@ export function VotingsStore(props: IChildren) {
       option_idx: optionIdx,
       proof: {
         body: [],
-        cert_raw: reputationProofCert()!,
+        cert_raw: await reputationProofCert(),
       },
     });
 
@@ -176,7 +173,9 @@ export function VotingsStore(props: IChildren) {
 
   const createHumansEmployVoting: IVotingsStoreContext["createHumansEmployVoting"] =
     async (candidate, hoursAWeekCommitment) => {
-      assertVotingCanBeCreated(encodeVotingId({ HumansEmploy: candidate }));
+      await assertVotingCanBeCreated(
+        encodeVotingId({ HumansEmploy: candidate })
+      );
 
       return startVoting({
         HumansEmploy: {
@@ -188,28 +187,32 @@ export function VotingsStore(props: IChildren) {
 
   const createHumansUnemployVoting: IVotingsStoreContext["createHumansUnemployVoting"] =
     async (teamMember) => {
-      assertVotingCanBeCreated(encodeVotingId({ HumansUnemploy: teamMember }));
+      await assertVotingCanBeCreated(
+        encodeVotingId({ HumansUnemploy: teamMember })
+      );
 
       return startVoting({ HumansUnemploy: { team_member: teamMember } });
     };
 
   const createTasksEvaluateVoting: IVotingsStoreContext["createTasksEvaluateVoting"] =
     async (taskId) => {
-      assertVotingCanBeCreated(encodeVotingId({ EvaluateTask: taskId }));
+      await assertVotingCanBeCreated(encodeVotingId({ EvaluateTask: taskId }));
 
       return startVoting({ EvaluateTask: { task_id: taskId, solutions: [] } });
     };
 
   const createTasksStartSolveVoting: IVotingsStoreContext["createTasksStartSolveVoting"] =
     async (taskId) => {
-      assertVotingCanBeCreated(encodeVotingId({ StartSolveTask: taskId }));
+      await assertVotingCanBeCreated(
+        encodeVotingId({ StartSolveTask: taskId })
+      );
 
       return startVoting({ StartSolveTask: { task_id: taskId } });
     };
 
   const createBankSetExchangeRateVoting: IVotingsStoreContext["createBankSetExchangeRateVoting"] =
     async (from, into, newRate) => {
-      assertVotingCanBeCreated(
+      await assertVotingCanBeCreated(
         encodeVotingId({ BankSetExchangeRate: [from, into] })
       );
 
@@ -224,20 +227,19 @@ export function VotingsStore(props: IChildren) {
       kind,
       profile_proof: {
         body: [],
-        cert_raw: profileProofCert()!,
+        cert_raw: await profileProofCert(),
       },
       reputation_proof: {
         body: [],
-        cert_raw: reputationProofCert()!,
+        cert_raw: await reputationProofCert(),
       },
     });
 
     return id;
   };
 
-  const assertVotingCanBeCreated = (votingId: TVotingIdStr) => {
+  const assertVotingCanBeCreated = async (votingId: TVotingIdStr) => {
     assertAuthorized();
-    assertWithProofs();
 
     const voting = votings[votingId];
 
@@ -245,7 +247,7 @@ export function VotingsStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, `Voting ${votingId} already exists`);
     }
 
-    const proof = profileProof()!;
+    const proof = await profileProof()!;
 
     if (!proof.is_team_member) {
       err(ErrorCode.UNREACHEABLE, `Only team members can create votings`);
@@ -390,29 +392,25 @@ export function VotingsStore(props: IChildren) {
   };
 
   const follow: IVotingsStoreContext["follow"] = async (id, topicset) => {
-    assertWithProofs();
-
     const actor = newLiquidDemocracyActor(agent()!);
     await actor.liquid_democracy__follow({
       followee: id,
       topics: [topicset],
       proof: {
         body: [],
-        cert_raw: reputationProofCert()!,
+        cert_raw: await reputationProofCert(),
       },
     });
   };
 
   const unfollow: IVotingsStoreContext["unfollow"] = async (id) => {
-    assertWithProofs();
-
     const actor = newLiquidDemocracyActor(agent()!);
     await actor.liquid_democracy__follow({
       followee: id,
       topics: [],
       proof: {
         body: [],
-        cert_raw: reputationProofCert()!,
+        cert_raw: await reputationProofCert(),
       },
     });
   };

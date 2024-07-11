@@ -17,9 +17,9 @@ use super::{
         AttachToTaskRequest, AttachToTaskResponse, BackToEditTaskRequest, BackToEditTaskResponse,
         CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
         EditTaskResponse, EvaluateRequest, EvaluateResponse, FinishEditTaskRequest,
-        FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
-        GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
-        StartSolveTaskRequest, StartSolveTaskResponse,
+        FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTasksByIdRequest,
+        GetTasksByIdResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest,
+        SolveTaskResponse, StartSolveTaskRequest, StartSolveTaskResponse,
     },
     types::{ArchivedTask, RewardEntry, Task, TaskId},
 };
@@ -165,20 +165,49 @@ impl TasksState {
         DeleteResponse {}
     }
 
-    pub fn get_task_ids(&self, _: GetTaskIdsRequest) -> GetTaskIdsResponse {
-        let ids = self.tasks.keys().copied().collect();
-
-        GetTaskIdsResponse { ids }
-    }
-
-    pub fn get_tasks(&self, req: GetTasksRequest) -> GetTasksResponse {
+    pub fn get_tasks_by_id(&self, req: GetTasksByIdRequest) -> GetTasksByIdResponse {
         let tasks = req
             .ids
             .iter()
             .map(|id| self.tasks.get(id).cloned())
             .collect();
 
-        GetTasksResponse { entries: tasks }
+        GetTasksByIdResponse { entries: tasks }
+    }
+
+    pub fn get_tasks(&self, req: GetTasksRequest) -> GetTasksResponse {
+        let (entries, left): (Vec<_>, u32) = if req.pagination.reversed {
+            let mut iter = self.tasks.iter().rev().skip(req.pagination.skip as usize);
+
+            let entries = iter
+                .by_ref()
+                .take(req.pagination.take as usize)
+                .map(|(_, it)| it)
+                .cloned()
+                .collect();
+
+            let left = iter.count() as u32;
+
+            (entries, left)
+        } else {
+            let mut iter = self.tasks.iter().skip(req.pagination.skip as usize);
+
+            let entries = iter
+                .by_ref()
+                .take(req.pagination.take as usize)
+                .map(|(_, it)| it)
+                .cloned()
+                .collect();
+
+            let left = iter.count() as u32;
+
+            (entries, left)
+        };
+
+        GetTasksResponse {
+            entries,
+            pagination: PageResponse { left, next: None },
+        }
     }
 
     pub fn prepare_archive_batch(

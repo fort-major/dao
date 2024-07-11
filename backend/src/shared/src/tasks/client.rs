@@ -7,9 +7,9 @@ use super::api::{
     AttachToTaskRequest, AttachToTaskResponse, BackToEditTaskRequest, BackToEditTaskResponse,
     CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
     EditTaskResponse, EvaluateRequest, EvaluateResponse, FinishEditTaskRequest,
-    FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTaskIdsRequest,
-    GetTaskIdsResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest, SolveTaskResponse,
-    StartSolveTaskRequest, StartSolveTaskResponse,
+    FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTasksByIdRequest,
+    GetTasksByIdResponse, SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest,
+    StartSolveTaskResponse,
 };
 
 pub struct TasksCanisterClient {
@@ -110,18 +110,11 @@ impl TasksCanisterClient {
     }
 
     #[allow(non_snake_case)]
-    pub async fn tasks__get_task_ids(
+    pub async fn tasks__get_tasks_by_id(
         &self,
-        req: GetTaskIdsRequest,
-    ) -> CallResult<GetTaskIdsResponse> {
-        call(self.canister_id, "tasks__get_task_ids", (req,))
-            .await
-            .map(|(it,)| it)
-    }
-
-    #[allow(non_snake_case)]
-    pub async fn tasks__get_tasks(&self, req: GetTasksRequest) -> CallResult<GetTasksResponse> {
-        call(self.canister_id, "tasks__get_tasks", (req,))
+        req: GetTasksByIdRequest,
+    ) -> CallResult<GetTasksByIdResponse> {
+        call(self.canister_id, "tasks__get_tasks_by_id", (req,))
             .await
             .map(|(it,)| it)
     }
