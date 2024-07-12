@@ -15,7 +15,12 @@ type GetProfileProofsResponse = record {
 };
 type GetProfilesRequest = record { ids : vec principal };
 type GetProfilesResponse = record { entries : vec opt Profile };
-type GetTotalsResponse = record { hours : nat; storypoints : nat };
+type GetTotalsResponse = record {
+  hours : nat;
+  storypoints : nat;
+  team_members : vec principal;
+  contributors : nat32;
+};
 type MintRewardsRequest = record { rewards : vec RewardEntry };
 type Profile = record {
   id : principal;
@@ -37,6 +42,7 @@ type RegisterRequest = record { name : opt text };
 type RewardEntry = record {
   solver : principal;
   reward_hours : nat;
+  want_rep : bool;
   reward_storypoints : nat;
 };
 type SpendRewardsRequest = record {

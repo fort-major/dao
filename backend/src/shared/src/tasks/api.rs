@@ -559,3 +559,27 @@ impl Guard<TasksState> for DeleteRequest {
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct DeleteResponse {}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetTasksStatsRequest {}
+
+impl Guard<TasksState> for GetTasksStatsRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &TasksState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetTasksStatsResponse {
+    #[garde(skip)]
+    pub ready_to_solve_tasks: u32,
+    #[garde(skip)]
+    pub solved_tasks: u32,
+    #[garde(skip)]
+    pub next: Principal,
+}

@@ -58,6 +58,11 @@ type GetTasksResponse = record {
   pagination : PageResponse;
   entries : vec Task;
 };
+type GetTasksStatsResponse = record {
+  ready_to_solve_tasks : nat32;
+  next : principal;
+  solved_tasks : nat32;
+};
 type InitRequest = record { task_archive_canister_id : principal };
 type PageRequest = record { skip : nat32; take : nat32; reversed : bool };
 type PageResponse = record { left : nat32; next : opt principal };
@@ -67,6 +72,7 @@ type Solution = record {
   evaluation : opt nat;
   attached_at : nat64;
   reward_hours : opt nat;
+  want_rep : bool;
   fields : vec opt text;
   rejected : bool;
   reward_storypoints : opt nat;
@@ -82,6 +88,7 @@ type SolveTaskRequest = record {
   id : nat64;
   profile_proof : ProfileProof;
   filled_in_fields_opt : opt vec opt text;
+  want_rep : bool;
 };
 type SolverConstraint = variant { MaxSolutions : nat32; TeamOnly };
 type Task = record {
@@ -134,6 +141,7 @@ service : (InitRequest) -> {
   tasks__get_tasks_by_id : (GetTasksByIdRequest) -> (
       GetTasksByIdResponse,
     ) query;
+  tasks__get_tasks_stats : (record {}) -> (GetTasksStatsResponse) query;
   tasks__solve_task : (SolveTaskRequest) -> (record {});
   tasks__start_solve_task : (DeleteRequest) -> (record {});
 }

@@ -19,6 +19,10 @@ type GetArchivedTasksResponse = record {
   pagination : PageResponse;
   entries : vec ArchivedTask;
 };
+type GetArchivedTasksStatsResponse = record {
+  next : opt principal;
+  solved_tasks : nat32;
+};
 type PageRequest = record { skip : nat32; take : nat32; reversed : bool };
 type PageResponse = record { left : nat32; next : opt principal };
 type SetNextRequest = record { next : opt principal };
@@ -26,6 +30,7 @@ type Solution = record {
   evaluation : opt nat;
   attached_at : nat64;
   reward_hours : opt nat;
+  want_rep : bool;
   fields : vec opt text;
   rejected : bool;
   reward_storypoints : opt nat;
@@ -54,6 +59,9 @@ service : () -> {
     ) query;
   task_archive__get_archived_tasks_by_id : (GetArchivedTasksByIdRequest) -> (
       GetArchivedTasksByIdResponse,
+    ) query;
+  task_archive__get_archived_tasks_stats : (record {}) -> (
+      GetArchivedTasksStatsResponse,
     ) query;
   task_archive__set_next : (SetNextRequest) -> (record {});
 }

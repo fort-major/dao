@@ -73,6 +73,10 @@ impl E8s {
         Self(Nat::from(1_0000_0000u64))
     }
 
+    pub fn two() -> Self {
+        Self(Nat::from(2_0000_0000u64))
+    }
+
     pub fn sqrt(&self) -> Self {
         let whole = self.0.clone() / Nat::from(1_0000_0000u64);
 

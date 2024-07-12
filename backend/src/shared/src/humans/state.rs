@@ -140,6 +140,14 @@ impl HumansState {
         GetTotalsResponse {
             hours: self.total_hours_minted.clone(),
             storypoints: self.total_storypoints_minted.clone(),
+            contributors: self.profiles.len() as u32,
+            team_members: self
+                .profiles
+                .iter()
+                .filter(|it| it.1.is_employed())
+                .map(|it| it.0)
+                .copied()
+                .collect(),
         }
     }
 

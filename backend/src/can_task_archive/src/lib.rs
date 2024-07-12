@@ -11,7 +11,8 @@ use shared::{
         api::{
             AppendBatchRequest, AppendBatchResponse, GetArchivedTasksByIdRequest,
             GetArchivedTasksByIdResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
-            SetNextRequest, SetNextResponse,
+            GetArchivedTasksStatsRequest, GetArchivedTasksStatsResponse, SetNextRequest,
+            SetNextResponse,
         },
         state::TaskArchiveState,
     },
@@ -83,6 +84,19 @@ fn task_archive__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArch
             .expect("Unable to get archived tasks");
 
         s.get_archived_tasks(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn task_archive__get_archived_tasks_stats(
+    mut req: GetArchivedTasksStatsRequest,
+) -> GetArchivedTasksStatsResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get archived tasks stats");
+
+        s.get_archived_tasks_stats(req)
     })
 }
 

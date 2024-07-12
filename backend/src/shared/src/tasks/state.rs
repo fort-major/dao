@@ -18,10 +18,11 @@ use super::{
         CreateTaskRequest, CreateTaskResponse, DeleteRequest, DeleteResponse, EditTaskRequest,
         EditTaskResponse, EvaluateRequest, EvaluateResponse, FinishEditTaskRequest,
         FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse, GetTasksByIdRequest,
-        GetTasksByIdResponse, GetTasksRequest, GetTasksResponse, SolveTaskRequest,
-        SolveTaskResponse, StartSolveTaskRequest, StartSolveTaskResponse,
+        GetTasksByIdResponse, GetTasksRequest, GetTasksResponse, GetTasksStatsRequest,
+        GetTasksStatsResponse, SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest,
+        StartSolveTaskResponse,
     },
-    types::{ArchivedTask, RewardEntry, Task, TaskId},
+    types::{ArchivedTask, RewardEntry, Task, TaskId, TaskStage},
 };
 
 #[derive(CandidType, Deserialize)]
@@ -279,6 +280,18 @@ impl TasksState {
                 left,
                 next: Some(self.task_archive_canister_id),
             },
+        }
+    }
+
+    pub fn get_task_stats(&self, _req: GetTasksStatsRequest) -> GetTasksStatsResponse {
+        GetTasksStatsResponse {
+            ready_to_solve_tasks: self
+                .tasks
+                .iter()
+                .filter(|(_, it)| matches!(it.stage, TaskStage::Solve { until_timestamp: _ }))
+                .count() as u32,
+            solved_tasks: self.archive.len() as u32,
+            next: self.task_archive_canister_id,
         }
     }
 

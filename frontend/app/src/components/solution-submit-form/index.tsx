@@ -1,4 +1,5 @@
 import { SolutionField } from "@/declarations/tasks/tasks.did";
+import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
 import { MdInput, TMdInputValidation } from "@components/md-input";
 import { TextInput, TTextInputValidation } from "@components/text-input";
@@ -31,12 +32,25 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
 
     return prevSolution[1].fields;
   });
+  const prevWantRep = createMemo(() => {
+    const me = identity()?.getPrincipal();
+    if (!me) return undefined;
+
+    const prevSolution = tasks[props.taskId.toString()]?.solutions.find(
+      ([solver, _]) => solver.compareTo(me) === "eq"
+    );
+
+    if (!prevSolution) return;
+
+    return prevSolution[1].want_rep;
+  });
 
   const [values, setValues] = createSignal<Result<string, string>[]>(
     prevFields()
       ? prevFields()!.map(Result.Ok)
       : props.fields.map((_) => Result.Ok(""))
   );
+  const [wantRep, setWantRep] = createSignal(prevWantRep() ?? false);
   const [disabled, setDisabled] = createSignal(false);
 
   const isErr = () => values().some((it) => it.isErr());
@@ -118,8 +132,17 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
     setDisabled(true);
     await solveTask(
       props.taskId,
-      values().map((it) => it.unwrapOk())
+      values().map((it) => it.unwrapOk()),
+      wantRep()
     );
+    setDisabled(false);
+
+    props.onSubmit?.();
+  };
+
+  const handleDelete = async () => {
+    setDisabled(true);
+    await solveTask(props.taskId, undefined, undefined);
     setDisabled(false);
 
     props.onSubmit?.();
@@ -128,11 +151,23 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
   return (
     <div class="max-w-3xl flex flex-col gap-5">
       <For each={props.fields}>{(f, idx) => field(f, idx())}</For>
-      <Btn
-        text="Submit"
-        disabled={disabled() && !isErr()}
-        onClick={handleSubmit}
+      <BooleanInput
+        value={wantRep()}
+        onChange={setWantRep}
+        labelOff="I don't need reputation"
+        labelOn="I need reputation"
       />
+      <div class="flex items-center justify-end gap-2">
+        <Show when={prevFields()}>
+          <Btn text="Delete" disabled={disabled()} onClick={handleDelete} />
+        </Show>
+
+        <Btn
+          text={prevFields() ? "Update" : "Submit"}
+          disabled={disabled() && !isErr()}
+          onClick={handleSubmit}
+        />
+      </div>
     </div>
   );
 }

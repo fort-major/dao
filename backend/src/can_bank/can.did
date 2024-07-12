@@ -1,6 +1,10 @@
 type GetExchangeRatesResponse = record {
   exchange_rates : vec record { SwapFrom; SwapInto; vec record { nat64; nat } };
 };
+type GetFmjStatsResponse = record {
+  avg_monthly_inflation : nat;
+  total_supply : nat;
+};
 type SetExchangeRateRequest = record {
   from : SwapFrom;
   into : SwapInto;
@@ -20,6 +24,7 @@ type SwapRewardsResponse = record {
 };
 service : () -> {
   bank__get_exchange_rates : (record {}) -> (GetExchangeRatesResponse) query;
+  bank__get_fmj_stats : (record {}) -> (GetFmjStatsResponse) query;
   bank__set_exchange_rate : (SetExchangeRateRequest) -> (record {});
   bank__swap_rewards : (SwapRewardsRequest) -> (SwapRewardsResponse);
 }

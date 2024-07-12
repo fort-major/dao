@@ -19,7 +19,8 @@ use shared::{
             DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest, EvaluateResponse,
             FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse,
             GetTasksByIdRequest, GetTasksByIdResponse, GetTasksRequest, GetTasksResponse,
-            SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest, StartSolveTaskResponse,
+            GetTasksStatsRequest, GetTasksStatsResponse, SolveTaskRequest, SolveTaskResponse,
+            StartSolveTaskRequest, StartSolveTaskResponse,
         },
         state::TasksState,
     },
@@ -238,6 +239,17 @@ fn task_archive__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArch
 #[query]
 fn get_archive_error() -> Option<(u64, String)> {
     with_state(|s| s.last_archive_error.clone())
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn tasks__get_tasks_stats(mut req: GetTasksStatsRequest) -> GetTasksStatsResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get tasks stats");
+
+        s.get_task_stats(req)
+    })
 }
 
 fn start_archiving_timer() {

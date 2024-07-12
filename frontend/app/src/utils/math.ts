@@ -147,4 +147,8 @@ export class E8s {
   public toPercentNum() {
     return Number((this.val * 100n) / 1_0000_0000n);
   }
+
+  public toPercent() {
+    return E8s.new(this.val * 100n);
+  }
 }

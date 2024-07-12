@@ -1,5 +1,5 @@
 import { Router } from "@solidjs/router";
-import { ROOT } from "./routes";
+import { getSolidRoutes, ROOT } from "./routes";
 import { HumanStore } from "./store/humans";
 import { IChildren } from "./utils/types";
 import { Toaster } from "solid-toast";
@@ -43,7 +43,7 @@ const AppRoot = (props: IChildren) => (
 );
 
 function App() {
-  return <Router root={AppRoot}>{ROOT}</Router>;
+  return <Router root={AppRoot}>{getSolidRoutes()}</Router>;
 }
 
 export default App;

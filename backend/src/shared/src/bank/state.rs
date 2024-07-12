@@ -5,13 +5,14 @@ use icrc_ledger_types::icrc1::{account::Account, transfer::TransferArg};
 use serde::Deserialize;
 
 use crate::{
-    btreemap, e8s::E8s, humans::api::SpendRewardsRequest, icrc1::ICRC1CanisterClient, TimestampNs,
+    btreemap, e8s::E8s, humans::api::SpendRewardsRequest, icrc1::ICRC1CanisterClient,
+    votings::types::ONE_MONTH_NS, TimestampNs,
 };
 
 use super::{
     api::{
-        GetExchangeRatesRequest, GetExchangeRatesResponse, SetExchangeRateRequest,
-        SetExchangeRateResponse, SwapRewardsRequest,
+        GetExchangeRatesRequest, GetExchangeRatesResponse, GetFmjStatsRequest, GetFmjStatsResponse,
+        SetExchangeRateRequest, SetExchangeRateResponse, SwapRewardsRequest,
     },
     types::{SwapFrom, SwapInto},
 };
@@ -23,6 +24,8 @@ pub struct BankState {
 
     // rates are expressed as how much <into> one gets for 1.00 <from>
     pub exchange_rates: BTreeMap<(SwapFrom, SwapInto), LinkedList<(TimestampNs, E8s)>>,
+    pub monthly_minted_fmj: LinkedList<(TimestampNs, E8s)>,
+    pub fmj_total_supply: E8s,
 }
 
 impl BankState {
@@ -39,6 +42,8 @@ impl BankState {
             icp_canister_id,
 
             exchange_rates,
+            monthly_minted_fmj: LinkedList::new(),
+            fmj_total_supply: E8s::zero(),
         }
     }
 
@@ -114,5 +119,59 @@ impl BankState {
         }
 
         GetExchangeRatesResponse { exchange_rates }
+    }
+
+    pub fn update_fmj_stats(&mut self, fmj_minted: E8s, now: TimestampNs) {
+        self.fmj_total_supply += &fmj_minted;
+
+        let mut needs_new_entry = false;
+
+        if let Some((timestamp, qty)) = self.monthly_minted_fmj.back_mut() {
+            if *timestamp + ONE_MONTH_NS <= now {
+                needs_new_entry = true;
+            } else {
+                *qty += &fmj_minted;
+            }
+        } else {
+            needs_new_entry = true;
+        }
+
+        if needs_new_entry {
+            if self.monthly_minted_fmj.len() == 12 {
+                self.monthly_minted_fmj.pop_front();
+            }
+
+            self.monthly_minted_fmj.push_back((now, fmj_minted));
+        }
+    }
+
+    pub fn get_fmj_stats(&self, _req: GetFmjStatsRequest) -> GetFmjStatsResponse {
+        let len = self.monthly_minted_fmj.len();
+
+        if len == 0 {
+            return GetFmjStatsResponse {
+                total_supply: E8s::zero(),
+                avg_monthly_inflation: E8s::zero(),
+            };
+        }
+
+        let mut multiplier = E8s::f0_5();
+        let divider = E8s::two();
+        let mut avg = E8s::zero();
+
+        for (idx, (_, qty)) in self.monthly_minted_fmj.iter().enumerate() {
+            avg += qty * &multiplier;
+
+            if idx == len - 1 {
+                avg += qty * &multiplier;
+            }
+
+            multiplier /= &divider;
+        }
+
+        return GetFmjStatsResponse {
+            total_supply: self.fmj_total_supply.clone(),
+            avg_monthly_inflation: avg,
+        };
     }
 }

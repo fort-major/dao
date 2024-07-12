@@ -96,3 +96,25 @@ pub struct GetExchangeRatesResponse {
     #[garde(skip)]
     pub exchange_rates: Vec<(SwapFrom, SwapInto, Vec<(TimestampNs, E8s)>)>,
 }
+
+#[derive(CandidType, Deserialize, Validate, Clone)]
+pub struct GetFmjStatsRequest {}
+
+impl Guard<BankState> for GetFmjStatsRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &BankState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate, Clone)]
+pub struct GetFmjStatsResponse {
+    #[garde(skip)]
+    pub total_supply: E8s,
+    #[garde(skip)]
+    pub avg_monthly_inflation: E8s, // normalized exponential moving average
+}

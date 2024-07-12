@@ -1,4 +1,11 @@
-import { createContext, useContext } from "solid-js";
+import {
+  Accessor,
+  createContext,
+  createEffect,
+  createSignal,
+  Setter,
+  useContext,
+} from "solid-js";
 import { Store, createStore } from "solid-js/store";
 import { IChildren, TTimestamp } from "../utils/types";
 import { ErrorCode, err } from "../utils/error";
@@ -33,6 +40,11 @@ export interface ISwapResponse {
   qty: E8s;
 }
 
+export interface IFmjStats {
+  totalSupply: E8s;
+  avgMonthlyInflation: E8s;
+}
+
 type ExchangeRatesStore = Partial<Record<TPairStr, [TTimestamp, E8s][]>>;
 
 export interface IBankStoreContext {
@@ -44,6 +56,7 @@ export interface IBankStoreContext {
     amount: E8s,
     to: Principal
   ) => Promise<bigint>;
+  fmjStats: Accessor<IFmjStats>;
 }
 
 const BankContext = createContext<IBankStoreContext>();
@@ -59,10 +72,39 @@ export function useBank(): IBankStoreContext {
 }
 
 export function BankStore(props: IChildren) {
-  const { anonymousAgent, assertReadyToFetch, assertAuthorized, agent } =
-    useAuth();
+  const {
+    anonymousAgent,
+    assertReadyToFetch,
+    isReadyToFetch,
+    assertAuthorized,
+    agent,
+  } = useAuth();
 
   const [exchangeRates, setExchangeRates] = createStore<ExchangeRatesStore>();
+  const [fmjStats, setFmjStats] = createSignal<IFmjStats>({
+    totalSupply: E8s.zero(),
+    avgMonthlyInflation: E8s.zero(),
+  });
+
+  createEffect(() => {
+    if (isReadyToFetch()) {
+      fetchFmjStats();
+    }
+  });
+
+  const fetchFmjStats = async () => {
+    assertReadyToFetch();
+
+    const bankActor = newBankActor(anonymousAgent()!);
+
+    const { total_supply, avg_monthly_inflation } =
+      await bankActor.bank__get_fmj_stats({});
+
+    setFmjStats({
+      totalSupply: E8s.new(total_supply),
+      avgMonthlyInflation: E8s.new(avg_monthly_inflation),
+    });
+  };
 
   const fetchExchangeRates: IBankStoreContext["fetchExchangeRates"] =
     async () => {
@@ -139,6 +181,7 @@ export function BankStore(props: IChildren) {
         fetchExchangeRates,
         swapRewards,
         transfer,
+        fmjStats,
       }}
     >
       {props.children}

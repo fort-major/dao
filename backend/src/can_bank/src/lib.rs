@@ -10,10 +10,12 @@ use ic_cdk::{
 use shared::{
     bank::{
         api::{
-            GetExchangeRatesRequest, GetExchangeRatesResponse, SetExchangeRateRequest,
-            SetExchangeRateResponse, SwapRewardsRequest, SwapRewardsResponse,
+            GetExchangeRatesRequest, GetExchangeRatesResponse, GetFmjStatsRequest,
+            GetFmjStatsResponse, SetExchangeRateRequest, SetExchangeRateResponse,
+            SwapRewardsRequest, SwapRewardsResponse,
         },
         state::BankState,
+        types::SwapInto,
     },
     e8s::E8s,
     humans::{api::RefundRewardsRequest, client::HumansCanisterClient},
@@ -78,11 +80,15 @@ async fn bank__swap_rewards(mut req: SwapRewardsRequest) -> SwapRewardsResponse 
         Ok((res,)) => match res {
             Err(e) => format!("Bad swap, rewards refunded: {}", e),
             Ok(block_idx) => {
+                if matches!(req.into, SwapInto::FMJ) {
+                    with_state_mut(|s| s.update_fmj_stats(qty.clone(), time()));
+                }
+
                 return SwapRewardsResponse {
                     asset: icrc1_client.canister_id,
                     block_idx,
                     qty,
-                }
+                };
             }
         },
     };
@@ -112,6 +118,17 @@ fn bank__get_exchange_rates(mut req: GetExchangeRatesRequest) -> GetExchangeRate
             .expect("Unable to get exchange rate");
 
         s.get_exchange_rates(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn bank__get_fmj_stats(mut req: GetFmjStatsRequest) -> GetFmjStatsResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get FMJ stats");
+
+        s.get_fmj_stats(req)
     })
 }
 

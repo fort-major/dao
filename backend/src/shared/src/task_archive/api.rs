@@ -123,3 +123,25 @@ impl Guard<TaskArchiveState> for SetNextRequest {
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct SetNextResponse {}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetArchivedTasksStatsRequest {}
+
+impl Guard<TaskArchiveState> for GetArchivedTasksStatsRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &TaskArchiveState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetArchivedTasksStatsResponse {
+    #[garde(skip)]
+    pub solved_tasks: u32,
+    #[garde(skip)]
+    pub next: Option<Principal>,
+}

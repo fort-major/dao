@@ -10,7 +10,7 @@ use crate::{
 use super::api::{
     AppendBatchRequest, AppendBatchResponse, GetArchivedTasksByIdRequest,
     GetArchivedTasksByIdResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
-    SetNextRequest, SetNextResponse,
+    GetArchivedTasksStatsRequest, GetArchivedTasksStatsResponse, SetNextRequest, SetNextResponse,
 };
 
 #[derive(CandidType, Deserialize, Default)]
@@ -87,5 +87,15 @@ impl TaskArchiveState {
         self.next = req.next;
 
         SetNextResponse {}
+    }
+
+    pub fn get_archived_tasks_stats(
+        &self,
+        _req: GetArchivedTasksStatsRequest,
+    ) -> GetArchivedTasksStatsResponse {
+        GetArchivedTasksStatsResponse {
+            solved_tasks: self.tasks.len() as u32,
+            next: self.next,
+        }
     }
 }

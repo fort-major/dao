@@ -1,4 +1,11 @@
-import { Accessor, createContext, createSignal, useContext } from "solid-js";
+import {
+  Accessor,
+  createContext,
+  createEffect,
+  createSignal,
+  onMount,
+  useContext,
+} from "solid-js";
 import { Store, createStore } from "solid-js/store";
 import { IChildren, TPrincipalStr } from "../utils/types";
 import { ErrorCode, err, logErr } from "../utils/error";
@@ -35,6 +42,8 @@ export interface ITotals {
   hours: E8s;
   storypoints: E8s;
   reputation: E8s;
+  teamMembers: Principal[];
+  contributors: number;
 }
 
 type ProfilesStore = Partial<Record<TPrincipalStr, IProfile>>;
@@ -48,7 +57,7 @@ export interface IHumansStoreContext {
   profileIds: Store<ProfileIdsStore>;
   fetchProfileIds: () => Promise<void>;
   totals: Accessor<ITotals>;
-  fetchTotals: () => Promise<void>;
+  decentralization: () => E8s;
 }
 
 const HumansContext = createContext<IHumansStoreContext>();
@@ -64,7 +73,7 @@ export function useHumans(): IHumansStoreContext {
 }
 
 export function HumanStore(props: IChildren) {
-  const { anonymousAgent, assertReadyToFetch } = useAuth();
+  const { anonymousAgent, assertReadyToFetch, isReadyToFetch } = useAuth();
 
   const [profiles, setProfiles] = createStore<ProfilesStore>();
   const [reputation, setReputation] = createStore<ReputationStore>();
@@ -73,9 +82,34 @@ export function HumanStore(props: IChildren) {
     hours: E8s.one(),
     storypoints: E8s.one(),
     reputation: E8s.one(),
+    teamMembers: [],
+    contributors: 0,
   });
 
-  const fetchTotals: IHumansStoreContext["fetchTotals"] = async () => {
+  createEffect(async () => {
+    if (isReadyToFetch()) {
+      await fetchTotals();
+    }
+
+    if (totals().teamMembers.length > 0) {
+      fetchProfiles(totals().teamMembers);
+    }
+  });
+
+  const decentralization = () => {
+    const t = totals();
+    const teamMembersReputation = t.teamMembers.reduce(
+      (prev, cur) => prev.add(reputation[cur.toText()] ?? E8s.zero()),
+      E8s.zero()
+    );
+    const centralization = teamMembersReputation.div(
+      t.reputation.isZero() ? E8s.one() : t.reputation
+    );
+
+    return E8s.one().sub(centralization);
+  };
+
+  const fetchTotals = async () => {
     assertReadyToFetch();
 
     const humansActor = newHumansActor(anonymousAgent()!);
@@ -86,14 +120,17 @@ export function HumanStore(props: IChildren) {
       reputationActor.reputation__get_total_supply({}),
     ];
 
-    const [{ hours, storypoints }, { total_supply }] = (await Promise.all(
-      p
-    )) as [GetTotalsResponse, GetTotalSupplyResponse];
+    const [
+      { hours, storypoints, team_members, contributors },
+      { total_supply },
+    ] = (await Promise.all(p)) as [GetTotalsResponse, GetTotalSupplyResponse];
 
     setTotals({
       hours: E8s.new(hours),
       storypoints: E8s.new(storypoints),
       reputation: E8s.new(total_supply),
+      teamMembers: team_members,
+      contributors,
     });
   };
 
@@ -198,7 +235,7 @@ export function HumanStore(props: IChildren) {
         profileIds,
         fetchProfileIds,
         totals,
-        fetchTotals,
+        decentralization,
       }}
     >
       {props.children}

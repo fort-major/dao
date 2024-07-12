@@ -7,7 +7,7 @@ export interface IStatProps {
 export function Stat(props: IStatProps) {
   return (
     <div class="flex flex-col min-w-64">
-      <p class="font-primary font-bold italic text-8xl leading-none text-black">
+      <p class="font-primary font-bold italic text-8xl leading-none text-black text-right">
         {props.data}
       </p>
       <h2 class="font-primary font-bold italic text-2xl leading-none text-right text-gray-150">

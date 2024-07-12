@@ -1,4 +1,5 @@
 import {
+  Accessor,
   createContext,
   createEffect,
   createSignal,
@@ -11,6 +12,7 @@ import { Principal } from "@dfinity/principal";
 import { useAuth } from "./auth";
 import { E8s } from "../utils/math";
 import {
+  GetTasksStatsResponse,
   SolutionField,
   SolverConstraint,
   TaskStage,
@@ -23,8 +25,7 @@ import {
 } from "../utils/backend";
 import { debugStringify } from "../utils/encoding";
 import { debouncedBatchFetch } from "@utils/common";
-import { DecisionTopicSet } from "@/declarations/votings/votings.did";
-import { useHumans } from "./humans";
+import { env } from "process";
 
 export interface ISolution {
   evaluation?: E8s;
@@ -33,6 +34,7 @@ export interface ISolution {
   fields: Array<string>;
   rejected: boolean;
   reward_storypoints?: E8s;
+  want_rep: boolean;
 }
 
 export type DecisionTopicId = number;
@@ -101,7 +103,6 @@ type TTaskId = bigint;
 type TTaskIdStr = string;
 type TasksStore = Partial<Record<TTaskIdStr, ITask>>;
 type ArchivedTasksStore = Partial<Record<TTaskIdStr, IArchivedTaskV1>>;
-type TaskIdsStore = TTaskId[];
 
 export interface ITasksStoreContext {
   tasks: Store<TasksStore>;
@@ -117,9 +118,16 @@ export interface ITasksStoreContext {
   attachToTask: (taskId: TTaskId) => Promise<void>;
   solveTask: (
     taskId: TTaskId,
-    filledInFields?: (string | undefined)[]
+    filledInFields?: (string | undefined)[],
+    wantRep?: boolean
   ) => Promise<void>;
   finishSolveTask: (taskId: TTaskId) => Promise<void>;
+  taskStats: Accessor<ITaskStats>;
+}
+
+export interface ITaskStats {
+  readyToSolveTasks: number;
+  solvedTasks: number;
 }
 
 const TasksContext = createContext<ITasksStoreContext>();
@@ -138,6 +146,7 @@ export function TasksStore(props: IChildren) {
   const {
     anonymousAgent,
     assertReadyToFetch,
+    isReadyToFetch,
     assertAuthorized,
     agent,
     profileProofCert,
@@ -151,6 +160,44 @@ export function TasksStore(props: IChildren) {
   const [taskArchiveActor, setTaskArchiveActor] = createSignal(
     newTaskArchiveActor(anonymousAgent()!)
   );
+  const [taskStats, setTaskStats] = createSignal<ITaskStats>({
+    readyToSolveTasks: 0,
+    solvedTasks: 0,
+  });
+
+  createEffect(() => {
+    if (isReadyToFetch()) fetchTaskStats();
+  });
+
+  const fetchTaskStats = async () => {
+    assertReadyToFetch();
+
+    const tasksActor = newTasksActor(anonymousAgent()!);
+    const resp = await tasksActor.tasks__get_tasks_stats({});
+
+    setTaskStats({
+      readyToSolveTasks: resp.ready_to_solve_tasks,
+      solvedTasks: resp.solved_tasks,
+    });
+
+    let canisterId: Principal = resp.next;
+
+    while (true) {
+      const a = newTaskArchiveActor(anonymousAgent()!, canisterId);
+      const res = await a.task_archive__get_archived_tasks_stats({});
+
+      setTaskStats((v) => {
+        v.solvedTasks += res.solved_tasks;
+        return v;
+      });
+
+      if (res.next.length === 1) {
+        canisterId = res.next[0];
+      } else {
+        return;
+      }
+    }
+  };
 
   const fetchTasksById: ITasksStoreContext["fetchTasksById"] = async (ids) => {
     assertReadyToFetch();
@@ -161,7 +208,7 @@ export function TasksStore(props: IChildren) {
   const fetchTasks: ITasksStoreContext["fetchTasks"] = async () => {
     assertReadyToFetch();
 
-    const tasksActor = newTasksActor(agent()!);
+    const tasksActor = newTasksActor(anonymousAgent()!);
 
     const { entries, pagination } = await tasksActor.tasks__get_tasks({
       pagination: {
@@ -196,6 +243,7 @@ export function TasksStore(props: IChildren) {
             evaluation,
             reward_hours: hours,
             reward_storypoints: storypoints,
+            want_rep: solution.want_rep,
           };
 
           return [solver, sol];
@@ -281,6 +329,7 @@ export function TasksStore(props: IChildren) {
                 evaluation,
                 reward_hours: hours,
                 reward_storypoints: storypoints,
+                want_rep: solution.want_rep,
               };
 
               return [solver, sol];
@@ -481,7 +530,8 @@ export function TasksStore(props: IChildren) {
   // if undefined - delete the solution
   const solveTask: ITasksStoreContext["solveTask"] = async (
     taskId,
-    filledInFields
+    filledInFields,
+    wantRep
   ) => {
     assertAuthorized();
 
@@ -518,6 +568,7 @@ export function TasksStore(props: IChildren) {
     await tasksActor.tasks__solve_task({
       id: taskId,
       filled_in_fields_opt: filledInFields ? [filledInFields.map(opt)] : [],
+      want_rep: !!wantRep,
       profile_proof: {
         body: [],
         cert_raw: await profileProofCert(),
@@ -590,6 +641,7 @@ export function TasksStore(props: IChildren) {
               evaluation,
               reward_hours: hours,
               reward_storypoints: storypoints,
+              want_rep: solution.want_rep,
             };
 
             return [solver, sol];
@@ -658,6 +710,7 @@ export function TasksStore(props: IChildren) {
               evaluation,
               reward_hours: hours,
               reward_storypoints: storypoints,
+              want_rep: solution.want_rep,
             };
 
             return [solver, sol];
@@ -699,6 +752,7 @@ export function TasksStore(props: IChildren) {
         solveTask,
         finishSolveTask,
         finishEditTask,
+        taskStats,
       }}
     >
       {props.children}

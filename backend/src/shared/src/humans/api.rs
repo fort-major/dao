@@ -341,4 +341,8 @@ pub struct GetTotalsResponse {
     pub hours: E8s,
     #[garde(skip)]
     pub storypoints: E8s,
+    #[garde(skip)]
+    pub contributors: u32,
+    #[garde(skip)]
+    pub team_members: Vec<Principal>,
 }
