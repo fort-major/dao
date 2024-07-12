@@ -1,6 +1,6 @@
 import { DecisionTopicId } from "@store/tasks";
 import { useVotings } from "@store/votings";
-import { onMount } from "solid-js";
+import { createEffect, onMount } from "solid-js";
 
 export interface IDecisionTopicProps {
   id: DecisionTopicId;
@@ -22,13 +22,9 @@ const PALETTE = [
 ];
 
 export function DecisionTopic(props: IDecisionTopicProps) {
-  const { decisionTopics, fetchDecisionTopics } = useVotings();
+  const { decisionTopics } = useVotings();
 
   const topic = () => decisionTopics[props.id];
-
-  onMount(() => {
-    if (!topic()) fetchDecisionTopics();
-  });
 
   return (
     <div

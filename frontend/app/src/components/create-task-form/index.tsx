@@ -18,7 +18,14 @@ import { DecisionTopicId, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
 import { E8s } from "@utils/math";
 import { Result, TTaskId } from "@utils/types";
-import { batch, createSignal, For, onMount, Show } from "solid-js";
+import {
+  batch,
+  createEffect,
+  createSignal,
+  For,
+  onMount,
+  Show,
+} from "solid-js";
 
 export interface ICreateTaskFormProps {
   id?: TTaskId;
@@ -35,12 +42,12 @@ type FieldType =
   | "Custom Link";
 
 export function CreateTaskForm(props: ICreateTaskFormProps) {
-  const { tasks, fetchTasks, editTask, createTask, deleteTask } = useTasks();
-  const { decisionTopics, fetchDecisionTopics } = useVotings();
+  const { tasks, fetchTasksById, editTask, createTask, deleteTask } =
+    useTasks();
+  const { decisionTopics } = useVotings();
 
   onMount(() => {
-    if (!task() && props.id) fetchTasks([props.id]);
-    if (!decisionTopics[0]) fetchDecisionTopics();
+    if (!task() && props.id) fetchTasksById([props.id]);
   });
 
   const task = () => (props.id ? tasks[props.id.toString()] : undefined);
@@ -177,14 +184,14 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const handleFieldTypeChange = (idx: number, res: Result<string, string>) => {
     setFieldsTypes((v) => {
       v[idx] = res as Result<FieldType, FieldType>;
-      return v;
+      return [...v];
     });
   };
 
   const handleFieldNameChange = (idx: number, res: Result<string, string>) => {
     setFieldNames((v) => {
       v[idx] = res;
-      return v;
+      return [...v];
     });
   };
 
@@ -194,14 +201,14 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   ) => {
     setFieldDescriptions((v) => {
       v[idx] = res;
-      return v;
+      return [...v];
     });
   };
 
   const handleFieldRequiredFlags = (idx: number, res: boolean) => {
     setFieldRequiredFlags((v) => {
       v[idx] = res;
-      return v;
+      return [...v];
     });
   };
 
@@ -209,19 +216,19 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     batch(() => {
       setFieldsTypes((v) => {
         v.push(Result.Ok("Twitter Link"));
-        return v;
+        return [...v];
       });
       setFieldNames((v) => {
         v.push(Result.Ok("Example Field Name"));
-        return v;
+        return [...v];
       });
       setFieldDescriptions((v) => {
         v.push(Result.Ok("Example Field Description"));
-        return v;
+        return [...v];
       });
       setFieldRequiredFlags((v) => {
         v.push(true);
-        return v;
+        return [...v];
       });
     });
   };
@@ -230,19 +237,19 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     batch(() => {
       setFieldsTypes((v) => {
         v.splice(idx, 1);
-        return v;
+        return [...v];
       });
       setFieldNames((v) => {
         v.splice(idx, 1);
-        return v;
+        return [...v];
       });
       setFieldDescriptions((v) => {
         v.splice(idx, 1);
-        return v;
+        return [...v];
       });
       setFieldRequiredFlags((v) => {
         v.splice(idx, 1);
-        return v;
+        return [...v];
       });
     });
   };
@@ -387,19 +394,20 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const handleTopicSelect = (id: DecisionTopicId) => {
     setTopics((v) => {
       const idx = v.indexOf(id);
+
       if (idx == -1) v.push(id);
       else v.splice(idx, 1);
 
-      return v;
+      return [...v];
     });
   };
 
   const fieldClass = "flex flex-col gap-2";
 
   return (
-    <div class="flex flex-col gap-2">
-      <div class="flex gap-2">
-        <div class={fieldClass}>
+    <div class="flex flex-col gap-6">
+      <div class="flex gap-6">
+        <div class={fieldClass + " flex-grow"}>
           <Title text="Title" />
           <TextInput
             validations={[{ required: null }, { minLen: 1 }, { maxLen: 256 }]}
@@ -408,7 +416,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
             disabled={disabled()}
           />
         </div>
-        <div class={fieldClass}>
+        <div class={fieldClass + " min-w-28"}>
           <Title text="Team Only" />
           <BooleanInput
             labelOff="Public"
@@ -422,7 +430,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       <div class={fieldClass}>
         <Title text="Topics" />
         <div class="flex gap-3 flex-wrap">
-          <For each={Object.keys(decisionTopics).map(parseInt)}>
+          <For each={Object.values(decisionTopics).map((it) => it!.id)}>
             {(topicId) => (
               <DecisionTopic
                 id={topicId}

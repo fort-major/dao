@@ -28,7 +28,7 @@ export function Select(props: ISelectProps) {
   );
 
   return (
-    <div class="flex flex-col min-w-36 p-2 text-black shadow-sm relative">
+    <div class="flex flex-col min-w-36 p-2 text-black shadow-md relative">
       <div
         class="flex items-center justify-between cursor-pointer"
         classList={{ "bg-gray-190": props.disabled }}

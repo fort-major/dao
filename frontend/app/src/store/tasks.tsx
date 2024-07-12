@@ -25,7 +25,6 @@ import {
 } from "../utils/backend";
 import { debugStringify } from "../utils/encoding";
 import { debouncedBatchFetch } from "@utils/common";
-import { env } from "process";
 
 export interface ISolution {
   evaluation?: E8s;
@@ -56,6 +55,15 @@ export interface ITask {
   solutions: Array<[Principal, ISolution]>;
   decision_topics: DecisionTopicId[];
   assignees?: Principal[];
+}
+
+export function taskStageToOrd(s: TaskStage) {
+  if ("Solve" in s) return 1;
+  if ("Evaluate" in s) return 2;
+  if ("PreSolve" in s) return 3;
+  if ("Edit" in s) return 4;
+
+  err(ErrorCode.UNREACHEABLE, "Invalid task stage " + debugStringify(s));
 }
 
 export interface IArchivedTaskV1 {
@@ -157,16 +165,18 @@ export function TasksStore(props: IChildren) {
   const [taskSkip, setTaskSkip] = createSignal(0);
   const [archivedTasks, setArchivedTasks] = createStore<ArchivedTasksStore>();
   const [archivedTaskSkip, setArchivedTaskSkip] = createSignal(0);
-  const [taskArchiveActor, setTaskArchiveActor] = createSignal(
-    newTaskArchiveActor(anonymousAgent()!)
-  );
+  const [taskArchiveActor, setTaskArchiveActor] =
+    createSignal<ReturnType<typeof newTaskArchiveActor>>();
   const [taskStats, setTaskStats] = createSignal<ITaskStats>({
     readyToSolveTasks: 0,
     solvedTasks: 0,
   });
 
   createEffect(() => {
-    if (isReadyToFetch()) fetchTaskStats();
+    if (isReadyToFetch()) {
+      setTaskArchiveActor(newTaskArchiveActor(anonymousAgent()!));
+      fetchTaskStats();
+    }
   });
 
   const fetchTaskStats = async () => {
@@ -188,7 +198,7 @@ export function TasksStore(props: IChildren) {
 
       setTaskStats((v) => {
         v.solvedTasks += res.solved_tasks;
-        return v;
+        return { ...v };
       });
 
       if (res.next.length === 1) {
@@ -201,6 +211,8 @@ export function TasksStore(props: IChildren) {
 
   const fetchTasksById: ITasksStoreContext["fetchTasksById"] = async (ids) => {
     assertReadyToFetch();
+
+    console.log("fetchTasksById");
 
     tasksGetTasksById({ ids });
   };
@@ -284,7 +296,7 @@ export function TasksStore(props: IChildren) {
     async () => {
       assertReadyToFetch();
 
-      const tasksActor = taskArchiveActor();
+      const tasksActor = taskArchiveActor()!;
 
       const { entries, pagination } =
         await tasksActor.task_archive__get_archived_tasks({

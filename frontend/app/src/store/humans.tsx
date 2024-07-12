@@ -73,7 +73,13 @@ export function useHumans(): IHumansStoreContext {
 }
 
 export function HumanStore(props: IChildren) {
-  const { anonymousAgent, assertReadyToFetch, isReadyToFetch } = useAuth();
+  const {
+    anonymousAgent,
+    assertReadyToFetch,
+    isReadyToFetch,
+    isAuthorized,
+    identity,
+  } = useAuth();
 
   const [profiles, setProfiles] = createStore<ProfilesStore>();
   const [reputation, setReputation] = createStore<ReputationStore>();
@@ -93,6 +99,10 @@ export function HumanStore(props: IChildren) {
 
     if (totals().teamMembers.length > 0) {
       fetchProfiles(totals().teamMembers);
+    }
+
+    if (isAuthorized()) {
+      fetchProfiles([identity()!.getPrincipal()]);
     }
   });
 

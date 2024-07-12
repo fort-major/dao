@@ -1,3 +1,4 @@
+import { ROOT } from "@/routes";
 import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
 import { daysLeft, nowNs } from "@components/countdown";
@@ -9,6 +10,7 @@ import { Modal } from "@components/modal";
 import { ProfileMicro, ProfileMini } from "@components/profile/profile";
 import { SolutionSubmitForm } from "@components/solution-submit-form";
 import { Title } from "@components/title";
+import { A } from "@solidjs/router";
 import { useAuth } from "@store/auth";
 import { IArchivedTaskV1, ITask, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
@@ -16,7 +18,15 @@ import { COLORS } from "@utils/colors";
 import { timestampToStr } from "@utils/encoding";
 import { E8s } from "@utils/math";
 import { TTaskId } from "@utils/types";
-import { For, Match, Show, Switch, createSignal, onMount } from "solid-js";
+import {
+  For,
+  Match,
+  Show,
+  Switch,
+  createEffect,
+  createSignal,
+  onMount,
+} from "solid-js";
 
 export interface ITaskProps {
   id: TTaskId;
@@ -170,19 +180,20 @@ export function Task(props: ITaskProps) {
     finishEditTask,
     finishSolveTask,
   } = useTasks();
-  const { identity, isAuthorized, profileProof, authorize } = useAuth();
+  const { identity, isAuthorized, isReadyToFetch, profileProof, authorize } =
+    useAuth();
   const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
     useVotings();
 
   const [showSolveModal, setShowSolveModal] = createSignal(false);
   const [disabled, setDisabled] = createSignal(false);
 
-  onMount(() => {
-    if (!task()) fetchTasksById([props.id]);
-  });
-
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
     tasks[props.id.toString()];
+
+  createEffect(() => {
+    if (!task() && isReadyToFetch()) fetchTasksById([props.id]);
+  });
 
   const stage = (): TStatus => {
     const t = task();
@@ -332,11 +343,19 @@ export function Task(props: ITaskProps) {
     return (
       <Switch>
         <Match when={canEdit()}>
-          <Btn
-            text="Start Solving Phase"
-            disabled={disabled()}
-            onClick={handleFinishEditClick}
-          />
+          <div class="flex gap-4 items-center">
+            <A
+              href={`${ROOT.$.tasks.$.edit.path}?id=${props.id.toString()}`}
+              class="font-primary font-light text-gray-150 underline text-sm"
+            >
+              Edit
+            </A>
+            <Btn
+              text="Start Solving Phase"
+              disabled={disabled()}
+              onClick={handleFinishEditClick}
+            />
+          </div>
         </Match>
         <Match when={readyToEvaluate()}>
           <Btn
@@ -443,12 +462,7 @@ export function Task(props: ITaskProps) {
               <h3 class="flex-grow font-primary font-medium text-4xl text-black">
                 {task() ? task()!.title : "Loading..."}
               </h3>
-              <div class="flex flex-col items-center py-2">
-                {statusIcon()}
-                <Show when={canEdit()}>
-                  <Icon kind={EIconKind.Edit} color={COLORS.gray[150]} />
-                </Show>
-              </div>
+              <div class="flex flex-col items-center py-2">{statusIcon()}</div>
             </div>
           </div>
           <div class="flex gap-2">

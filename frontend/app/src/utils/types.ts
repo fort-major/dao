@@ -10,6 +10,10 @@ export interface IClass {
   class?: string;
 }
 
+export interface IRef<T> {
+  ref?: T;
+}
+
 export type TTaskId = bigint;
 export type TTaskTagId = number;
 export type TTokenId = number;

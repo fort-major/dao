@@ -16,7 +16,7 @@ export function Btn(props: IBtnProps) {
 
   return (
     <button
-      class="flex active:shadow-none shadow-sm items-center justify-center gap-2 px-5 py-2"
+      class="flex active:shadow-none shadow-md items-center justify-center gap-2 px-5 py-2"
       classList={{
         "shadow-none": props.disabled,
         "bg-gray-190": props.disabled,

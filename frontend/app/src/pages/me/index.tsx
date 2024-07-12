@@ -9,7 +9,7 @@ export function MePage() {
   const me = () => identity()?.getPrincipal();
 
   return (
-    <Page class="pt-6 max-w-4xl self-center">
+    <Page slim>
       <ProfileFull id={me()} me />
       <TransferSwapForm />
     </Page>

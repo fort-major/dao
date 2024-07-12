@@ -294,7 +294,7 @@ export function MdInput(props: IMdInputProps) {
   return (
     <div class="flex flex-col gap-1">
       <div
-        class="flex flex-col shadow-sm"
+        class="flex flex-col shadow-md"
         classList={{ "shadow-errorRed": !!error() }}
       >
         <MdTools
@@ -315,7 +315,7 @@ export function MdInput(props: IMdInputProps) {
         <Switch>
           <Match when={mode() === "edit"}>
             <TextArea
-              class="font-primary font-light focus:outline-none"
+              class="font-primary font-light focus:outline-none p-4"
               classList={{
                 italic: props.value.length === 0,
                 "bg-gray-190": props.disabled,

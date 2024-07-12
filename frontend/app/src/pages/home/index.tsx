@@ -24,13 +24,13 @@ export function HomePage() {
         <h1 class="font-primary font-bold text-[250px] leading-[0.8]">
           <i class="italic">F</i>ort <br /> <i class="italic">M</i>ajor
         </h1>
-        <div class="flex flex-col items-center justify-center gap-5">
+        <div class="flex flex-col items-center justify-center gap-8">
           <h2 class="font-primary font-normal text-4xl text-center">
             A Fair, Open, Robust and Transparent digital organization with an
             uplifting vibe
           </h2>
-          <div class="flex gap-2 items-center">
-            <A href={ROOT["/"].tasks.path}>
+          <div class="flex gap-6 items-center">
+            <A href={ROOT.$.tasks.path}>
               <Btn
                 text="Start Contributing"
                 icon={EIconKind.ArrowUpRight}
@@ -49,7 +49,7 @@ export function HomePage() {
           <a href="https://icp.msq.tech" target="_blank">
             <ProjectCard kind="msq" class={cardClass} />
           </a>
-          <A href="/">
+          <A href={ROOT.path}>
             <ProjectCard kind="fmj" class={cardClass} />
           </A>
           <ProjectCard kind="soon" class={cardClass} />
@@ -133,8 +133,8 @@ export function HomePage() {
           />
         </div>
       </div>
-      <div class="flex min-h-32 items-center justify-center gap-2">
-        <A href={ROOT["/"].tasks.path}>
+      <div class="flex min-h-32 items-center justify-center gap-6">
+        <A href={ROOT.$.tasks.path}>
           <Btn
             text="Start Contributing"
             icon={EIconKind.ArrowUpRight}

@@ -2,11 +2,14 @@ import { Component } from "solid-js";
 import { useLocation } from "@solidjs/router";
 import { HomePage } from "@pages/home";
 import { MePage } from "@pages/me";
+import { TasksPage } from "@pages/tasks";
+import { CreateUpdateTaskPage } from "@pages/create-new-task";
+import { TaskPage } from "@pages/task";
 
 export interface IRoute {
   parent?: IRoute;
   component?: Component;
-  ["/"]?: Record<string, IRoute | undefined>;
+  $?: Record<string, IRoute | undefined>;
   path: string;
   pathSegment: string;
   features?: IRouteFeatures;
@@ -18,11 +21,26 @@ function route<T>(r: T): T & IRoute {
 }
 
 export const ROOT = route({
-  "/": {
+  $: {
     "/": route({
       component: HomePage,
     }),
-    tasks: route({}),
+    tasks: route({
+      $: {
+        "/": route({
+          component: TasksPage,
+        }),
+        create: route({
+          component: CreateUpdateTaskPage,
+        }),
+        edit: route({
+          component: CreateUpdateTaskPage,
+        }),
+      },
+    }),
+    task: route({
+      component: TaskPage,
+    }),
     humans: route({}),
     me: route({
       component: MePage,
@@ -77,9 +95,9 @@ function setRouteInfo(
 
   route.pathSegment = "/" + routeKey;
 
-  if (route["/"]) {
-    for (let subrouteKey in route["/"]) {
-      setRouteInfo(subrouteKey, route["/"][subrouteKey]!, route);
+  if (route["$"]) {
+    for (let subrouteKey in route["$"]) {
+      setRouteInfo(subrouteKey, route["$"][subrouteKey]!, route);
     }
   }
 }
@@ -94,7 +112,7 @@ export function findRoute(path: string): IRoute | undefined {
   let cur: IRoute = ROOT;
 
   for (let segment of segments) {
-    const subroute = cur["/"]?.[segment];
+    const subroute = cur["$"]?.[segment];
 
     if (!subroute) return undefined;
 
@@ -123,10 +141,10 @@ export function getSolidRoutes(): ISolidRoute {
 function toSolidRoute(route: IRoute): ISolidRoute {
   let children: ISolidRoute[] | undefined;
 
-  if (route["/"]) {
+  if (route["$"]) {
     children = [];
 
-    for (let subroute of Object.values(route["/"] as Record<string, IRoute>)) {
+    for (let subroute of Object.values(route["$"] as Record<string, IRoute>)) {
       children.push(toSolidRoute(subroute));
     }
   }

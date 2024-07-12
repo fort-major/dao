@@ -186,7 +186,7 @@ export function ProfileFull(props: IProfileProps) {
           </Show>
         </p>
       </div>
-      <div class="flex flex-wrap gap-2 items-center">
+      <div class="flex flex-wrap gap-4 items-center">
         <div class={metricClass}>
           <Title text="Reputation" />
           <MetricWidget

@@ -1,12 +1,26 @@
-import { IChildren, IClass } from "@utils/types";
+import { IChildren, IClass, IRef } from "@utils/types";
+import { Match, Switch } from "solid-js";
 
-export function Page(props: IChildren & IClass) {
+type T = IChildren & IClass & IRef<HTMLDivElement>;
+export interface IPageProps extends T {
+  slim?: boolean;
+}
+
+export function Page(props: IPageProps) {
   return (
     <div
-      class="flex flex-col gap-20 px-40 text-black"
-      classList={{ [props.class!]: !!props.class }}
+      ref={props.ref}
+      class="flex flex-col items-center px-40 pt-20 text-black font-primary"
     >
-      {props.children}
+      <div
+        class="flex flex-col w-full relative gap-20"
+        classList={{
+          ["max-w-5xl"]: !!props.slim,
+          [props.class!]: !!props.class,
+        }}
+      >
+        {props.children}
+      </div>
     </div>
   );
 }

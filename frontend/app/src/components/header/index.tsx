@@ -38,30 +38,22 @@ export function Header(props: IHeaderProps) {
 
   return (
     <header
-      class="flex px-5 py-6 fixed top-0 left-0 right-0 w-full bg-black"
+      class="flex px-5 py-6 fixed z-50 top-0 left-0 right-0 w-full bg-black"
       classList={{ [props.class!]: !!props.class }}
     >
       <Logo />
       <div class="flex gap-9 px-24 flex-grow items-center">
-        <A activeClass="underline" class={linkClass} href={ROOT.path}>
+        <A class={linkClass} href={ROOT.path}>
           Home
         </A>
-        <A
-          activeClass="underline"
-          class={linkClass}
-          href={ROOT["/"].tasks.path}
-        >
+        <A activeClass="underline" class={linkClass} href={ROOT.$.tasks.path}>
           Tasks
         </A>
-        <A
-          activeClass="underline"
-          class={linkClass}
-          href={ROOT["/"].humans.path}
-        >
+        <A activeClass="underline" class={linkClass} href={ROOT.$.humans.path}>
           Humans
         </A>
         <Show when={isAuthorized()}>
-          <A activeClass="underline" class={linkClass} href={ROOT["/"].me.path}>
+          <A activeClass="underline" class={linkClass} href={ROOT.$.me.path}>
             Me
           </A>
         </Show>

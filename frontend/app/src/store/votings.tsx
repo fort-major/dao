@@ -1,4 +1,4 @@
-import { createContext, useContext } from "solid-js";
+import { createContext, createEffect, useContext } from "solid-js";
 import { Store, createStore } from "solid-js/store";
 import { IChildren, TPrincipalStr, TTaskId, TTimestamp } from "../utils/types";
 import { ErrorCode, err } from "../utils/error";
@@ -97,7 +97,6 @@ export interface IVotingsStoreContext {
     newRate: E8s
   ) => Promise<VotingId>;
   decisionTopics: Store<DecisionTopicsStore>;
-  fetchDecisionTopics: () => Promise<void>;
   followersOf: Store<FollowersOfStore>;
   fetchFollowersOf: (ids: Principal[]) => Promise<void>;
   followeesOf: Store<FolloweesOfStore>;
@@ -122,6 +121,7 @@ export function VotingsStore(props: IChildren) {
   const {
     anonymousAgent,
     assertReadyToFetch,
+    isReadyToFetch,
     profileProofCert,
     profileProof,
     reputationProofCert,
@@ -134,6 +134,12 @@ export function VotingsStore(props: IChildren) {
     createStore<DecisionTopicsStore>();
   const [followersOf, setFollowersOf] = createStore<FollowersOfStore>();
   const [followeesOf, setFolloweesOf] = createStore<FolloweesOfStore>();
+
+  createEffect(() => {
+    if (isReadyToFetch()) {
+      fetchDecisionTopics();
+    }
+  });
 
   const fetchVotings: IVotingsStoreContext["fetchVotings"] = async (
     ids: VotingId[]
@@ -333,19 +339,18 @@ export function VotingsStore(props: IChildren) {
     (reason) => err(ErrorCode.NETWORK, `Unable to fetch votings: ${reason}`)
   );
 
-  const fetchDecisionTopics: IVotingsStoreContext["fetchDecisionTopics"] =
-    async () => {
-      assertReadyToFetch();
+  const fetchDecisionTopics = async () => {
+    assertReadyToFetch();
 
-      const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
+    const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
 
-      const { entries: topics } =
-        await liquidDemocracyActor.liquid_democracy__get_decision_topics({});
+    const { entries: topics } =
+      await liquidDemocracyActor.liquid_democracy__get_decision_topics({});
 
-      for (let topic of topics) {
-        setDecisionTopics(topic.id, topic);
-      }
-    };
+    for (let topic of topics) {
+      setDecisionTopics(topic.id, topic);
+    }
+  };
 
   const liquidDemocracyGetFollowersOf = debouncedBatchFetch(
     (req: GetFolloweesOfRequest) => {
@@ -427,7 +432,6 @@ export function VotingsStore(props: IChildren) {
         createTasksStartSolveVoting: createTasksStartSolveVoting,
         createBankSetExchangeRateVoting,
         decisionTopics,
-        fetchDecisionTopics,
         followersOf,
         fetchFollowersOf,
         followeesOf,

@@ -45,7 +45,7 @@ export function TextInput(props: ITextInputProps) {
     <div class="flex flex-col gap-1 flex-1">
       <input
         type="text"
-        class="flex p-2 font-primary focus:outline-none text-sm leading-6 flex-1 shadow-sm"
+        class="flex p-2 font-primary focus:outline-none text-sm leading-6 flex-1 shadow-md"
         classList={{
           italic: props.value === "",
           "shadow-errorRed": !!error(),
@@ -68,7 +68,7 @@ function isValid(
   if (!validations || validations.length == 0) return undefined;
 
   for (let validation of validations) {
-    if ("required" in validation) {
+    if ("required" in validation && s.length === 0) {
       return `This field is required`;
     }
 

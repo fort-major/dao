@@ -89,7 +89,7 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
       setValues((v) => {
         v[idx] = result;
 
-        return v;
+        return [...v];
       });
     };
 

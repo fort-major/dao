@@ -46,7 +46,7 @@ export function QtyInput<T extends E8s | number>(props: IQtyInputProps<T>) {
   return (
     <div class="flex flex-col gap-1 min-w-52">
       <div
-        class="flex items-center justify-between p-2 gap-1 shadow-sm"
+        class="flex items-center justify-between p-2 gap-1 shadow-md"
         classList={{ "shadow-errorRed": !!error() }}
       >
         <input
