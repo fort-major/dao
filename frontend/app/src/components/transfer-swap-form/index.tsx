@@ -21,7 +21,7 @@ import { createResource, createSignal, from, Match, Switch } from "solid-js";
 export interface ITransferSwapFormProps {}
 
 export function TransferSwapForm(props: ITransferSwapFormProps) {
-  const { myBalance, profileProof } = useAuth();
+  const { myBalance, profileProof, disable, enable, disabled } = useAuth();
   const { transfer, swapRewards, exchangeRates } = useBank();
 
   const [profProof] = createResource(profileProof);
@@ -33,7 +33,6 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   const [transferRecipient, setTransferRecipient] = createSignal<
     Result<string, string>
   >(Result.Ok(""));
-  const [disabled, setDisabled] = createSignal(false);
 
   const balance = () => {
     const b = myBalance();
@@ -90,13 +89,13 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
 
     if (!agreed) return;
 
-    setDisabled(true);
+    disable();
     await transfer(
       from() as "ICP" | "FMJ",
       a,
       Principal.fromText(recipient.unwrapOk())
     );
-    setDisabled(false);
+    enable();
 
     alert("Successful transfer");
   };
@@ -131,12 +130,12 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
 
     if (!agreed) return;
 
-    setDisabled(true);
+    disable();
     const { qty } = await swapRewards(
       pairToStr({ from: from(), into: into() }),
       a.unwrapOk()
     );
-    setDisabled(false);
+    enable();
 
     alert(
       `Successfully swapped ${a.toString()} ${from()} into ${qty.toString()} ${into()}!`
@@ -168,7 +167,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
               text="Transfer"
               icon={EIconKind.ArrowUpRight}
               iconColor={COLORS.green}
-              disabled={!canTransfer() || disabled()}
+              disabled={!canTransfer()}
               onClick={handleTransfer}
             />
           </Match>
@@ -192,7 +191,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
               icon={EIconKind.ArrowsCircle}
               text="Swap"
               iconColor={COLORS.darkBlue}
-              disabled={!canSwap() || disabled()}
+              disabled={!canSwap()}
               onClick={handleSwap}
             />
             <PriceChart pair={pairToStr({ from: from(), into: into() })} />

@@ -212,8 +212,6 @@ export function TasksStore(props: IChildren) {
   const fetchTasksById: ITasksStoreContext["fetchTasksById"] = async (ids) => {
     assertReadyToFetch();
 
-    console.log("fetchTasksById");
-
     tasksGetTasksById({ ids });
   };
 

@@ -1,6 +1,7 @@
 import { TMdInputValidation } from "@components/md-input";
 import { ValidationError } from "@components/validation-error";
 import { Principal } from "@dfinity/principal";
+import { useAuth } from "@store/auth";
 import { eventHandler } from "@utils/security";
 import { Result } from "@utils/types";
 import { Show, createSignal, onMount } from "solid-js";
@@ -28,7 +29,11 @@ export interface ITextInputProps {
 }
 
 export function TextInput(props: ITextInputProps) {
+  const { disabled } = useAuth();
+
   const [error, setError] = createSignal<string | undefined>();
+
+  const d = () => props.disabled || disabled();
 
   const handleChange = eventHandler(
     (e: Event & { target: HTMLInputElement }) => {
@@ -49,12 +54,12 @@ export function TextInput(props: ITextInputProps) {
         classList={{
           italic: props.value === "",
           "shadow-errorRed": !!error(),
-          "bg-gray-190": props.disabled,
+          "bg-gray-190": d(),
         }}
         placeholder={props.placeholder ?? "Type here"}
         value={props.value}
         onChange={handleChange}
-        disabled={props.disabled}
+        disabled={d()}
       />
       <ValidationError error={error()} />
     </div>

@@ -113,7 +113,7 @@ export function TasksPage() {
             {(task) => (
               <A
                 href={`${ROOT.$.task.path}?id=${task!.id.toString()}`}
-                class="flex flex-col shadow-sm p-5"
+                class="flex flex-col shadow-md p-5"
               >
                 <TaskMini id={task!.id} />
               </A>
@@ -132,7 +132,7 @@ export function TasksPage() {
               {(task) => (
                 <A
                   href={`${ROOT.$.task.path}?id=${task!.id.toString()}`}
-                  class="flex flex-col shadow-sm p-5"
+                  class="flex flex-col shadow-md p-5"
                 >
                   <TaskMini id={task!.id} />
                 </A>

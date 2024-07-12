@@ -11,7 +11,7 @@ export function CreateUpdateTaskPage() {
   const id = createMemo(() => (query["id"] ? BigInt(query["id"]) : undefined));
 
   return (
-    <Page class="pt-10 items-center">
+    <Page class="pt-10 items-center" slim>
       <Backlink />
       <div class="flex flex-col gap-20 max-w-5xl w-full">
         <Title

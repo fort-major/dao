@@ -1,4 +1,5 @@
 import { EIconKind, Icon } from "@components/icon";
+import { useAuth } from "@store/auth";
 import { COLORS } from "@utils/colors";
 import { ErrorCode, err } from "@utils/error";
 import { E8s } from "@utils/math";
@@ -31,8 +32,12 @@ export function VotingInput(props: IVotingInputProps) {
 }
 
 function BinaryVotingInput(props: IVotingInputProps) {
+  const { disabled } = useAuth();
+
+  const d = () => props.disabled || disabled();
+
   const downColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : !props.value
       ? props.reset
@@ -41,7 +46,7 @@ function BinaryVotingInput(props: IVotingInputProps) {
       : COLORS.gray[150];
 
   const upColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : props.value?.toBool()
       ? props.reset
@@ -53,25 +58,29 @@ function BinaryVotingInput(props: IVotingInputProps) {
     <div class="flex items-center gap-1 p-3">
       <Icon
         kind={EIconKind.ThumbDown}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.errorRed}
         color={downColor()}
         onClick={() => props.onChange(Result.Ok(null))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.ThumbUp}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.green}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.green}
         color={upColor()}
         onClick={() => props.onChange?.(Result.Ok(E8s.one()))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
     </div>
   );
 }
 
 function SatisfactionVotingInput(props: IVotingInputProps) {
+  const { disabled } = useAuth();
+
+  const d = () => props.disabled || disabled();
+
   const rejectColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : !props.value
       ? props.reset
@@ -80,7 +89,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
       : COLORS.gray[150];
 
   const verySadColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : props.value?.eq(E8s.f0_2())
       ? props.reset
@@ -89,7 +98,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
       : COLORS.gray[150];
 
   const sadColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : props.value?.eq(E8s.f0_4())
       ? props.reset
@@ -98,7 +107,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
       : COLORS.gray[150];
 
   const neutralColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : props.value?.eq(E8s.f0_6())
       ? props.reset
@@ -107,7 +116,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
       : COLORS.gray[150];
 
   const happyColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : props.value?.eq(E8s.f0_8())
       ? props.reset
@@ -116,7 +125,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
       : COLORS.gray[150];
 
   const veryHappyColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : props.value?.eq(E8s.one())
       ? props.reset
@@ -128,45 +137,45 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
     <div class="flex items-center gap-1 p-3">
       <Icon
         kind={EIconKind.CancelCircle}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.errorRed}
         color={rejectColor()}
         onClick={() => props.onChange(Result.Ok(null))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceVerySad}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.pink}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.pink}
         color={verySadColor()}
         onClick={() => props.onChange(Result.Ok(E8s.f0_2()))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceSad}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.orange}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.orange}
         color={sadColor()}
         onClick={() => props.onChange(Result.Ok(E8s.f0_4()))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceNeutral}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.gray[110]}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.gray[110]}
         color={neutralColor()}
         onClick={() => props.onChange(Result.Ok(E8s.f0_6()))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceHappy}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.green}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.green}
         color={happyColor()}
         onClick={() => props.onChange(Result.Ok(E8s.f0_8()))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
       <Icon
         kind={EIconKind.FaceVeryHappy}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.blue}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.blue}
         color={veryHappyColor()}
         onClick={() => props.onChange(Result.Ok(E8s.one()))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
     </div>
   );
@@ -197,12 +206,16 @@ function levelToStars(level: E8s): number {
 }
 
 function EvaluationVotingInput(props: IVotingInputProps) {
+  const { disabled } = useAuth();
+
+  const d = () => props.disabled || disabled();
+
   const [hoveredStar, setHoveredStar] = createSignal<number | undefined>(
     undefined
   );
 
   const rejectColor = () =>
-    props.disabled
+    d()
       ? COLORS.gray[150]
       : !props.value
       ? props.reset
@@ -211,7 +224,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
       : COLORS.gray[150];
 
   const starColor = () => {
-    if (props.disabled) return COLORS.gray[150];
+    if (d()) return COLORS.gray[150];
 
     if (props.reset) {
       const h = hoveredStar();
@@ -227,7 +240,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
   };
 
   const starIcon = (idx: number) => {
-    if (props.reset && !props.disabled) {
+    if (props.reset && !d()) {
       const h = hoveredStar();
 
       if (!h) return EIconKind.StarEmpty;
@@ -246,56 +259,56 @@ function EvaluationVotingInput(props: IVotingInputProps) {
     <div class="flex items-center gap-1 p-3">
       <Icon
         kind={EIconKind.CancelCircle}
-        hoverColor={props.disabled ? COLORS.gray[150] : COLORS.errorRed}
+        hoverColor={d() ? COLORS.gray[150] : COLORS.errorRed}
         color={rejectColor()}
         onClick={() => props.onChange(Result.Ok(null))}
-        class={props.disabled ? "" : "cursor-pointer"}
+        class={d() ? "" : "cursor-pointer"}
       />
       <div class="flex items-center">
         <Icon
           kind={starIcon(1)}
           color={starColor()}
-          hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
+          hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
           onClick={() => props.onChange(Result.Ok(E8s.f0_2()))}
           onMouseEnter={() => setHoveredStar(1)}
           onMouseLeave={setHoveredStar}
-          class={props.disabled ? "" : "cursor-pointer"}
+          class={d() ? "" : "cursor-pointer"}
         />
         <Icon
           kind={starIcon(2)}
           color={starColor()}
-          hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
+          hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
           onClick={() => props.onChange(Result.Ok(E8s.f0_4()))}
           onMouseEnter={() => setHoveredStar(2)}
           onMouseLeave={setHoveredStar}
-          class={props.disabled ? "" : "cursor-pointer"}
+          class={d() ? "" : "cursor-pointer"}
         />
         <Icon
           kind={starIcon(3)}
           color={starColor()}
-          hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
+          hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
           onClick={() => props.onChange(Result.Ok(E8s.f0_6()))}
           onMouseEnter={() => setHoveredStar(3)}
           onMouseLeave={setHoveredStar}
-          class={props.disabled ? "" : "cursor-pointer"}
+          class={d() ? "" : "cursor-pointer"}
         />
         <Icon
           kind={starIcon(4)}
           color={starColor()}
-          hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
+          hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
           onClick={() => props.onChange(Result.Ok(E8s.f0_8()))}
           onMouseEnter={() => setHoveredStar(4)}
           onMouseLeave={setHoveredStar}
-          class={props.disabled ? "" : "cursor-pointer"}
+          class={d() ? "" : "cursor-pointer"}
         />
         <Icon
           kind={starIcon(5)}
           color={starColor()}
-          hoverColor={props.disabled ? COLORS.gray[150] : COLORS.yellow}
+          hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
           onClick={() => props.onChange(Result.Ok(E8s.one()))}
           onMouseEnter={() => setHoveredStar(5)}
           onMouseLeave={setHoveredStar}
-          class={props.disabled ? "" : "cursor-pointer"}
+          class={d() ? "" : "cursor-pointer"}
         />
       </div>
     </div>

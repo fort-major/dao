@@ -7,7 +7,7 @@ import { IClass } from "@utils/types";
 export function Backlink(props: IClass) {
   return (
     <A
-      class="flex items-center gap-1"
+      class="flex items-center flex-grow justify-start self-stretch gap-1"
       classList={{ [props.class!]: !!props.class }}
       href={ROOT.$.tasks.path}
     >

@@ -18,7 +18,7 @@ export interface ISolutionSubmitFormProps {
 
 export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
   const { solveTask, tasks } = useTasks();
-  const { identity } = useAuth();
+  const { identity, disable, enable, disabled } = useAuth();
 
   const prevFields = createMemo(() => {
     const me = identity()?.getPrincipal();
@@ -51,7 +51,6 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
       : props.fields.map((_) => Result.Ok(""))
   );
   const [wantRep, setWantRep] = createSignal(prevWantRep() ?? false);
-  const [disabled, setDisabled] = createSignal(false);
 
   const isErr = () => values().some((it) => it.isErr());
 
@@ -111,7 +110,6 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
             <MdInput
               value={values()[idx].unwrap()}
               onChange={handleChange}
-              disabled={disabled()}
               validations={validations() as TMdInputValidation[]}
             />
           </Match>
@@ -120,7 +118,6 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
               value={values()[idx].unwrap()}
               onChange={handleChange}
               validations={validations()}
-              disabled={disabled()}
             />
           </Match>
         </Switch>
@@ -129,21 +126,21 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
   };
 
   const handleSubmit = async () => {
-    setDisabled(true);
+    disable();
     await solveTask(
       props.taskId,
       values().map((it) => it.unwrapOk()),
       wantRep()
     );
-    setDisabled(false);
+    enable();
 
     props.onSubmit?.();
   };
 
   const handleDelete = async () => {
-    setDisabled(true);
+    disable();
     await solveTask(props.taskId, undefined, undefined);
-    setDisabled(false);
+    enable();
 
     props.onSubmit?.();
   };
@@ -164,7 +161,7 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
 
         <Btn
           text={prevFields() ? "Update" : "Submit"}
-          disabled={disabled() && !isErr()}
+          disabled={isErr()}
           onClick={handleSubmit}
         />
       </div>

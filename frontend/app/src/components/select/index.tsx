@@ -1,4 +1,5 @@
 import { EIconKind, Icon } from "@components/icon";
+import { useAuth } from "@store/auth";
 import { COLORS } from "@utils/colors";
 import { eventHandler } from "@utils/security";
 import { Result } from "@utils/types";
@@ -12,7 +13,11 @@ export interface ISelectProps {
 }
 
 export function Select(props: ISelectProps) {
+  const { disabled } = useAuth();
+
   const [expanded, setExpanded] = createSignal(false);
+
+  const d = () => props.disabled || disabled();
 
   const handleValueClick = eventHandler(() => {
     setExpanded((e) => !e);
@@ -28,23 +33,23 @@ export function Select(props: ISelectProps) {
   );
 
   return (
-    <div class="flex flex-col min-w-36 p-2 text-black shadow-md relative">
+    <div
+      class="flex flex-col min-w-36 p-2 text-black shadow-md relative justify-center"
+      classList={{ "bg-gray-190": d() }}
+    >
       <div
         class="flex items-center justify-between cursor-pointer"
-        classList={{ "bg-gray-190": props.disabled }}
         onClick={handleValueClick}
       >
         <p class="select-none">{props.value}</p>
         <Icon
           kind={
-            expanded() && !props.disabled
-              ? EIconKind.ChevronUp
-              : EIconKind.ChevronDown
+            expanded() && !d() ? EIconKind.ChevronUp : EIconKind.ChevronDown
           }
           color={COLORS.black}
         />
       </div>
-      <Show when={expanded() && !props.disabled}>
+      <Show when={expanded() && !d()}>
         <div class="flex flex-col gap-1 absolute z-10 bg-white w-full top-full left-0 shadow-sm">
           <For each={props.possibleValues}>
             {(p) => (

@@ -14,8 +14,11 @@ import { Select } from "@components/select";
 import { TextInput } from "@components/text-input";
 import { Title } from "@components/title";
 import { Principal } from "@dfinity/principal";
+import { useAuth } from "@store/auth";
 import { DecisionTopicId, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
+import { COLORS } from "@utils/colors";
+import { logInfo } from "@utils/error";
 import { E8s } from "@utils/math";
 import { Result, TTaskId } from "@utils/types";
 import {
@@ -45,46 +48,27 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const { tasks, fetchTasksById, editTask, createTask, deleteTask } =
     useTasks();
   const { decisionTopics } = useVotings();
+  const { isAuthorized, disable, disabled, enable } = useAuth();
 
-  onMount(() => {
-    if (!task() && props.id) fetchTasksById([props.id]);
+  createEffect(() => {
+    if (!task() && props.id !== undefined && isAuthorized())
+      fetchTasksById([props.id]);
   });
 
-  const task = () => (props.id ? tasks[props.id.toString()] : undefined);
-
-  const defaultTitle = () => (task() ? task()!.title : "");
-  const defaultTeamOnly = () =>
-    task() ? !!task()!.solver_constraints.find((it) => "TeamOnly" in it) : true;
-  const defaultDescription = () => (task() ? task()!.description : "");
-  const defaultDaysToSolve = () => (task() ? Number(task()!.days_to_solve) : 7);
-  const defaultMaxSolutionsNum = () => {
+  createEffect(() => {
     const t = task();
-    if (!t) return 100;
 
-    const found = t.solver_constraints.find(
+    if (!t) return;
+
+    const maxSolutions = t.solver_constraints.find(
       (it) => "MaxSolutions" in it
     )?.MaxSolutions;
 
-    return found ? found : 100;
-  };
-  const defaultHoursReward = () => (task() ? task()!.hours_base : E8s.zero());
-  const defaultStorypointsBaseReward = () =>
-    task() ? task()!.storypoints_base : E8s.zero();
-  const defaultStorypointsAdditionalReward = () =>
-    task() ? task()!.storypoints_ext_budget : E8s.zero();
-  const defaultDecisionTopics = () => (task() ? task()!.decision_topics : []);
-  const defaultAssignees = () =>
-    task() ? Result.Ok(task()!.assignees![0].toText()) : Result.Ok("");
-  const defaultFieldTypes = () => {
-    const t = task();
-
-    if (!t) return [];
-
-    const res: Result<FieldType, FieldType>[] = [];
+    const solutionFieldTypes: Result<FieldType, FieldType>[] = [];
 
     for (let f of t.solution_fields) {
       if ("Md" in f.kind) {
-        res.push(Result.Ok("Custom Text"));
+        solutionFieldTypes.push(Result.Ok("Custom Text"));
         continue;
       }
 
@@ -92,74 +76,101 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         const u = f.kind.Url.kind;
 
         if ("Any" in u) {
-          res.push(Result.Ok("Custom Link"));
+          solutionFieldTypes.push(Result.Ok("Custom Link"));
         } else if ("Github" in u) {
-          res.push(Result.Ok("Github Link"));
+          solutionFieldTypes.push(Result.Ok("Github Link"));
         } else if ("Twitter" in u) {
-          res.push(Result.Ok("Twitter Link"));
+          solutionFieldTypes.push(Result.Ok("Twitter Link"));
         } else if ("Figma" in u) {
-          res.push(Result.Ok("Figma Link"));
+          solutionFieldTypes.push(Result.Ok("Figma Link"));
         } else if ("Notion" in u) {
-          res.push(Result.Ok("Notion Link"));
+          solutionFieldTypes.push(Result.Ok("Notion Link"));
         } else if ("FortMajorSite" in u) {
-          res.push(Result.Ok("Fort Major Site Link"));
+          solutionFieldTypes.push(Result.Ok("Fort Major Site Link"));
         } else if ("DfinityForum" in u) {
-          res.push(Result.Ok("Dfinity Forum Link"));
+          solutionFieldTypes.push(Result.Ok("Dfinity Forum Link"));
         }
       }
     }
 
-    return res;
-  };
-  const defaultFieldNames = () =>
-    task() ? task()!.solution_fields.map((it) => Result.Ok(it.name)) : [];
-  const defaultFieldDescription = () =>
-    task()
-      ? task()!.solution_fields.map((it) => Result.Ok(it.description))
-      : [];
-  const defaultFieldRequiredFlags = () =>
-    task() ? task()!.solution_fields.map((it) => it.required) : [];
+    batch(() => {
+      setTitle(Result.Ok(t.title));
+      setDescription(Result.Ok(t.description));
+      setTeamOnly(!!t.solver_constraints.find((it) => "TeamOnly" in it));
+      setDaysToSolve(Result.Ok(Number(t.days_to_solve)));
+      if (maxSolutions) setMaxSolutionsNum(Result.Ok(maxSolutions));
+      setHoursReward(Result.Ok(t.hours_base));
+      setStorypointsBaseRewards(Result.Ok(t.storypoints_base));
+      setStorypointsAdditionalRewards(Result.Ok(t.storypoints_ext_budget));
+      setTopics([...t.decision_topics]);
+      if (t.assignees && t.assignees.length > 0)
+        setAssignee(Result.Ok(t.assignees[0].toText()));
+      setFieldsTypes(solutionFieldTypes);
+      setFieldNames(t.solution_fields.map((it) => Result.Ok(it.name)));
+      setFieldDescriptions(
+        t.solution_fields.map((it) => Result.Ok(it.description))
+      );
+      setFieldRequiredFlags(t.solution_fields.map((it) => it.required));
+    });
+  });
 
-  const [disabled, setDisabled] = createSignal(false);
-  const [title, setTitle] = createSignal<Result<string, string>>(
-    Result.Ok(defaultTitle())
-  );
-  const [teamOnly, setTeamOnly] = createSignal(defaultTeamOnly());
+  const clear = () => {
+    batch(() => {
+      setTitle(Result.Ok(""));
+      setDescription(Result.Ok(""));
+      setTeamOnly(true);
+      setDaysToSolve(Result.Ok(7));
+      setMaxSolutionsNum(Result.Ok(100));
+      setHoursReward(Result.Ok(E8s.zero()));
+      setStorypointsBaseRewards(Result.Ok(E8s.zero()));
+      setStorypointsAdditionalRewards(Result.Ok(E8s.zero()));
+      setTopics([]);
+      setAssignee(Result.Ok(""));
+      setFieldsTypes([]);
+      setFieldNames([]);
+      setFieldDescriptions([]);
+      setFieldRequiredFlags([]);
+    });
+  };
+
+  const task = () =>
+    props.id !== undefined ? tasks[props.id.toString()] : undefined;
+
+  const [title, setTitle] = createSignal<Result<string, string>>(Result.Ok(""));
+  const [teamOnly, setTeamOnly] = createSignal(true);
   const [description, setDescription] = createSignal<Result<string, string>>(
-    Result.Ok(defaultDescription())
+    Result.Ok("")
   );
   const [daysToSolve, setDaysToSolve] = createSignal<Result<number, number>>(
-    Result.Ok(defaultDaysToSolve())
+    Result.Ok(7)
   );
   const [maxSolutionsNum, setMaxSolutionsNum] = createSignal<
     Result<number, number>
-  >(Result.Ok(defaultMaxSolutionsNum()));
+  >(Result.Ok(100));
   const [hoursReward, setHoursReward] = createSignal<Result<E8s, E8s>>(
-    Result.Ok(defaultHoursReward())
+    Result.Ok(E8s.zero())
   );
   const [storypointsBaseReward, setStorypointsBaseRewards] = createSignal<
     Result<E8s, E8s>
-  >(Result.Ok(defaultStorypointsBaseReward()));
+  >(Result.Ok(E8s.zero()));
   const [storypointsAdditionalReward, setStorypointsAdditionalRewards] =
-    createSignal<Result<E8s, E8s>>(
-      Result.Ok(defaultStorypointsAdditionalReward())
-    );
-  const [topics, setTopics] = createSignal(defaultDecisionTopics());
-  const [assignee, setAssignee] = createSignal<
-    Result<string | undefined, string | undefined>
-  >(defaultAssignees());
+    createSignal<Result<E8s, E8s>>(Result.Ok(E8s.zero()));
+  const [topics, setTopics] = createSignal<number[]>([]);
+  const [assignee, setAssignee] = createSignal<Result<string, string>>(
+    Result.Ok("")
+  );
 
   const [fieldTypes, setFieldsTypes] = createSignal<
     Result<FieldType, FieldType>[]
-  >(defaultFieldTypes());
+  >([]);
   const [fieldNames, setFieldNames] = createSignal<Result<string, string>[]>(
-    defaultFieldNames()
+    []
   );
   const [fieldDescriptions, setFieldDescriptions] = createSignal<
     Result<string, string>[]
-  >(defaultFieldDescription());
+  >([]);
   const [fieldRequiredFlags, setFieldRequiredFlags] = createSignal<boolean[]>(
-    defaultFieldRequiredFlags()
+    []
   );
 
   const isErr = () => {
@@ -179,7 +190,8 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     );
   };
 
-  const canSubmit = () => !props.id || (task() && "Edit" in task()!.stage);
+  const canSubmit = () =>
+    props.id === undefined || (task() && "Edit" in task()!.stage);
 
   const handleFieldTypeChange = (idx: number, res: Result<string, string>) => {
     setFieldsTypes((v) => {
@@ -270,33 +282,29 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
             "Fort Major Site Link",
             "Custom Link",
           ]}
-          disabled={disabled()}
         />
         <TextInput
           value={fieldNames()[idx].unwrap()}
           onChange={(v) => handleFieldNameChange(idx, v)}
           validations={[{ minLen: 1 }, { maxLen: 64 }]}
           placeholder="Field Name"
-          disabled={disabled()}
         />
         <TextInput
           value={fieldDescriptions()[idx].unwrap()}
           onChange={(v) => handleFieldDescriptionChange(idx, v)}
           validations={[{ minLen: 16 }, { maxLen: 512 }]}
           placeholder="Field Description"
-          disabled={disabled()}
         />
         <BooleanInput
           value={fieldRequiredFlags()[idx]}
           onChange={(v) => handleFieldRequiredFlags(idx, v)}
           labelOff="Optional"
           labelOn="Required"
-          disabled={disabled()}
         />
         <Btn
           icon={EIconKind.Minus}
           onClick={() => handleDeleteFieldClick(idx)}
-          disabled={disabled()}
+          iconColor={COLORS.errorRed}
         />
       </div>
     );
@@ -305,7 +313,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const handleCreateClick = async () => {
     if (isErr()) return;
 
-    setDisabled(true);
+    disable();
 
     const constraints: SolverConstraint[] = [
       { MaxSolutions: maxSolutionsNum().unwrapOk() },
@@ -347,10 +355,10 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
 
     const assig = assignee().unwrapOk();
 
-    if (!props.id) {
-      await createTask({
+    if (props.id === undefined) {
+      const id = await createTask({
         title: title().unwrapOk(),
-        description: title().unwrapOk(),
+        description: description().unwrapOk(),
         days_to_solve: BigInt(daysToSolve().unwrapOk()),
         solver_constraints: constraints,
         hours_base: hoursReward().unwrapOk(),
@@ -360,11 +368,17 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         assignees: assig ? [Principal.fromText(assig)] : undefined,
         decision_topics: topics(),
       });
+
+      clear();
+
+      fetchTasksById([id]);
+
+      logInfo(`The task #${id.toString()} has been created`);
     } else {
       await editTask({
         id: props.id,
         new_title: title().unwrapOk(),
-        new_description: title().unwrapOk(),
+        new_description: description().unwrapOk(),
         new_days_to_solve: BigInt(daysToSolve().unwrapOk()),
         new_solver_constraints: constraints,
         new_hours_base: hoursReward().unwrapOk(),
@@ -374,9 +388,13 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         new_assignees: assig ? [Principal.fromText(assig)] : null,
         new_decision_topics: topics(),
       });
+
+      fetchTasksById([props.id]);
+
+      logInfo(`The task #${props.id.toString()} has been edited`);
     }
 
-    setDisabled(false);
+    enable();
   };
 
   const handleDeleteClick = async () => {
@@ -386,9 +404,10 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
 
     if (!agreed) return;
 
-    setDisabled(true);
+    disable();
     await deleteTask(props.id!);
-    setDisabled(false);
+    clear();
+    enable();
   };
 
   const handleTopicSelect = (id: DecisionTopicId) => {
@@ -413,7 +432,6 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
             validations={[{ required: null }, { minLen: 1 }, { maxLen: 256 }]}
             value={title().unwrap()}
             onChange={setTitle}
-            disabled={disabled()}
           />
         </div>
         <div class={fieldClass + " min-w-28"}>
@@ -423,7 +441,6 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
             labelOn="Team Only"
             value={teamOnly()}
             onChange={setTeamOnly}
-            disabled={disabled()}
           />
         </div>
       </div>
@@ -455,7 +472,6 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
           validations={[{ required: null }, { minLen: 16 }, { maxLen: 4096 }]}
           value={description().unwrap()}
           onChange={setDescription}
-          disabled={disabled()}
         />
       </div>
       <div class={fieldClass}>
@@ -465,7 +481,6 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
           validations={[{ min: 0 }, { max: 90 }]}
           value={daysToSolve().unwrap()}
           onChange={setDaysToSolve}
-          disabled={disabled()}
         />
       </div>
       <div class={fieldClass}>
@@ -475,7 +490,6 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
           validations={[{ min: 1 }, { max: 1000 }]}
           value={maxSolutionsNum().unwrap()}
           onChange={setMaxSolutionsNum}
-          disabled={disabled()}
         />
       </div>
       <div class={fieldClass}>
@@ -485,7 +499,6 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
           validations={[{ max: E8s.fromBigIntBase(40n) }]}
           value={hoursReward().unwrap()}
           onChange={setHoursReward}
-          disabled={disabled()}
         />
       </div>
       <div class={fieldClass}>
@@ -495,7 +508,6 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
           validations={[{ max: E8s.fromBigIntBase(100n) }]}
           value={storypointsBaseReward().unwrap()}
           onChange={setStorypointsBaseRewards}
-          disabled={disabled()}
         />
       </div>
       <div class={fieldClass}>
@@ -505,31 +517,29 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
           validations={[{ max: E8s.fromBigIntBase(100n) }]}
           value={storypointsAdditionalReward().unwrap()}
           onChange={setStorypointsAdditionalRewards}
-          disabled={disabled()}
         />
       </div>
       <div class={fieldClass}>
         <Title text="Solution Fields" />
         <div class="flex flex-col gap-2 justify-end">
           <For each={fieldNames()}>{(_, idx) => field(idx())}</For>
-          <Btn
-            icon={EIconKind.Plus}
-            onClick={handleAddFieldClick}
-            disabled={disabled()}
-          />
+          <Btn icon={EIconKind.Plus} onClick={handleAddFieldClick} />
         </div>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 justify-end">
         <Btn
           text={props.id === undefined ? "Create Task" : "Edit Task"}
-          disabled={(isErr() || disabled()) && canSubmit()}
+          disabled={isErr() || !canSubmit()}
           onClick={handleCreateClick}
+          icon={EIconKind.Edit}
+          iconColor={COLORS.green}
         />
         <Show when={props.id !== undefined}>
           <Btn
             text="Delete Task"
-            disabled={disabled()}
             onClick={handleDeleteClick}
+            icon={EIconKind.CancelCircle}
+            iconColor={COLORS.errorRed}
           />
         </Show>
       </div>

@@ -81,6 +81,9 @@ export interface IAuthStoreContext {
   isReadyToFetch: Accessor<boolean>;
   assertReadyToFetch: () => never | void;
   assertAuthorized: () => never | void;
+  disabled: Accessor<boolean>;
+  disable: () => void;
+  enable: () => void;
 
   profileProof: () => Promise<IProfileProof>;
   profileProofCert: () => Promise<Uint8Array>;
@@ -110,6 +113,7 @@ export function AuthStore(props: IChildren) {
   const [agent, setAgent] = createSignal<Agent | undefined>();
   const [anonymousAgent, setAnonymousAgent] = createSignal<Agent | undefined>();
   const [myBalance, setMyBalance] = createSignal<IMyBalance | undefined>();
+  const [disabled, setDisabled] = createSignal(false);
   const [profileProof, profileProofCert] = createProofSignal<IProfileProof>(
     "fmj-profile-proof",
     async () => {
@@ -334,6 +338,9 @@ export function AuthStore(props: IChildren) {
         reputationProofCert,
         editMyProfile,
         myBalance,
+        disabled,
+        disable: () => setDisabled(true),
+        enable: () => setDisabled(false),
       }}
     >
       {props.children}

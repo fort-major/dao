@@ -1,6 +1,7 @@
 import { Match, Switch, createSignal } from "solid-js";
 import { COLORS } from "../../utils/colors";
 import { eventHandler } from "../../utils/security";
+import { useAuth } from "@store/auth";
 
 export enum EIconKind {
   ThumbUp,
@@ -65,7 +66,10 @@ export interface IIconProps {
 }
 
 export function Icon(props: IIconProps) {
+  const { disabled } = useAuth();
+
   const [hovered, setHovered] = createSignal(false);
+  const d = () => props.disabled || disabled();
 
   const color = () => {
     if (hovered() && props.onClick) {
@@ -74,8 +78,8 @@ export function Icon(props: IIconProps) {
       } else {
         return COLORS.black;
       }
-    } else if (props.disabled) {
-      return COLORS.gray[120];
+    } else if (d()) {
+      return COLORS.gray[150];
     } else {
       if (props.color) {
         return props.color;

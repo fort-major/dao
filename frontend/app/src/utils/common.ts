@@ -38,8 +38,6 @@ export const debouncedBatchFetch = <ID, T, RESP extends Resp<T>>(
   const execute = () => {
     const req = { ids };
 
-    console.log("execute", fetcher);
-
     fetcher(req)
       .then((resp) => onSuccess(resp, req))
       .catch((reason) => onErr(reason, req));

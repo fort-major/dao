@@ -33,7 +33,9 @@ export function E8sWidget(props: IE8sWidgetProps) {
       return `from ${props.minValue.toPrecision(
         4,
         !props.disallowEmptyTail
-      )} to ${props.maxValue.toPrecision(4, !props.disallowEmptyTail)}`;
+      )} to ${props.minValue
+        .add(props.maxValue)
+        .toPrecision(4, !props.disallowEmptyTail)}`;
     } else {
       return props.minValue.toPrecision(4, !props.disallowEmptyTail);
     }

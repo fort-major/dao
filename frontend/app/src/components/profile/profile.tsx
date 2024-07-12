@@ -37,14 +37,20 @@ export interface IProfileProps extends IClass {
 
 export function ProfileFull(props: IProfileProps) {
   const { profiles, reputation, totals, fetchProfiles } = useHumans();
-  const { editMyProfile, myBalance, isReadyToFetch } = useAuth();
+  const {
+    editMyProfile,
+    myBalance,
+    isReadyToFetch,
+    disable,
+    enable,
+    disabled,
+  } = useAuth();
   const { createHumansEmployVoting, createHumansUnemployVoting } = useVotings();
 
   const [newName, setNewName] = createSignal<Result<string, string>>(
     Result.Ok("Anonymous")
   );
   const [edited, setEdited] = createSignal(false);
-  const [disabled, setDisabled] = createSignal(false);
 
   const profile = () => (props.id ? profiles[props.id.toText()] : undefined);
   const rep = () => (props.id ? reputation[props.id.toText()] : undefined);
@@ -84,15 +90,13 @@ export function ProfileFull(props: IProfileProps) {
   const canUpdateName = () => !disabled() && newName().isOk();
 
   const handleUpdateName = async () => {
-    setDisabled(true);
+    disable();
 
     await editMyProfile(newName()!.unwrapOk());
-
     setEdited(false);
-
     await fetchProfiles([props.id!]);
 
-    setDisabled(false);
+    enable();
   };
 
   const handleProposeAdmit = async () => {
@@ -110,9 +114,9 @@ export function ProfileFull(props: IProfileProps) {
         return;
       }
 
-      setDisabled(true);
+      disable();
       await createHumansEmployVoting(props.id!, commitment);
-      setDisabled(false);
+      enable();
 
       alert(
         "The voting has been created! Navigate to the Decisions page to continue."
@@ -129,9 +133,9 @@ export function ProfileFull(props: IProfileProps) {
 
     if (!agreed) return;
 
-    setDisabled(true);
+    disable();
     await createHumansUnemployVoting(props.id!);
-    setDisabled(false);
+    enable();
 
     alert(
       "The voting has been created! Navigate to the Decisions page to continue."
@@ -258,7 +262,6 @@ export function ProfileFull(props: IProfileProps) {
             <Btn
               text="Expel"
               icon={EIconKind.Minus}
-              disabled={disabled()}
               onClick={handleProposeExpel}
             />
           </Match>
@@ -266,7 +269,6 @@ export function ProfileFull(props: IProfileProps) {
             <Btn
               text="Admit"
               icon={EIconKind.Plus}
-              disabled={disabled()}
               onClick={handleProposeAdmit}
             />
           </Match>

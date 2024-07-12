@@ -130,7 +130,7 @@ export function TaskMini(props: ITaskProps) {
 
   return (
     <div class="flex flex-col gap-5">
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-2">
         <div class="flex flex-grow gap-1 items-center">
           <div class="flex flex-grow gap-1 items-baseline">
             <p class="font-primary font-medium text-xs text-gray-150">
@@ -180,14 +180,20 @@ export function Task(props: ITaskProps) {
     finishEditTask,
     finishSolveTask,
   } = useTasks();
-  const { identity, isAuthorized, isReadyToFetch, profileProof, authorize } =
-    useAuth();
+  const {
+    identity,
+    isAuthorized,
+    isReadyToFetch,
+    profileProof,
+    authorize,
+    enable,
+    disable,
+    disabled,
+  } = useAuth();
   const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
     useVotings();
 
   const [showSolveModal, setShowSolveModal] = createSignal(false);
-  const [disabled, setDisabled] = createSignal(false);
-
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
     tasks[props.id.toString()];
 
@@ -302,10 +308,10 @@ export function Task(props: ITaskProps) {
 
     if (!agreed) return;
 
-    setDisabled(true);
+    disable();
     await finishEditTask(props.id);
     await createTasksStartSolveVoting(props.id);
-    setDisabled(false);
+    enable();
 
     alert(
       "The voting has been created! Navigate to the Decisions page to continue."
@@ -319,10 +325,10 @@ export function Task(props: ITaskProps) {
 
     if (!agreed) return;
 
-    setDisabled(true);
+    disable();
     await finishSolveTask(props.id);
     await createTasksEvaluateVoting(props.id);
-    setDisabled(false);
+    enable();
 
     alert(
       "The voting has been created! Navigate to the Decisions page to continue."
@@ -330,9 +336,9 @@ export function Task(props: ITaskProps) {
   };
 
   const handleLogInClick = async () => {
-    setDisabled(true);
+    disable();
     await authorize();
-    setDisabled(false);
+    enable();
   };
 
   const handleSolveClick = () => {
@@ -350,26 +356,17 @@ export function Task(props: ITaskProps) {
             >
               Edit
             </A>
-            <Btn
-              text="Start Solving Phase"
-              disabled={disabled()}
-              onClick={handleFinishEditClick}
-            />
+            <Btn text="Start Solving Phase" onClick={handleFinishEditClick} />
           </div>
         </Match>
         <Match when={readyToEvaluate()}>
-          <Btn
-            text="Start Evaluation Phase"
-            disabled={disabled()}
-            onClick={handleFinishSolveClick}
-          />
+          <Btn text="Start Evaluation Phase" onClick={handleFinishSolveClick} />
         </Match>
         <Match when={canSolve() && profileProof()}>
           <Btn
             text={mySolution() ? "Edit Solution" : "Solve"}
             icon={EIconKind.CheckRect}
             iconColor={COLORS.green}
-            disabled={disabled()}
             onClick={handleSolveClick}
           />
         </Match>
@@ -377,7 +374,6 @@ export function Task(props: ITaskProps) {
           <Btn
             text="Log In to Contribute"
             icon={EIconKind.MetaMask}
-            disabled={disabled()}
             onClick={handleLogInClick}
           />
         </Match>
@@ -438,9 +434,9 @@ export function Task(props: ITaskProps) {
   };
 
   const handleCountMeIn = async () => {
-    setDisabled(true);
+    disable();
     await attachToTask(props.id);
-    setDisabled(false);
+    enable();
 
     fetchTasksById([props.id]);
   };
@@ -453,7 +449,7 @@ export function Task(props: ITaskProps) {
   return (
     <>
       <div class="flex flex-col gap-5">
-        <div class="flex flex-col">
+        <div class="flex flex-col gap-2">
           <div class="flex flex-grow gap-1 items-center">
             <div class="flex flex-grow gap-1 items-baseline">
               <p class="font-primary font-medium text-xs text-gray-150">
@@ -524,7 +520,6 @@ export function Task(props: ITaskProps) {
                       labelOff="Won't Do"
                       labelOn="Count Me It"
                       value={countMeInValue()}
-                      disabled={disabled()}
                       onChange={handleCountMeIn}
                     />
                   </div>

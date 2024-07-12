@@ -1,6 +1,7 @@
 import { MdPreview } from "@components/md-preview";
 import { MdTools } from "@components/md-tools";
 import { ValidationError } from "@components/validation-error";
+import { useAuth } from "@store/auth";
 import { ErrorCode, err } from "@utils/error";
 import { eventHandler } from "@utils/security";
 import { Result } from "@utils/types";
@@ -21,9 +22,13 @@ export interface IMdInputProps {
 }
 
 export function MdInput(props: IMdInputProps) {
+  const { disabled } = useAuth();
+
   const [history, setHistory] = createSignal<Result<string, string>[]>([]);
   const [mode, setMode] = createSignal<"edit" | "preview">("edit");
   const [error, setError] = createSignal<string | undefined>();
+
+  const d = () => disabled() || props.disabled;
 
   let textAreaRef: HTMLTextAreaElement | undefined;
 
@@ -211,6 +216,8 @@ export function MdInput(props: IMdInputProps) {
       to: number
     ) => [string, number | undefined | null, number | undefined | null]
   ) => {
+    if (d()) return;
+
     if (!textAreaRef)
       err(ErrorCode.UNREACHEABLE, "Text Area Ref accessed before linking");
 
@@ -280,6 +287,7 @@ export function MdInput(props: IMdInputProps) {
 
         case "z":
           e.preventDefault();
+          if (d()) return;
           const v = popHistory();
           if (v !== undefined) {
             props.onChange(v);
@@ -318,7 +326,7 @@ export function MdInput(props: IMdInputProps) {
               class="font-primary font-light focus:outline-none p-4"
               classList={{
                 italic: props.value.length === 0,
-                "bg-gray-190": props.disabled,
+                "bg-gray-190": d(),
               }}
               minRows={10}
               ref={textAreaRef}
@@ -327,7 +335,7 @@ export function MdInput(props: IMdInputProps) {
               onChange={handleChangeEvent}
               value={props.value}
               onKeyDown={handleKeyDown}
-              disabled={props.disabled}
+              disabled={d()}
             />
           </Match>
           <Match when={mode() === "preview"}>
