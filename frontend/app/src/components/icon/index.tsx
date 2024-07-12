@@ -44,8 +44,8 @@ export enum EIconKind {
   ArrowsCircle,
   ICP,
   FMJ,
-  Hours,
-  Storypoints,
+  Hour,
+  Storypoint,
   DocEdit,
   DocQuestion,
   DocSearch,
@@ -627,7 +627,7 @@ export function Icon(props: IIconProps) {
           />
         </Match>
 
-        <Match when={props.kind === EIconKind.Storypoints}>
+        <Match when={props.kind === EIconKind.Storypoint}>
           <path
             d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z"
             fill="#FF7425"
@@ -638,7 +638,7 @@ export function Icon(props: IIconProps) {
           />
         </Match>
 
-        <Match when={props.kind === EIconKind.Hours}>
+        <Match when={props.kind === EIconKind.Hour}>
           <path
             d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z"
             fill="#15E3FF"

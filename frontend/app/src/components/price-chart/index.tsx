@@ -1,7 +1,7 @@
 import { TPairStr, useBank } from "@store/bank";
 import { strToPair, timestampToStr } from "@utils/encoding";
 import { Line } from "solid-chartjs";
-import { onMount } from "solid-js";
+import { createEffect, onMount } from "solid-js";
 import { COLORS } from "@utils/colors";
 import { Chart, Title, Tooltip, Legend, Colors } from "chart.js";
 
@@ -25,6 +25,7 @@ export function PriceChart(props: IPriceChart) {
 
     return l;
   };
+
   const rates = () => {
     const r = (exchangeRates[props.pair] ?? []).map(([_, rate]) =>
       rate.toPrecision(4)

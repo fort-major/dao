@@ -1,8 +1,7 @@
 import { Component } from "solid-js";
 import { useLocation } from "@solidjs/router";
-import { unreacheable } from "@fort-major/msq-shared";
-import { TestPage } from "@pages/test";
 import { HomePage } from "@pages/home";
+import { MePage } from "@pages/me";
 
 export interface IRoute {
   parent?: IRoute;
@@ -24,9 +23,10 @@ export const ROOT = route({
       component: HomePage,
     }),
     tasks: route({}),
-    decisions: route({}),
-    stats: route({}),
-    me: route({}),
+    humans: route({}),
+    me: route({
+      component: MePage,
+    }),
   },
 });
 

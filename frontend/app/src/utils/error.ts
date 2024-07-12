@@ -21,10 +21,10 @@ export function logErr(code: ErrorCode, msg?: string) {
   const str = `[code: ${code}]${msg ? `: ${msg}` : ""}`;
 
   console.error(str);
-  toast.error(str);
+  toast.error(str, { position: "bottom-center" });
 }
 
 export function logInfo(msg: string) {
   console.info(msg);
-  toast(msg);
+  toast(msg, { position: "bottom-center" });
 }

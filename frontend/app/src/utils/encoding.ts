@@ -290,8 +290,8 @@ export function encodeVotingId(id: VotingId): string {
   if ("EvaluateTask" in id) {
     return `EvaluateTask${VOTING_ID_STR_DELIMITER}${id.EvaluateTask.toString()}`;
   }
-  if ("FinishEditTask" in id) {
-    return `FinishEditTask${VOTING_ID_STR_DELIMITER}${id.FinishEditTask.toString()}`;
+  if ("StartSolveTask" in id) {
+    return `StartSolveTask${VOTING_ID_STR_DELIMITER}${id.StartSolveTask.toString()}`;
   }
   if ("BankSetExchangeRate" in id) {
     const [swapFrom, swapInto] = id.BankSetExchangeRate;
@@ -315,8 +315,8 @@ export function decodeVotingId(idStr: string): VotingId {
       return { HumansUnemploy: Principal.fromText(args[0]) };
     case "EvaluateTask":
       return { EvaluateTask: BigInt(args[0]) };
-    case "FinishEditTask":
-      return { FinishEditTask: BigInt(args[0]) };
+    case "StartSolveTask":
+      return { StartSolveTask: BigInt(args[0]) };
     case "BankSetExchangeRate":
       return {
         // @ts-expect-error - invalid SwapFrom and SwapInto keys will fail on backend

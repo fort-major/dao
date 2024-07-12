@@ -26,7 +26,7 @@ export interface IExchangeRateProps {
 
 export function ExchangeRate(props: IExchangeRateProps) {
   const { createBankSetExchangeRateVoting } = useVotings();
-  const { exchangeRates, fetchExchangeRates } = useBank();
+  const { exchangeRates } = useBank();
 
   const [edited, setEdited] = createSignal(false);
   const [proposing, setProposing] = createSignal(false);
@@ -43,12 +43,6 @@ export function ExchangeRate(props: IExchangeRateProps) {
     return current[1];
   };
   const pair = createMemo(() => strToPair(props.pair));
-
-  onMount(() => {
-    const r = rate();
-
-    if (!r) fetchExchangeRates();
-  });
 
   createEffect(() => {
     const r = rate();

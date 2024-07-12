@@ -28,8 +28,8 @@ export function FromInput(props: IFromInputProps) {
       <div class="flex flex-col gap-2 justify-between">
         <Select
           possibleValues={[
-            EE8sKind.Hours,
-            EE8sKind.Storypoints,
+            EE8sKind.Hour,
+            EE8sKind.Storypoint,
             EE8sKind.FMJ,
             EE8sKind.ICP,
           ]}
@@ -45,6 +45,7 @@ export function FromInput(props: IFromInputProps) {
           symbol={props.kind}
           value={props.amount}
           onChange={props.onAmountChange}
+          validations={[{ max: props.balance }]}
         />
         <p
           class="flex justify-end px-2 text-darkBlue underline cursor-pointer"

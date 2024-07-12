@@ -2,6 +2,7 @@ import {
   Accessor,
   batch,
   createContext,
+  createEffect,
   createSignal,
   onMount,
   useContext,
@@ -34,8 +35,8 @@ import { ReputationDelegationTreeNode } from "@/declarations/votings/votings.did
 const PROOF_TTL_MS = Number((ONE_MIN_NS * 450n) / 1000_000n);
 
 export interface IMyBalance {
-  Hours: E8s;
-  Storypoints: E8s;
+  Hour: E8s;
+  Storypoint: E8s;
   FMJ: E8s;
   ICP: E8s;
 }
@@ -89,7 +90,6 @@ export interface IAuthStoreContext {
   editMyProfile: (name?: string) => Promise<void>;
 
   myBalance: Accessor<IMyBalance | undefined>;
-  fetchMyBalance: () => Promise<void>;
 }
 
 const AuthContext = createContext<IAuthStoreContext>();
@@ -169,7 +169,23 @@ export function AuthStore(props: IChildren) {
     });
 
   onMount(async () => {
-    setAnonymousAgent(await makeAnonymousAgent());
+    makeAnonymousAgent().then((a) => setAnonymousAgent(a));
+
+    if (retrieveHasMetaMask()) {
+      const res = await MsqClient.create();
+
+      if ("Ok" in res) {
+        setMsqClient(res.Ok);
+
+        return authorize();
+      }
+    }
+  });
+
+  createEffect(() => {
+    if (isAuthorized()) {
+      fetchMyBalance();
+    }
   });
 
   const authorize: IAuthStoreContext["authorize"] = async () => {
@@ -201,14 +217,19 @@ export function AuthStore(props: IChildren) {
         ]);
       };
 
+      batch(() => {
+        setIdentity(id as unknown as Identity);
+        setAgent(a);
+      });
+
+      logInfo("Login successful");
+
       const { entries: profiles } = await humansActor.humans__get_profiles({
         ids: [id.getPrincipal()],
       });
 
       if (!profiles[0][0]) {
-        logInfo(
-          `First time here? Registering ${id.getPrincipal().toText()}...`
-        );
+        logInfo(`First time here? Registering...`);
 
         const name = await id.getPseudonym();
 
@@ -217,17 +238,13 @@ export function AuthStore(props: IChildren) {
         });
       }
 
-      setIdentity(id as unknown as Identity);
-      setAgent(a);
-
-      logInfo("Login successful");
-
       return true;
     }
 
     const res = await MsqClient.create();
 
     if ("Ok" in res) {
+      storeHasMetaMask();
       setMsqClient(res.Ok);
 
       return authorize();
@@ -272,8 +289,8 @@ export function AuthStore(props: IChildren) {
     }
 
     setMyBalance({
-      Hours: E8s.new(myProfile.hours_balance),
-      Storypoints: E8s.new(myProfile.storypoints_balance),
+      Hour: E8s.new(myProfile.hours_balance),
+      Storypoint: E8s.new(myProfile.storypoints_balance),
       ICP: E8s.new(icpBalance),
       FMJ: E8s.new(fmjBalance),
     });
@@ -317,7 +334,6 @@ export function AuthStore(props: IChildren) {
         reputationProofCert,
         editMyProfile,
         myBalance,
-        fetchMyBalance,
       }}
     >
       {props.children}
@@ -437,4 +453,12 @@ export function createProofSignal<T>(
   };
 
   return [getBody, getCert];
+}
+
+function retrieveHasMetaMask() {
+  return !!localStorage.getItem("fmj-has-metamask");
+}
+
+function storeHasMetaMask() {
+  localStorage.setItem("fmj-has-metamask", "true");
 }

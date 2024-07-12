@@ -473,7 +473,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       <div class={fieldClass}>
         <Title text="Hours Reward" />
         <QtyInput
-          symbol={EE8sKind.Hours}
+          symbol={EE8sKind.Hour}
           validations={[{ max: E8s.fromBigIntBase(40n) }]}
           value={hoursReward().unwrap()}
           onChange={setHoursReward}
@@ -483,7 +483,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       <div class={fieldClass}>
         <Title text="Storypoints Base Reward" />
         <QtyInput
-          symbol={EE8sKind.Storypoints}
+          symbol={EE8sKind.Storypoint}
           validations={[{ max: E8s.fromBigIntBase(100n) }]}
           value={storypointsBaseReward().unwrap()}
           onChange={setStorypointsBaseRewards}
@@ -493,7 +493,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       <div class={fieldClass}>
         <Title text="Storypoints Max Additional Reward" />
         <QtyInput
-          symbol={EE8sKind.Storypoints}
+          symbol={EE8sKind.Storypoint}
           validations={[{ max: E8s.fromBigIntBase(100n) }]}
           value={storypointsAdditionalReward().unwrap()}
           onChange={setStorypointsAdditionalRewards}

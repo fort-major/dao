@@ -49,7 +49,6 @@ type ExchangeRatesStore = Partial<Record<TPairStr, [TTimestamp, E8s][]>>;
 
 export interface IBankStoreContext {
   exchangeRates: Store<ExchangeRatesStore>;
-  fetchExchangeRates: () => Promise<void>;
   swapRewards: (pairStr: TPairStr, amount: E8s) => Promise<ISwapResponse>;
   transfer: (
     token: "ICP" | "FMJ",
@@ -89,6 +88,7 @@ export function BankStore(props: IChildren) {
   createEffect(() => {
     if (isReadyToFetch()) {
       fetchFmjStats();
+      fetchExchangeRates();
     }
   });
 
@@ -106,22 +106,21 @@ export function BankStore(props: IChildren) {
     });
   };
 
-  const fetchExchangeRates: IBankStoreContext["fetchExchangeRates"] =
-    async () => {
-      assertReadyToFetch();
+  const fetchExchangeRates = async () => {
+    assertReadyToFetch();
 
-      const bankActor = newBankActor(anonymousAgent()!);
-      const { exchange_rates } = await bankActor.bank__get_exchange_rates({});
+    const bankActor = newBankActor(anonymousAgent()!);
+    const { exchange_rates } = await bankActor.bank__get_exchange_rates({});
 
-      for (let [from, into, history] of exchange_rates) {
-        const pair = wrapPair(from, into);
+    for (let [from, into, history] of exchange_rates) {
+      const pair = wrapPair(from, into);
 
-        setExchangeRates(
-          pairToStr(pair),
-          history.map(([timestamp, rate]) => [timestamp, E8s.new(rate)])
-        );
-      }
-    };
+      setExchangeRates(
+        pairToStr(pair),
+        history.map(([timestamp, rate]) => [timestamp, E8s.new(rate)])
+      );
+    }
+  };
 
   const swapRewards: IBankStoreContext["swapRewards"] = async (
     pairStr,
@@ -178,7 +177,6 @@ export function BankStore(props: IChildren) {
     <BankContext.Provider
       value={{
         exchangeRates,
-        fetchExchangeRates,
         swapRewards,
         transfer,
         fmjStats,

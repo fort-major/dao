@@ -3,6 +3,7 @@ import { Match, Switch } from "solid-js";
 
 export interface IProjectCardProps {
   kind: "msq" | "fmj" | "soon";
+  class?: string;
 }
 
 export function ProjectCard(props: IProjectCardProps) {
@@ -13,6 +14,7 @@ export function ProjectCard(props: IProjectCardProps) {
       viewBox="0 0 320 200"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      class={props.class}
     >
       <Switch>
         <Match when={props.kind === "fmj"}>

@@ -3,10 +3,12 @@ import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { ExchangeRate } from "@components/exchange-rate";
 import { FromInput } from "@components/from-input";
 import { EIconKind } from "@components/icon";
+import { PriceChart } from "@components/price-chart";
 import { Select } from "@components/select";
 import { TextInput } from "@components/text-input";
 import { Title } from "@components/title";
 import { Principal } from "@dfinity/principal";
+import { debugStringify } from "@fort-major/msq-shared";
 import { useAuth } from "@store/auth";
 import { useBank } from "@store/bank";
 import { COLORS } from "@utils/colors";
@@ -23,9 +25,11 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   const { transfer, swapRewards, exchangeRates } = useBank();
 
   const [profProof] = createResource(profileProof);
-  const [from, setFrom] = createSignal(EE8sKind.Hours);
+  const [from, setFrom] = createSignal(EE8sKind.Hour);
   const [into, setInto] = createSignal(EE8sKind.FMJ);
-  const [amount, setAmount] = createSignal<E8s>(E8s.zero());
+  const [amount, setAmount] = createSignal<Result<E8s, E8s>>(
+    Result.Ok(E8s.zero())
+  );
   const [transferRecipient, setTransferRecipient] = createSignal<
     Result<string, string>
   >(Result.Ok(""));
@@ -44,30 +48,34 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   const amountToTransfer = () => {
     const a = amount();
 
-    if (!a) return E8s.zero();
+    if (a.isErr()) return E8s.zero();
 
     const fee = E8s.new(1000n);
+    const am = a.unwrapOk();
 
-    if (a.le(fee)) return E8s.zero();
+    if (am.le(fee)) return E8s.zero();
 
-    return a.sub(fee);
+    return am.sub(fee);
   };
 
   const mode = () => {
-    if (from() === EE8sKind.Hours || from() === EE8sKind.Storypoints)
+    if (from() === EE8sKind.Hour || from() === EE8sKind.Storypoint)
       return "swap";
     if (from() === EE8sKind.FMJ || from() === EE8sKind.ICP) return "transfer";
 
-    err(ErrorCode.UNREACHEABLE, `Unexpected token ${from()}`);
+    err(ErrorCode.UNREACHEABLE, `Unexpected token ${debugStringify(from())}`);
   };
 
   const canTransfer = () =>
-    mode() === "transfer" && transferRecipient() && amount()?.toBool();
+    mode() === "transfer" &&
+    transferRecipient() &&
+    amount().isOk() &&
+    amount().unwrap().toBool();
 
   const canSwap = () => mode() === "swap" && into() && intoAmount().toBool();
 
   const handleTransfer = async () => {
-    const a = amount()!;
+    const a = amount().unwrapOk();
     const at = amountToTransfer()!;
     const recipient = transferRecipient()!;
 
@@ -108,9 +116,9 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   const intoAmount = () => {
     const a = amount();
 
-    if (!a) return E8s.zero();
+    if (a.isErr()) return E8s.zero();
 
-    return a.mul(exchangeRate());
+    return a.unwrapOk().mul(exchangeRate());
   };
 
   const handleSwap = async () => {
@@ -126,7 +134,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     setDisabled(true);
     const { qty } = await swapRewards(
       pairToStr({ from: from(), into: into() }),
-      a
+      a.unwrapOk()
     );
     setDisabled(false);
 
@@ -139,10 +147,10 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     <div class="flex flex-col gap-5">
       <FromInput
         balance={balance()}
-        amount={amount()}
+        amount={amount().unwrap()}
         kind={from()}
         onAmountChange={setAmount}
-        onKindChange={setFrom}
+        onKindChange={(r) => setFrom(r.unwrapOk())}
       />
       <div class="flex flex-col justify-end gap-2">
         <Switch>
@@ -187,6 +195,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
               disabled={!canSwap() || disabled()}
               onClick={handleSwap}
             />
+            <PriceChart pair={pairToStr({ from: from(), into: into() })} />
           </Match>
         </Switch>
       </div>

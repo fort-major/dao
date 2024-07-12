@@ -143,11 +143,11 @@ export function TaskMini(props: ITaskProps) {
           {stageLabel()}
           <div class="flex gap-1 items-center">
             <E8sWidget
-              kind={EE8sKind.Hours}
+              kind={EE8sKind.Hour}
               minValue={task()?.hours_base ? task()!.hours_base! : E8s.zero()}
             />
             <E8sWidget
-              kind={EE8sKind.Storypoints}
+              kind={EE8sKind.Storypoint}
               minValue={
                 task()?.storypoints_base
                   ? task()!.storypoints_base!
@@ -522,11 +522,11 @@ export function Task(props: ITaskProps) {
             <div class="flex flex-grow flex-col gap-1">
               <Title text="Rewards" />
               <E8sWidget
-                kind={EE8sKind.Hours}
+                kind={EE8sKind.Hour}
                 minValue={task()?.hours_base ? task()!.hours_base! : E8s.zero()}
               />
               <E8sWidget
-                kind={EE8sKind.Storypoints}
+                kind={EE8sKind.Storypoint}
                 minValue={
                   task()?.storypoints_base
                     ? task()!.storypoints_base!

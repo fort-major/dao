@@ -4,12 +4,14 @@ import { Btn } from "@components/btn";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { EIconKind } from "@components/icon";
 import { Logo } from "@components/logo";
+import { MetricWidget } from "@components/metric-widget";
 import { ProfileMicro } from "@components/profile/profile";
 import { A } from "@solidjs/router";
 import { useAuth } from "@store/auth";
+import { useHumans } from "@store/humans";
 import { avatarSrcFromPrincipal } from "@utils/common";
 import { E8s } from "@utils/math";
-import { Match, Switch } from "solid-js";
+import { createEffect, Match, Show, Switch } from "solid-js";
 
 export interface IHeaderProps {
   class?: string;
@@ -17,6 +19,20 @@ export interface IHeaderProps {
 
 export function Header(props: IHeaderProps) {
   const { isAuthorized, authorize, identity, myBalance } = useAuth();
+  const { reputation, fetchProfiles } = useHumans();
+
+  const myRep = () => {
+    const me = identity()?.getPrincipal();
+    return me ? reputation[me.toText()] : undefined;
+  };
+
+  createEffect(() => {
+    const me = identity()?.getPrincipal();
+
+    if (isAuthorized() && !myRep() && me) {
+      fetchProfiles([me]);
+    }
+  });
 
   const linkClass = "font-primary font-normal text-white text-xl";
 
@@ -40,17 +56,15 @@ export function Header(props: IHeaderProps) {
         <A
           activeClass="underline"
           class={linkClass}
-          href={ROOT["/"].decisions.path}
+          href={ROOT["/"].humans.path}
         >
-          Decisions
+          Humans
         </A>
-        <A
-          activeClass="underline"
-          class={linkClass}
-          href={ROOT["/"].stats.path}
-        >
-          Stats
-        </A>
+        <Show when={isAuthorized()}>
+          <A activeClass="underline" class={linkClass} href={ROOT["/"].me.path}>
+            Me
+          </A>
+        </Show>
       </div>
       <Switch>
         <Match when={!isAuthorized()}>
@@ -62,7 +76,7 @@ export function Header(props: IHeaderProps) {
           />
         </Match>
         <Match when={isAuthorized()}>
-          <A href={ROOT["/"].me.path} class="flex gap-2 items-center">
+          <div class="flex gap-2 items-center">
             <div class="min-w-24">
               <E8sWidget
                 white
@@ -74,21 +88,31 @@ export function Header(props: IHeaderProps) {
             <div class="min-w-24">
               <E8sWidget
                 white
-                kind={EE8sKind.Hours}
-                minValue={myBalance() ? myBalance()!.Hours : E8s.zero()}
+                kind={EE8sKind.Hour}
+                minValue={myBalance() ? myBalance()!.Hour : E8s.zero()}
                 disallowEmptyTail
               />
             </div>
             <div class="min-w-24">
               <E8sWidget
                 white
-                kind={EE8sKind.Storypoints}
-                minValue={myBalance() ? myBalance()!.Storypoints : E8s.zero()}
+                kind={EE8sKind.Storypoint}
+                minValue={myBalance() ? myBalance()!.Storypoint : E8s.zero()}
                 disallowEmptyTail
               />
             </div>
+            <Show when={myRep()}>
+              <div class="min-w-24">
+                <MetricWidget
+                  primary={myRep()!.toPrecision(2, true)}
+                  secondary="Reputation"
+                  white
+                />
+              </div>
+            </Show>
+
             <ProfileMicro id={identity()?.getPrincipal()} avatarSize="md" />
-          </A>
+          </div>
         </Match>
       </Switch>
     </header>

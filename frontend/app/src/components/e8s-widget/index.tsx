@@ -6,8 +6,8 @@ import { IClass } from "@utils/types";
 export enum EE8sKind {
   FMJ = "FMJ",
   ICP = "ICP",
-  Storypoints = "Storypoints",
-  Hours = "Hours",
+  Storypoint = "Storypoint",
+  Hour = "Hour",
 }
 
 export interface IE8sWidgetProps extends IClass {
@@ -24,9 +24,9 @@ export function E8sWidget(props: IE8sWidgetProps) {
       ? EIconKind.FMJ
       : props.kind === EE8sKind.ICP
       ? EIconKind.ICP
-      : props.kind === EE8sKind.Storypoints
-      ? EIconKind.Storypoints
-      : EIconKind.Hours;
+      : props.kind === EE8sKind.Storypoint
+      ? EIconKind.Storypoint
+      : EIconKind.Hour;
 
   const value = () => {
     if (props.maxValue) {

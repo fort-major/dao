@@ -27,6 +27,7 @@ import { useAuth } from "@store/auth";
 import { useVotings } from "@store/votings";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { avatarSrcFromPrincipal } from "@utils/common";
+import { ComingSoonText } from "@components/coming-soon-text";
 
 export interface IProfileProps extends IClass {
   id?: Principal;
@@ -35,9 +36,8 @@ export interface IProfileProps extends IClass {
 }
 
 export function ProfileFull(props: IProfileProps) {
-  const { profiles, reputation, totals, fetchTotals, fetchProfiles } =
-    useHumans();
-  const { editMyProfile, profileProof, myBalance, fetchMyBalance } = useAuth();
+  const { profiles, reputation, totals, fetchProfiles } = useHumans();
+  const { editMyProfile, myBalance, isReadyToFetch } = useAuth();
   const { createHumansEmployVoting, createHumansUnemployVoting } = useVotings();
 
   const [newName, setNewName] = createSignal<Result<string, string>>(
@@ -70,12 +70,7 @@ export function ProfileFull(props: IProfileProps) {
   });
 
   createEffect(() => {
-    if (!profile() && props.id) fetchProfiles([props.id]);
-  });
-
-  createEffect(() => {
-    if (!totals()) fetchTotals();
-    if (!myBalance()) fetchMyBalance();
+    if (!profile() && props.id && isReadyToFetch()) fetchProfiles([props.id]);
   });
 
   const handleEditClick = () => {
@@ -143,6 +138,9 @@ export function ProfileFull(props: IProfileProps) {
     );
   };
 
+  const borderColor = () =>
+    profile()?.employment ? COLORS.chartreuse : COLORS.gray[150];
+
   const metricClass = "flex flex-col gap-1 min-w-36";
 
   return (
@@ -150,9 +148,7 @@ export function ProfileFull(props: IProfileProps) {
       <div class="flex flex-col self-center items-center gap-2">
         <Avatar
           size={props.avatarSize ?? "lg"}
-          borderColor={
-            profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]
-          }
+          borderColor={borderColor()}
           url={props.id ? avatarSrcFromPrincipal(props.id) : undefined}
         />
         <p class="flex gap-1 items-center text-center font-primary text-xs font-bold">
@@ -194,7 +190,7 @@ export function ProfileFull(props: IProfileProps) {
         <div class={metricClass}>
           <Title text="Reputation" />
           <MetricWidget
-            primary={rep() ? rep()!.toPrecision(2) : "0.0"}
+            primary={rep() ? rep()!.toPrecision(2, true) : "0.0"}
             secondary={
               rep() && totals()
                 ? rep()!.div(totals()!.reputation).toPercentNum() + "%"
@@ -230,7 +226,7 @@ export function ProfileFull(props: IProfileProps) {
         <Show when={profile()?.employment}>
           <div class={metricClass}>
             <Title text="Rating" />
-            <MetricWidget primary="Coming soon" />
+            <ComingSoonText class="text-sm" />
           </div>
           <div class={metricClass}>
             <Title text="Teammate Since" />
@@ -277,14 +273,14 @@ export function ProfileFull(props: IProfileProps) {
           <Match when={props.me}>
             <div class={metricClass}>
               <E8sWidget
-                minValue={myBalance() ? myBalance()!.Hours : E8s.zero()}
-                kind={EE8sKind.Hours}
+                minValue={myBalance() ? myBalance()!.Hour : E8s.zero()}
+                kind={EE8sKind.Hour}
               />
             </div>
             <div class={metricClass}>
               <E8sWidget
-                minValue={myBalance() ? myBalance()!.Storypoints : E8s.zero()}
-                kind={EE8sKind.Storypoints}
+                minValue={myBalance() ? myBalance()!.Storypoint : E8s.zero()}
+                kind={EE8sKind.Storypoint}
               />
             </div>
             <div class={metricClass}>
@@ -318,7 +314,9 @@ export function ProfileMini(props: IProfileProps) {
   return (
     <div class="flex flex-row items-center gap-2">
       <Avatar
-        borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
+        borderColor={
+          profile()?.employment ? COLORS.chartreuse : COLORS.gray[150]
+        }
         url={props.id ? avatarSrcFromPrincipal(props.id) : undefined}
         size={props.avatarSize ?? "md"}
       />
@@ -350,7 +348,9 @@ export function ProfileMicro(props: IProfileProps) {
   return (
     <div class="flex flex-row items-center gap-2">
       <Avatar
-        borderColor={profile()?.employment ? COLORS.darkBlue : COLORS.gray[150]}
+        borderColor={
+          profile()?.employment ? COLORS.chartreuse : COLORS.gray[150]
+        }
         url={props.id ? avatarSrcFromPrincipal(props.id) : undefined}
         size={props.avatarSize ?? "sm"}
       />

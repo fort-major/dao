@@ -1,6 +1,8 @@
 import { ROOT } from "@/routes";
 import { Btn } from "@components/btn";
+import { ComingSoonText } from "@components/coming-soon-text";
 import { EIconKind, Icon } from "@components/icon";
+import { Page } from "@components/page";
 import { ProjectCard } from "@components/project-card";
 import { Stat } from "@components/stat";
 import { A } from "@solidjs/router";
@@ -14,11 +16,13 @@ export function HomePage() {
   const { fmjStats } = useBank();
   const { taskStats } = useTasks();
 
+  const cardClass = "";
+
   return (
-    <div class="flex flex-col gap-20 px-40 text-black">
+    <Page>
       <div class="flex gap-5 items-center justify-center min-h-[900px]">
         <h1 class="font-primary font-bold text-[250px] leading-[0.8]">
-          Fort <br /> <i class="italic">M</i>ajor
+          <i class="italic">F</i>ort <br /> <i class="italic">M</i>ajor
         </h1>
         <div class="flex flex-col items-center justify-center gap-5">
           <h2 class="font-primary font-normal text-4xl text-center">
@@ -40,58 +44,56 @@ export function HomePage() {
         </div>
       </div>
       <div class="flex flex-col gap-10">
-        <h3 class="font-primary font-bold text-5xl">Our Projects</h3>
-        <div class="flex flex-wrap gap-10">
+        <h3 class="font-primary font-bold text-2xl">Our Projects</h3>
+        <div class="flex gap-5 justify-between flex-wrap">
           <a href="https://icp.msq.tech" target="_blank">
-            <ProjectCard kind="msq" />
+            <ProjectCard kind="msq" class={cardClass} />
           </a>
           <A href="/">
-            <ProjectCard kind="fmj" />
+            <ProjectCard kind="fmj" class={cardClass} />
           </A>
-          <ProjectCard kind="soon" />
-          <ProjectCard kind="soon" />
+          <ProjectCard kind="soon" class={cardClass} />
+          <ProjectCard kind="soon" class={cardClass} />
         </div>
       </div>
       <div class="flex flex-col gap-10">
-        <h3 class="font-primary font-bold text-5xl">How It Works</h3>
+        <h3 class="font-primary font-bold text-2xl">How It Works</h3>
         <div class="flex flex-col gap-2">
           <div class="flex gap-16 items-center">
-            <p class="font-mono italic font-medium text-9xl">1</p>
+            <p class="font-mono italic font-bold text-9xl">1</p>
             <h4 class="font-primary font-normal text-4xl">
               Solve <b class="font-bold">Tasks</b>
             </h4>
           </div>
           <div class="flex gap-16 items-center">
-            <p class="font-mono italic font-medium text-9xl">2</p>
+            <p class="font-mono italic font-bold text-9xl">2</p>
             <h4 class="font-primary font-normal text-4xl">
               Earn <b class="font-bold">Rewards</b> and{" "}
               <b class="font-bold">Reputation</b>
             </h4>
           </div>
           <div class="flex gap-16 items-center">
-            <p class="font-mono italic font-medium text-9xl">3</p>
+            <p class="font-mono italic font-bold text-9xl">3</p>
             <h4 class="font-primary font-normal text-4xl">
               Exchange <b class="font-bold">Rewards</b> for{" "}
               <b class="font-bold">FMJ</b>, <b class="font-bold">ICP</b> or{" "}
-              <small class="italic text-gray-190 text-lg">(coming soon)</small>{" "}
-              other tokens
+              <ComingSoonText /> other tokens
             </h4>
           </div>
           <div class="flex gap-16 items-center">
-            <p class="font-mono italic font-medium text-9xl">4</p>
+            <p class="font-mono italic font-bold text-9xl">4</p>
             <h4 class="font-primary font-normal text-4xl">
               Use <b class="font-bold">Reputation</b> to{" "}
               <b class="font-bold">govern</b> the DAO,{" "}
               <b class="font-bold">evaluate</b> task solutions and{" "}
-              <small class="italic text-gray-190 text-lg">(coming soon)</small>{" "}
-              receive dividends
+              <ComingSoonText /> receive dividends
             </h4>
           </div>
         </div>
       </div>
 
       <div class="flex flex-col gap-10">
-        <h3 class="font-primary font-bold text-5xl">Statistics</h3>
+        <h3 class="font-primary font-bold text-2xl">Statistics</h3>
         <div class="flex flex-wrap gap-x-24 gap-y-5 justify-between">
           <Stat
             data={totals().reputation.toPrecision(2, true)}
@@ -100,6 +102,14 @@ export function HomePage() {
           <Stat
             data={decentralization().toPercent().toPrecision(2, true) + "%"}
             title="decentralization"
+          />
+          <Stat
+            data={totals().storypoints.toPrecision(2, true)}
+            title="total storypoints"
+          />
+          <Stat
+            data={totals().hours.toPrecision(2, true)}
+            title="total hours"
           />
           <Stat data={totals().contributors.toString()} title="contributors" />
           <Stat
@@ -135,6 +145,6 @@ export function HomePage() {
           <Icon kind={EIconKind.Telegram} />
         </a>
       </div>
-    </div>
+    </Page>
   );
 }
