@@ -15,7 +15,7 @@ use crate::{
 
 use super::{
     state::TasksState,
-    types::{SolutionField, SolverConstraint, Task, TaskId, TaskStage},
+    types::{SolutionField, SolverConstraint, Task, TaskFilter, TaskId, TaskStage},
 };
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -504,6 +504,8 @@ pub struct GetTasksByIdResponse {
 pub struct GetTasksRequest {
     #[garde(dive)]
     pub pagination: PageRequest,
+    #[garde(dive)]
+    pub filter: TaskFilter,
 }
 
 impl Guard<TasksState> for GetTasksRequest {
@@ -520,7 +522,7 @@ impl Guard<TasksState> for GetTasksRequest {
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetTasksResponse {
     #[garde(skip)]
-    pub entries: Vec<Task>,
+    pub entries: Vec<TaskId>,
     #[garde(dive)]
     pub pagination: PageResponse,
 }

@@ -22,7 +22,7 @@ use super::{
         GetTasksStatsResponse, SolveTaskRequest, SolveTaskResponse, StartSolveTaskRequest,
         StartSolveTaskResponse,
     },
-    types::{ArchivedTask, RewardEntry, Task, TaskId, TaskStage},
+    types::{ArchivedTask, RewardEntry, Task, TaskFilter, TaskId, TaskStage},
 };
 
 #[derive(CandidType, Deserialize)]
@@ -178,26 +178,53 @@ impl TasksState {
 
     pub fn get_tasks(&self, req: GetTasksRequest) -> GetTasksResponse {
         let (entries, left): (Vec<_>, u32) = if req.pagination.reversed {
-            let mut iter = self.tasks.iter().rev().skip(req.pagination.skip as usize);
+            let mut iter = self
+                .tasks
+                .iter()
+                .rev()
+                .filter(|it| match req.filter {
+                    TaskFilter::Stage(stage) => match stage {
+                        TaskStage::Edit => matches!(it.1.stage, TaskStage::Edit),
+                        TaskStage::PreSolve => matches!(it.1.stage, TaskStage::PreSolve),
+                        TaskStage::Solve { until_timestamp: _ } => {
+                            matches!(it.1.stage, TaskStage::Solve { until_timestamp: _ })
+                        }
+                        TaskStage::Evaluate => matches!(it.1.stage, TaskStage::Evaluate),
+                    },
+                })
+                .skip(req.pagination.skip as usize);
 
             let entries = iter
                 .by_ref()
                 .take(req.pagination.take as usize)
-                .map(|(_, it)| it)
-                .cloned()
+                .map(|(id, _)| id)
+                .copied()
                 .collect();
 
             let left = iter.count() as u32;
 
             (entries, left)
         } else {
-            let mut iter = self.tasks.iter().skip(req.pagination.skip as usize);
+            let mut iter = self
+                .tasks
+                .iter()
+                .filter(|it| match req.filter {
+                    TaskFilter::Stage(stage) => match stage {
+                        TaskStage::Edit => matches!(it.1.stage, TaskStage::Edit),
+                        TaskStage::PreSolve => matches!(it.1.stage, TaskStage::PreSolve),
+                        TaskStage::Solve { until_timestamp: _ } => {
+                            matches!(it.1.stage, TaskStage::Solve { until_timestamp: _ })
+                        }
+                        TaskStage::Evaluate => matches!(it.1.stage, TaskStage::Evaluate),
+                    },
+                })
+                .skip(req.pagination.skip as usize);
 
             let entries = iter
                 .by_ref()
                 .take(req.pagination.take as usize)
-                .map(|(_, it)| it)
-                .cloned()
+                .map(|(id, _)| id)
+                .copied()
                 .collect();
 
             let left = iter.count() as u32;

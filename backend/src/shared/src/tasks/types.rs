@@ -469,3 +469,8 @@ pub struct ArchivedTaskV1 {
     pub decision_topics: Vec<DecisionTopicId>,
     pub assignees: Option<Vec<Principal>>,
 }
+
+#[derive(CandidType, Deserialize, Validate)]
+pub enum TaskFilter {
+    Stage(#[garde(skip)] TaskStage),
+}

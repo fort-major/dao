@@ -53,10 +53,10 @@ type GetArchivedTasksResponse = record {
 };
 type GetTasksByIdRequest = record { ids : vec nat64 };
 type GetTasksByIdResponse = record { entries : vec opt Task };
-type GetTasksRequest = record { pagination : PageRequest };
+type GetTasksRequest = record { pagination : PageRequest; filter : TaskFilter };
 type GetTasksResponse = record {
   pagination : PageResponse;
-  entries : vec Task;
+  entries : vec nat64;
 };
 type GetTasksStatsResponse = record {
   ready_to_solve_tasks : nat32;
@@ -109,6 +109,7 @@ type Task = record {
   assignees : opt vec principal;
   solutions : vec record { principal; Solution };
 };
+type TaskFilter = variant { Stage : TaskStage };
 type TaskStage = variant {
   Solve : record { until_timestamp : nat64 };
   Edit;
