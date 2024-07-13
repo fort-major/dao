@@ -5,6 +5,7 @@ import { MePage } from "@pages/me";
 import { TasksPage } from "@pages/tasks";
 import { CreateUpdateTaskPage } from "@pages/create-new-task";
 import { TaskPage } from "@pages/task";
+import { HumansPage } from "@pages/humans";
 
 export interface IRoute {
   parent?: IRoute;
@@ -41,7 +42,9 @@ export const ROOT = route({
     task: route({
       component: TaskPage,
     }),
-    humans: route({}),
+    humans: route({
+      component: HumansPage,
+    }),
     me: route({
       component: MePage,
     }),

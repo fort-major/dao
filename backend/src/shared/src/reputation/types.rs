@@ -36,20 +36,11 @@ impl RepBalanceEntry {
 
     // returns true if the entry should be deleted (the balance decayed completely)
     pub fn decay(&mut self) -> (bool, E8s) {
-        let mut total_decay_amount = E8s::zero();
+        let decay_amount = self.balance.sqrt();
 
-        for _ in 0..4 {
-            let decay_amount = self.balance.sqrt();
-            total_decay_amount += &decay_amount;
+        self.balance -= &decay_amount;
 
-            self.balance -= &decay_amount;
-
-            if self.balance == E8s::zero() {
-                return (true, total_decay_amount);
-            }
-        }
-
-        return (false, total_decay_amount);
+        return (self.balance == E8s::zero(), decay_amount);
     }
 }
 

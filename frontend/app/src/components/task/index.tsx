@@ -242,8 +242,7 @@ export function Task(props: ITaskProps) {
         </Match>
         <Match when={t && t.stage && "PreSolve" in t.stage}>
           <p class={pClass}>
-            this <span class={spanClass}>draft</span> is in post-edit review
-            creator
+            this <span class={spanClass}>draft</span> is in review
           </p>
         </Match>
         <Match when={t && t.stage && "Solve" in t.stage}>

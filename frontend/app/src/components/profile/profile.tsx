@@ -148,7 +148,7 @@ export function ProfileFull(props: IProfileProps) {
   const metricClass = "flex flex-col gap-1 min-w-36";
 
   return (
-    <div class="flex flex-col gap-5 p-2" classList={{ "shadow-sm": !props.me }}>
+    <div class="flex flex-col gap-5 p-2" classList={{ "shadow-md": !props.me }}>
       <div class="flex flex-col self-center items-center gap-2">
         <Avatar
           size={props.avatarSize ?? "lg"}
@@ -190,7 +190,7 @@ export function ProfileFull(props: IProfileProps) {
           </Show>
         </p>
       </div>
-      <div class="flex flex-wrap gap-4 items-center">
+      <div class="grid grid-cols-2 gap-4 items-center">
         <div class={metricClass}>
           <Title text="Reputation" />
           <MetricWidget
@@ -258,20 +258,6 @@ export function ProfileFull(props: IProfileProps) {
           </div>
         </Show>
         <Switch>
-          <Match when={!props.me && profile()?.employment}>
-            <Btn
-              text="Expel"
-              icon={EIconKind.Minus}
-              onClick={handleProposeExpel}
-            />
-          </Match>
-          <Match when={!props.me && !profile()?.employment}>
-            <Btn
-              text="Admit"
-              icon={EIconKind.Plus}
-              onClick={handleProposeAdmit}
-            />
-          </Match>
           <Match when={props.me}>
             <div class={metricClass}>
               <E8sWidget
@@ -295,6 +281,28 @@ export function ProfileFull(props: IProfileProps) {
               <E8sWidget
                 minValue={myBalance() ? myBalance()!.ICP : E8s.zero()}
                 kind={EE8sKind.ICP}
+              />
+            </div>
+          </Match>
+        </Switch>
+        <Switch>
+          <Match when={!props.me && profile()?.employment}>
+            <div class="flex flex-col col-span-full">
+              <Btn
+                text="Expel"
+                icon={EIconKind.Minus}
+                onClick={handleProposeExpel}
+                iconColor={COLORS.errorRed}
+              />
+            </div>
+          </Match>
+          <Match when={!props.me && !profile()?.employment}>
+            <div class="flex flex-col col-span-full">
+              <Btn
+                text="Admit"
+                icon={EIconKind.Plus}
+                onClick={handleProposeAdmit}
+                iconColor={COLORS.green}
               />
             </div>
           </Match>

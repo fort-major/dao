@@ -20,7 +20,7 @@ export function HomePage() {
 
   return (
     <Page>
-      <div class="flex gap-5 items-center justify-center min-h-[900px]">
+      <div class="flex gap-5 items-center justify-center min-h-[700px]">
         <h1 class="font-primary font-bold text-[250px] leading-[0.8]">
           <i class="italic">F</i>ort <br /> <i class="italic">M</i>ajor
         </h1>
