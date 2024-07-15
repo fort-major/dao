@@ -2,7 +2,7 @@ use std::{cell::RefCell, time::Duration};
 
 use ic_cdk::{
     api::time,
-    caller, export_candid, init, post_upgrade, pre_upgrade, query, spawn,
+    caller, export_candid, post_upgrade, pre_upgrade, query, spawn,
     storage::{stable_restore, stable_save},
     update,
 };
@@ -20,26 +20,16 @@ use shared::{
     Guard, TimestampNs, ENV_VARS,
 };
 
-#[init]
-fn init_hook() {
-    let votings_state = create_votings_state();
-
-    install_votings_state(Some(votings_state));
-}
-
 #[pre_upgrade]
 fn pre_upgrade_hook() {
-    let votings_state = install_votings_state(None);
-
-    stable_save((votings_state,)).expect("Unable to stable save");
+    with_state(|s| stable_save((s,)).expect("Unable to stable save"));
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    let (votings_state,): (Option<VotingsState>,) =
-        stable_restore().expect("Unable to stable restore");
+    let (votings_state,): (VotingsState,) = stable_restore().expect("Unable to stable restore");
 
-    install_votings_state(votings_state);
+    with_state_mut(|s| *s = votings_state);
 
     let timers = with_state(|s| s.timers.values().copied().collect::<Vec<_>>());
     let now = time();
@@ -229,36 +219,22 @@ async fn validate_voting_related_entity(
 }
 
 thread_local! {
-    static VOTINGS_STATE: RefCell<Option<VotingsState>> = RefCell::default();
-}
-
-pub fn create_votings_state() -> VotingsState {
-    VotingsState::new()
-}
-
-pub fn install_votings_state(new_state: Option<VotingsState>) -> Option<VotingsState> {
-    VOTINGS_STATE.replace(new_state)
+    static VOTINGS_STATE: RefCell<VotingsState> = RefCell::default();
 }
 
 fn with_state<R, F: FnOnce(&VotingsState) -> R>(f: F) -> R {
     VOTINGS_STATE.with(|s| {
         let state_ref = s.borrow();
-        let state = state_ref
-            .as_ref()
-            .expect("Votings state is not initialized");
 
-        f(state)
+        f(&state_ref)
     })
 }
 
 fn with_state_mut<R, F: FnOnce(&mut VotingsState) -> R>(f: F) -> R {
     VOTINGS_STATE.with(|s| {
         let mut state_ref = s.borrow_mut();
-        let state = state_ref
-            .as_mut()
-            .expect("Votings state is not initialized");
 
-        f(state)
+        f(&mut state_ref)
     })
 }
 

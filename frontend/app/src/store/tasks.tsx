@@ -362,7 +362,7 @@ export function TasksStore(props: IChildren) {
   const createTask: ITasksStoreContext["createTask"] = async (args) => {
     assertAuthorized();
 
-    const proof = await profileProof();
+    const proof = (await profileProof())!;
 
     if (!proof.is_team_member) {
       err(ErrorCode.AUTH, "Only team members can create new tasks");
@@ -380,7 +380,7 @@ export function TasksStore(props: IChildren) {
       storypoints_ext_budget: args.storypoints_ext_budget.toBigIntRaw(),
       profile_proof: {
         body: [],
-        cert_raw: await profileProofCert(),
+        cert_raw: (await profileProofCert())!,
       },
       decision_topics: args.decision_topics,
       assignees: opt(args.assignees),
@@ -544,7 +544,7 @@ export function TasksStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, "The task can no longer be solved");
     }
 
-    const proof = await profileProof();
+    const proof = (await profileProof())!;
 
     if (
       task.solver_constraints.find((it) => "TeamOnly" in it) &&
@@ -567,7 +567,7 @@ export function TasksStore(props: IChildren) {
       want_rep: !!wantRep,
       profile_proof: {
         body: [],
-        cert_raw: await profileProofCert(),
+        cert_raw: (await profileProofCert())!,
       },
     });
   };
@@ -590,7 +590,7 @@ export function TasksStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, "The task can no longer be solved");
     }
 
-    const proof = await profileProof();
+    const proof = (await profileProof())!;
 
     if (!proof.is_team_member) {
       err(
@@ -599,12 +599,12 @@ export function TasksStore(props: IChildren) {
       );
     }
 
-    const tasksActor = newTasksActor(anonymousAgent()!);
+    const tasksActor = newTasksActor(agent()!);
     await tasksActor.tasks__finish_solve_task({
       id: taskId,
       profile_proof: {
         body: [],
-        cert_raw: await profileProofCert(),
+        cert_raw: (await profileProofCert())!,
       },
     });
   };
@@ -700,11 +700,15 @@ export function TasksStore(props: IChildren) {
         }
       }
     },
-    ({ entries: tasks }) => {
+    ({ entries: tasks }, _, done) => {
       for (let i = 0; i < tasks.length; i++) {
         const t = optUnwrap(tasks[i]);
 
         if (!t) {
+          if (done) {
+            err(ErrorCode.UNKNOWN, "Task not found");
+          }
+
           continue;
         }
 

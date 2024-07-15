@@ -1,3 +1,4 @@
+import { VotingId } from "@/declarations/votings/votings.did";
 import { ROOT } from "@/routes";
 import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
@@ -9,13 +10,15 @@ import { MdPreview } from "@components/md-preview";
 import { Modal } from "@components/modal";
 import { ProfileMicro, ProfileMini } from "@components/profile/profile";
 import { SolutionSubmitForm } from "@components/solution-submit-form";
+import { TaskSolution } from "@components/task-solution";
 import { Title } from "@components/title";
+import { VotingWidget } from "@components/voting-widget";
 import { A } from "@solidjs/router";
 import { useAuth } from "@store/auth";
 import { IArchivedTaskV1, ITask, TTaskStatus, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
-import { timestampToStr } from "@utils/encoding";
+import { encodeVotingId, timestampToStr } from "@utils/encoding";
 import { E8s } from "@utils/math";
 import { TTaskId } from "@utils/types";
 import {
@@ -24,6 +27,7 @@ import {
   Show,
   Switch,
   createEffect,
+  createResource,
   createSignal,
   onMount,
 } from "solid-js";
@@ -186,11 +190,11 @@ export function Task(props: ITaskProps) {
     authorize,
     enable,
     disable,
-    disabled,
   } = useAuth();
-  const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
+  const { createTasksStartSolveVoting, createTasksEvaluateVoting, votings } =
     useVotings();
 
+  const [proof] = createResource(profileProof);
   const [showSolveModal, setShowSolveModal] = createSignal(false);
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
     tasks[props.id.toString()];
@@ -198,6 +202,24 @@ export function Task(props: ITaskProps) {
   createEffect(() => {
     if (!task() && isReadyToFetch()) fetchTasksById([props.id]);
   });
+
+  const startSolveVotingId: () => VotingId = () => ({
+    StartSolveTask: props.id,
+  });
+
+  const evaluateVotingId: () => VotingId = () => ({
+    EvaluateTask: props.id,
+  });
+
+  const maxSolutions = () => {
+    const t = task();
+
+    if (!t) return 0;
+
+    return (
+      t.solver_constraints.find((it) => "MaxSolutions" in it)?.MaxSolutions ?? 0
+    );
+  };
 
   const stage = (): TTaskStatus => {
     const t = task();
@@ -344,37 +366,51 @@ export function Task(props: ITaskProps) {
 
   const button = () => {
     return (
-      <Switch>
-        <Match when={canEdit()}>
-          <div class="flex gap-4 items-center">
-            <A
-              href={`${ROOT.$.tasks.$.edit.path}?id=${props.id.toString()}`}
-              class="font-primary font-light text-gray-150 underline text-sm"
-            >
-              Edit
-            </A>
-            <Btn text="Start Solving Phase" onClick={handleFinishEditClick} />
-          </div>
-        </Match>
-        <Match when={readyToEvaluate()}>
-          <Btn text="Start Evaluation Phase" onClick={handleFinishSolveClick} />
-        </Match>
-        <Match when={canSolve() && profileProof()}>
-          <Btn
-            text={mySolution() ? "Edit Solution" : "Solve"}
-            icon={EIconKind.CheckRect}
-            iconColor={COLORS.green}
-            onClick={handleSolveClick}
-          />
-        </Match>
-        <Match when={canSolve() && !profileProof()}>
-          <Btn
-            text="Log In to Contribute"
-            icon={EIconKind.MetaMask}
-            onClick={handleLogInClick}
-          />
-        </Match>
-      </Switch>
+      <>
+        <Switch>
+          <Match when={canEdit()}>
+            <div class="flex gap-4 items-center">
+              <A
+                href={`${ROOT.$.tasks.$.edit.path}?id=${props.id.toString()}`}
+                class="font-primary font-light text-gray-150 underline text-sm"
+              >
+                Edit
+              </A>
+              <Btn text="Start Solving Phase" onClick={handleFinishEditClick} />
+            </div>
+          </Match>
+          <Match when={stage() === "PreSolve"}>
+            <VotingWidget
+              kind="satisfaction"
+              id={encodeVotingId(startSolveVotingId())}
+              optionIdx={0}
+            />
+          </Match>
+          <Match when={readyToEvaluate()}>
+            <Btn
+              text="Start Evaluation Phase"
+              onClick={handleFinishSolveClick}
+            />
+          </Match>
+        </Switch>
+        <Switch>
+          <Match when={canSolve() && proof()}>
+            <Btn
+              text={mySolution() ? "Edit Solution" : "Solve"}
+              icon={EIconKind.CheckRect}
+              iconColor={COLORS.green}
+              onClick={handleSolveClick}
+            />
+          </Match>
+          <Match when={canSolve() && !proof()}>
+            <Btn
+              text="Log In to Contribute"
+              icon={EIconKind.MetaMask}
+              onClick={handleLogInClick}
+            />
+          </Match>
+        </Switch>
+      </>
     );
   };
 
@@ -382,7 +418,7 @@ export function Task(props: ITaskProps) {
     const t = task();
     const me = identity()?.getPrincipal();
 
-    if (!me) return false;
+    if (!me || !t || !t.stage) return false;
 
     if (
       !t ||
@@ -392,6 +428,8 @@ export function Task(props: ITaskProps) {
         !t.assignees.map((it) => it.toText()).includes(me.toText()))
     )
       return false;
+
+    return true;
   };
 
   const mySolution = () => {
@@ -547,9 +585,34 @@ export function Task(props: ITaskProps) {
             </div>
           </div>
         </div>
+        <Show when={task()?.solutions && task()!.solutions!.length > 0}>
+          <div class="flex flex-col gap-5">
+            <Title
+              text={`Solutions (${task()!.solutions.length}/${maxSolutions()})`}
+            />
+            <For each={task()!.solutions!}>
+              {([solver, it], idx) => (
+                <TaskSolution
+                  idx={idx()}
+                  solution={it}
+                  solver={solver}
+                  fields={task()!.solution_fields}
+                  votingId={
+                    task()!.stage! && "Evaluate" in task()!.stage!
+                      ? { EvaluateTask: props.id }
+                      : undefined
+                  }
+                />
+              )}
+            </For>
+          </div>
+        </Show>
       </div>
       <Show when={showSolveModal() && task()?.solution_fields}>
-        <Modal title={`Submit a solution for task #${props.id}`}>
+        <Modal
+          onClose={() => setShowSolveModal(false)}
+          title={`Submit a solution for task #${props.id}`}
+        >
           <SolutionSubmitForm
             onSubmit={handleSolutionSubmit}
             taskId={props.id}

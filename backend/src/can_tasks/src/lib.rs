@@ -18,7 +18,7 @@ use shared::{
             BackToEditTaskResponse, CreateTaskRequest, CreateTaskResponse, DeleteRequest,
             DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest, EvaluateResponse,
             FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse,
-            GetTasksByIdRequest, GetTasksByIdResponse, GetTaskIdsRequest, GetTaskIdsResponse,
+            GetTaskIdsRequest, GetTaskIdsResponse, GetTasksByIdRequest, GetTasksByIdResponse,
             GetTasksStatsRequest, GetTasksStatsResponse, SolveTaskRequest, SolveTaskResponse,
             StartSolveTaskRequest, StartSolveTaskResponse,
         },
@@ -35,24 +35,21 @@ pub struct InitRequest {
 
 #[init]
 fn init_hook(req: InitRequest) {
-    let tasks_state = create_tasks_state(req.task_archive_canister_id);
+    with_state_mut(|s| s.task_archive_canister_id = req.task_archive_canister_id);
 
-    install_tasks_state(Some(tasks_state));
     start_archiving_timer();
 }
 
 #[pre_upgrade]
 fn pre_upgrade_hook() {
-    let tasks_state = install_tasks_state(None);
-
-    stable_save((tasks_state,)).expect("Unable to stable save");
+    with_state(|s| stable_save((s,)).expect("Unable to stable save"))
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    let (tasks_state,): (Option<TasksState>,) = stable_restore().expect("Unable to stable restore");
+    let (tasks_state,): (TasksState,) = stable_restore().expect("Unable to stable restore");
+    with_state_mut(|s| *s = tasks_state);
 
-    install_tasks_state(tasks_state);
     start_archiving_timer();
 }
 
@@ -272,32 +269,22 @@ fn start_archiving_timer() {
 }
 
 thread_local! {
-    static TASKS_STATE: RefCell<Option<TasksState>> = RefCell::default();
-}
-
-pub fn create_tasks_state(task_archive_canister_id: Principal) -> TasksState {
-    TasksState::new(task_archive_canister_id)
-}
-
-pub fn install_tasks_state(new_state: Option<TasksState>) -> Option<TasksState> {
-    TASKS_STATE.replace(new_state)
+    static TASKS_STATE: RefCell<TasksState> = RefCell::new(TasksState::new(Principal::management_canister()));
 }
 
 fn with_state<R, F: FnOnce(&TasksState) -> R>(f: F) -> R {
     TASKS_STATE.with(|s| {
         let state_ref = s.borrow();
-        let state = state_ref.as_ref().expect("Tasks state is not initialized");
 
-        f(state)
+        f(&state_ref)
     })
 }
 
 fn with_state_mut<R, F: FnOnce(&mut TasksState) -> R>(f: F) -> R {
     TASKS_STATE.with(|s| {
         let mut state_ref = s.borrow_mut();
-        let state = state_ref.as_mut().expect("Tasks state is not initialized");
 
-        f(state)
+        f(&mut state_ref)
     })
 }
 

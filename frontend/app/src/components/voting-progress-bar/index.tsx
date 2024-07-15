@@ -36,7 +36,7 @@ export function VotingProgressBar(props: IVotingProgressBarProps) {
     props.totalVoted.ge(props.finishEarly) ? COLORS.gray[150] : COLORS.blue;
 
   return (
-    <div class="w-full h-1 bg-black relative">
+    <div class="w-full h-1 bg-black relative overflow-hidden">
       <div
         class="h-1 absolute"
         style={{

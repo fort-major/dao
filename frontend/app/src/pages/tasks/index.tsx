@@ -90,7 +90,6 @@ export function TasksPage() {
         : await fetchTaskIds(tab());
 
     setCanFetchMore(more);
-
     setFetching(false);
   };
 
@@ -109,7 +108,6 @@ export function TasksPage() {
   return (
     <Page ref={ref!} class="self-stretch pt-10">
       <div class="flex flex-col gap-20">
-        <TasksPageTabs onTabChange={setTab} />
         <Show when={canCreateTasks()}>
           <A class="flex flex-col" href={ROOT.$.tasks.$.create.path}>
             <Btn
@@ -119,10 +117,14 @@ export function TasksPage() {
             />
           </A>
         </Show>
+        <TasksPageTabs onTabChange={setTab} />
         <div class="flex flex-col gap-10">
-          <Title text="In-Progress Tasks" />
           <For
-            fallback={<p class="font-primary font-medium text-2xl">No tasks</p>}
+            fallback={
+              <p class="font-primary font-medium text-2xl text-center">
+                No tasks
+              </p>
+            }
             each={ids()}
           >
             {(id) => (

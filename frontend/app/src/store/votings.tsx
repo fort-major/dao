@@ -166,11 +166,14 @@ export function VotingsStore(props: IChildren) {
 
     const { decision_made } = await votingsActor.votings__cast_vote({
       id: decodeVotingId(id),
-      normalized_approval_level: opt(normalizedApprovalLevel?.toBigIntRaw()),
+      normalized_approval_level:
+        normalizedApprovalLevel === null
+          ? []
+          : [normalizedApprovalLevel.toBigIntRaw()],
       option_idx: optionIdx,
       proof: {
         body: [],
-        cert_raw: await reputationProofCert(),
+        cert_raw: (await reputationProofCert())!,
       },
     });
 
@@ -233,11 +236,11 @@ export function VotingsStore(props: IChildren) {
       kind,
       profile_proof: {
         body: [],
-        cert_raw: await profileProofCert(),
+        cert_raw: (await profileProofCert())!,
       },
       reputation_proof: {
         body: [],
-        cert_raw: await reputationProofCert(),
+        cert_raw: (await reputationProofCert())!,
       },
     });
 
@@ -253,7 +256,7 @@ export function VotingsStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, `Voting ${votingId} already exists`);
     }
 
-    const proof = await profileProof()!;
+    const proof = (await profileProof())!;
 
     if (!proof.is_team_member) {
       err(ErrorCode.UNREACHEABLE, `Only team members can create votings`);
@@ -397,25 +400,29 @@ export function VotingsStore(props: IChildren) {
   };
 
   const follow: IVotingsStoreContext["follow"] = async (id, topicset) => {
+    assertAuthorized();
+
     const actor = newLiquidDemocracyActor(agent()!);
     await actor.liquid_democracy__follow({
       followee: id,
       topics: [topicset],
       proof: {
         body: [],
-        cert_raw: await reputationProofCert(),
+        cert_raw: (await reputationProofCert())!,
       },
     });
   };
 
   const unfollow: IVotingsStoreContext["unfollow"] = async (id) => {
+    assertAuthorized();
+
     const actor = newLiquidDemocracyActor(agent()!);
     await actor.liquid_democracy__follow({
       followee: id,
       topics: [],
       proof: {
         body: [],
-        cert_raw: await reputationProofCert(),
+        cert_raw: (await reputationProofCert())!,
       },
     });
   };

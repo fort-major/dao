@@ -102,7 +102,7 @@ type VotingKind = variant {
   };
 };
 type VotingStage = variant { Executing; InProgress };
-service : () -> {
+service : {
   votings__cast_vote : (CastVoteRequest) -> (CastVoteResponse);
   votings__get_events : (record {}) -> (GetVotingEventsResponse) query;
   votings__get_votings : (GetVotingsRequest) -> (GetVotingsResponse) query;

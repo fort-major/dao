@@ -7,15 +7,8 @@ import { useHumans } from "@store/humans";
 import { createEffect, createMemo, For } from "solid-js";
 
 export function HumansPage() {
-  const {
-    totals,
-    profileIds,
-    fetchProfileIds,
-    profiles,
-    fetchProfiles,
-    reputation,
-  } = useHumans();
-  const {} = useAuth();
+  const { totals, profileIds, fetchProfileIds } = useHumans();
+  const { isReadyToFetch } = useAuth();
 
   const teamMemberIds = () => totals().teamMembers;
   const ids = createMemo(() =>
@@ -25,7 +18,7 @@ export function HumansPage() {
   );
 
   createEffect(() => {
-    if (ids().length === 0) {
+    if (ids().length === 0 && isReadyToFetch()) {
       fetchProfileIds();
     }
   });

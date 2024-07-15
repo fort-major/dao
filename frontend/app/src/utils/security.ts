@@ -1,5 +1,11 @@
-import { debugStringify } from "./encoding";
+import {
+  DecisionTopicSet,
+  ReputationDelegationTreeNode,
+} from "@/declarations/votings/votings.did";
+import { debugStringify, Principal } from "./encoding";
 import { ErrorCode, err } from "./error";
+import { E8s } from "./math";
+import { ONE_MIN_NS } from "./types";
 
 export function eventHandler<E extends Event>(
   fn: (e: E) => void | Promise<void>
@@ -17,3 +23,6 @@ export function eventHandler<E extends Event>(
     );
   };
 }
+
+// 7.5 hours
+export const PROOF_TTL_MS = Number((ONE_MIN_NS * 450n) / 1000_000n);

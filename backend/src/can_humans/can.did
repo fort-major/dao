@@ -51,7 +51,7 @@ type SpendRewardsRequest = record {
   spender : principal;
 };
 type UnemployRequest = record { team_member : principal };
-service : () -> {
+service : {
   humans__edit_profile : (EditProfileRequest) -> (record {});
   humans__employ : (EmployRequest) -> (record {});
   humans__get_profile_ids : (record {}) -> (GetProfileIdsResponse) query;

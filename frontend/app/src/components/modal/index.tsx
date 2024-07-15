@@ -29,7 +29,7 @@ export function Modal(props: IModalProps) {
 
   return (
     <Portal ref={ref} mount={mount}>
-      <div class="flex flex-col gap-4 p-2 shadow-lg min-w-[550px] min-h-80">
+      <div class="flex flex-col gap-4 p-2 shadow-lg bg-white mt-36 min-w-[550px] min-h-80">
         <div class="flex items-center justify-between">
           <p class="font-primary font-bold text-2xl">
             {props.title ?? "Dialog"}

@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use ic_cdk::{
     api::time,
-    caller, export_candid, init, post_upgrade, pre_upgrade, query,
+    caller, export_candid, post_upgrade, pre_upgrade, query,
     storage::{stable_restore, stable_save},
     update,
 };
@@ -78,55 +78,35 @@ fn liquid_democracy__get_liquid_democracy_proof(
     })
 }
 
-#[init]
-fn init_hook() {
-    let state = create_state();
-
-    install_state(Some(state));
-}
-
 #[pre_upgrade]
 fn pre_upgrade_hook() {
-    let state = install_state(None);
-
-    stable_save((state,)).expect("Unable to stable save");
+    with_state(|s| stable_save((s,)).expect("Unable to stable save"));
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    let (state,): (Option<LiquidDemocracyState>,) =
-        stable_restore().expect("Unable to stable restore");
+    let (state,): (LiquidDemocracyState,) = stable_restore().expect("Unable to stable restore");
 
-    install_state(state);
+    with_state_mut(|s| *s = state);
 }
 
 thread_local! {
-    static STATE: RefCell<Option<LiquidDemocracyState>> = RefCell::default();
-}
-
-pub fn create_state() -> LiquidDemocracyState {
-    LiquidDemocracyState::new()
-}
-
-pub fn install_state(new_state: Option<LiquidDemocracyState>) -> Option<LiquidDemocracyState> {
-    STATE.replace(new_state)
+    static STATE: RefCell<LiquidDemocracyState> = RefCell::new(LiquidDemocracyState::new());
 }
 
 fn with_state<R, F: FnOnce(&LiquidDemocracyState) -> R>(f: F) -> R {
     STATE.with(|s| {
         let state_ref = s.borrow();
-        let state = state_ref.as_ref().expect("State is not initialized");
 
-        f(state)
+        f(&state_ref)
     })
 }
 
 fn with_state_mut<R, F: FnOnce(&mut LiquidDemocracyState) -> R>(f: F) -> R {
     STATE.with(|s| {
         let mut state_ref = s.borrow_mut();
-        let state = state_ref.as_mut().expect("State is not initialized");
 
-        f(state)
+        f(&mut state_ref)
     })
 }
 

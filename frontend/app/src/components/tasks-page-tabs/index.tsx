@@ -16,7 +16,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
   createEffect(() => props.onTabChange(curTab()));
 
   return (
-    <nav class="flex gap-5 p-5 items-center">
+    <nav class="flex gap-5 p-5 items-center justify-center">
       <A
         href={`${ROOT.$.tasks.path}?tab=Solve`}
         class="font-primary text-gray-150 font-bold text-lg"

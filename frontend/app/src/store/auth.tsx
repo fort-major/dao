@@ -28,45 +28,19 @@ import {
   optUnwrap,
 } from "../utils/backend";
 import { E8s } from "../utils/math";
-import { GetProfilesResponse } from "@/declarations/humans/humans.did";
-import { DecisionTopicSet } from "@/declarations/liquid_democracy/liquid_democracy.did";
-import { ReputationDelegationTreeNode } from "@/declarations/votings/votings.did";
-
-const PROOF_TTL_MS = Number((ONE_MIN_NS * 450n) / 1000_000n);
+import {
+  GetProfilesResponse,
+  ProfileProofBody,
+} from "@/declarations/humans/humans.did";
+import { delay, fromCBOR, toCBOR } from "@fort-major/msq-shared";
+import { ReputationProofBody } from "@/declarations/reputation/reputation.did";
+import { PROOF_TTL_MS } from "@utils/security";
 
 export interface IMyBalance {
   Hour: E8s;
   Storypoint: E8s;
   FMJ: E8s;
   ICP: E8s;
-}
-
-export interface IProfileProof {
-  id: Principal;
-  is_team_member: boolean;
-}
-
-export interface IReputationDelegationTreeNode {
-  id: Principal;
-  reputation: E8s;
-  topicset: DecisionTopicSet;
-  followers: Array<IReputationDelegationTreeNode>;
-}
-
-function repDelegationTreeMap(
-  node: ReputationDelegationTreeNode
-): IReputationDelegationTreeNode {
-  return {
-    id: node.id,
-    reputation: E8s.new(node.reputation),
-    topicset: node.topicset,
-    followers: node.followers.map(repDelegationTreeMap),
-  };
-}
-
-export interface IReputationProof {
-  reputation_total_supply: E8s;
-  reputation_delegation_tree: IReputationDelegationTreeNode;
 }
 
 export interface IAuthStoreContext {
@@ -85,10 +59,10 @@ export interface IAuthStoreContext {
   disable: () => void;
   enable: () => void;
 
-  profileProof: () => Promise<IProfileProof>;
-  profileProofCert: () => Promise<Uint8Array>;
-  reputationProof: () => Promise<IReputationProof>;
-  reputationProofCert: () => Promise<Uint8Array>;
+  profileProof: () => Promise<ProfileProofBody | undefined>;
+  profileProofCert: () => Promise<Uint8Array | undefined>;
+  reputationProof: () => Promise<ReputationProofBody | undefined>;
+  reputationProofCert: () => Promise<Uint8Array | undefined>;
 
   editMyProfile: (name?: string) => Promise<void>;
 
@@ -114,9 +88,13 @@ export function AuthStore(props: IChildren) {
   const [anonymousAgent, setAnonymousAgent] = createSignal<Agent | undefined>();
   const [myBalance, setMyBalance] = createSignal<IMyBalance | undefined>();
   const [disabled, setDisabled] = createSignal(false);
-  const [profileProof, profileProofCert] = createProofSignal<IProfileProof>(
+  const [profileProof, profileProofCert] = createProofSignal<ProfileProofBody>(
     "fmj-profile-proof",
     async () => {
+      while (!isAuthorized()) {
+        await delay(1000);
+      }
+
       const a = agent()!;
       const humansActor = newHumansActor(a);
 
@@ -132,7 +110,11 @@ export function AuthStore(props: IChildren) {
     }
   );
   const [reputationProof, reputationProofCert] =
-    createProofSignal<IReputationProof>("fmj-reputation-proof", async () => {
+    createProofSignal<ReputationProofBody>("fmj-reputation-proof", async () => {
+      while (!isAuthorized()) {
+        await delay(1000);
+      }
+
       const a = agent()!;
       const liquidDemocracyActor = newLiquidDemocracyActor(a);
 
@@ -160,16 +142,7 @@ export function AuthStore(props: IChildren) {
           },
         });
 
-      let iproof: IReputationProof = {
-        reputation_total_supply: E8s.new(
-          response.proof.reputation_total_supply
-        ),
-        reputation_delegation_tree: repDelegationTreeMap(
-          response.proof.reputation_delegation_tree
-        ),
-      };
-
-      return [cert2!, iproof];
+      return [cert2!, response.proof];
     });
 
   onMount(async () => {
@@ -371,7 +344,7 @@ function storeCert<T>(
     createdAtMs: now,
   };
 
-  localStorage.setItem(key, debugStringify(p));
+  localStorage.setItem(key, toCBOR(p));
 }
 
 function retrieveCert<T>(key: string): [Uint8Array, T, number] | undefined {
@@ -380,7 +353,7 @@ function retrieveCert<T>(key: string): [Uint8Array, T, number] | undefined {
     return undefined;
   }
 
-  const p: StoredCert<T> = JSON.parse(pStr);
+  const p: StoredCert<T> = fromCBOR(pStr);
 
   return [hexToBytes(p.certHex), p.body, p.createdAtMs];
 }
@@ -388,7 +361,7 @@ function retrieveCert<T>(key: string): [Uint8Array, T, number] | undefined {
 export function createProofSignal<T>(
   key: string,
   fetcher: () => Promise<[Uint8Array, T]>
-): [() => Promise<T>, () => Promise<Uint8Array>] {
+): [() => Promise<T | undefined>, () => Promise<Uint8Array | undefined>] {
   const [createdAt, setCreatedAt] = createSignal<number | undefined>();
   const [cert, setCert] = createSignal<Uint8Array | undefined>();
   const [body, setBody] = createSignal<T | undefined>();
@@ -416,6 +389,7 @@ export function createProofSignal<T>(
     if (!b1 || !t1 || t1 + PROOF_TTL_MS <= now) {
       const [newC, newB] = await fetcher();
       storeCert(key, newC, newB, now);
+
       batch(() => {
         setCert(newC);
         setBody(newB as undefined);

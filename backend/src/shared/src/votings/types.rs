@@ -248,7 +248,7 @@ pub enum VotingKind {
     EvaluateTask {
         #[garde(skip)]
         task_id: TaskId,
-        #[garde(length(min = 1))]
+        #[garde(skip)]
         solutions: Vec<Principal>,
     },
     BankSetExchangeRate {

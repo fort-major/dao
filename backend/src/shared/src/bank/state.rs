@@ -1,11 +1,11 @@
 use std::collections::{BTreeMap, LinkedList};
 
-use candid::{CandidType, Nat, Principal};
+use candid::{CandidType, Principal};
 use icrc_ledger_types::icrc1::{account::Account, transfer::TransferArg};
 use serde::Deserialize;
 
 use crate::{
-    btreemap, e8s::E8s, humans::api::SpendRewardsRequest, icrc1::ICRC1CanisterClient,
+    e8s::E8s, humans::api::SpendRewardsRequest, icrc1::ICRC1CanisterClient,
     votings::types::ONE_MONTH_NS, TimestampNs,
 };
 
@@ -29,19 +29,12 @@ pub struct BankState {
 }
 
 impl BankState {
-    pub fn new(fmj_canister_id: Principal, icp_canister_id: Principal, now: TimestampNs) -> Self {
-        let exchange_rates = btreemap! {
-            (SwapFrom::Storypoint, SwapInto::FMJ) => LinkedList::from([(now, E8s(Nat::from(10000_0000_0000u64)))]),
-            (SwapFrom::Storypoint, SwapInto::ICP) => LinkedList::from([(now, E8s(Nat::from(1_0000_0000u64)))]),
-            (SwapFrom::Hour, SwapInto::FMJ) => LinkedList::from([(now, E8s(Nat::from(10000_0000_0000u64)))]),
-            (SwapFrom::Hour, SwapInto::ICP) => LinkedList::from([(now, E8s(Nat::from(1_0000_0000u64)))]),
-        };
-
+    pub fn new(fmj_canister_id: Principal, icp_canister_id: Principal) -> Self {
         Self {
             fmj_canister_id,
             icp_canister_id,
 
-            exchange_rates,
+            exchange_rates: BTreeMap::new(),
             monthly_minted_fmj: LinkedList::new(),
             fmj_total_supply: E8s::zero(),
         }

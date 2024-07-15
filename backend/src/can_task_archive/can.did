@@ -55,7 +55,7 @@ type URLKind = variant {
   FortMajorSite;
   Twitter;
 };
-service : () -> {
+service : {
   task_archive__append_batch : (AppendBatchRequest) -> (record {});
   task_archive__get_archived_tasks : (GetArchivedTaskIdsRequest) -> (
       GetArchivedTaskIdsResponse,

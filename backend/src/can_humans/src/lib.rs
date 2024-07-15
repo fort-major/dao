@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use ic_cdk::{
     api::time,
-    caller, export_candid, init, post_upgrade, pre_upgrade, query,
+    caller, export_candid, post_upgrade, pre_upgrade, query,
     storage::{stable_restore, stable_save},
     update,
 };
@@ -21,26 +21,16 @@ use shared::{
     Guard,
 };
 
-#[init]
-fn init_hook() {
-    let humans_state = create_humans_state();
-
-    install_humans_state(Some(humans_state));
-}
-
 #[pre_upgrade]
 fn pre_upgrade_hook() {
-    let humans_state = install_humans_state(None);
-
-    stable_save((humans_state,)).expect("Unable to stable save");
+    with_state(|s| stable_save((s,)).expect("Unable to stable save"));
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    let (humans_state,): (Option<HumansState>,) =
-        stable_restore().expect("Unable to stable restore");
+    let (humans_state,): (HumansState,) = stable_restore().expect("Unable to stable restore");
 
-    install_humans_state(humans_state);
+    with_state_mut(|s| *s = humans_state);
 }
 
 #[update]
@@ -171,32 +161,22 @@ fn humans__init_once() {
 }
 
 thread_local! {
-    static HUMANS_STATE: RefCell<Option<HumansState>> = RefCell::default();
-}
-
-pub fn create_humans_state() -> HumansState {
-    HumansState::default()
-}
-
-pub fn install_humans_state(new_state: Option<HumansState>) -> Option<HumansState> {
-    HUMANS_STATE.replace(new_state)
+    static HUMANS_STATE: RefCell<HumansState> = RefCell::default();
 }
 
 fn with_state<R, F: FnOnce(&HumansState) -> R>(f: F) -> R {
     HUMANS_STATE.with(|s| {
         let state_ref = s.borrow();
-        let state = state_ref.as_ref().expect("Humans state is not initialized");
 
-        f(state)
+        f(&state_ref)
     })
 }
 
 fn with_state_mut<R, F: FnOnce(&mut HumansState) -> R>(f: F) -> R {
     HUMANS_STATE.with(|s| {
         let mut state_ref = s.borrow_mut();
-        let state = state_ref.as_mut().expect("Humans state is not initialized");
 
-        f(state)
+        f(&mut state_ref)
     })
 }
 

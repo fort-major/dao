@@ -1,6 +1,9 @@
-use std::cell::RefCell;
+use std::{
+    cell::RefCell,
+    collections::{BTreeMap, LinkedList},
+};
 
-use candid::Principal;
+use candid::{Nat, Principal};
 use ic_cdk::{
     api::time,
     caller, export_candid, init, post_upgrade, pre_upgrade, query,
@@ -15,32 +18,43 @@ use shared::{
             SwapRewardsRequest, SwapRewardsResponse,
         },
         state::BankState,
-        types::SwapInto,
+        types::{SwapFrom, SwapInto},
     },
+    btreemap,
     e8s::E8s,
     humans::{api::RefundRewardsRequest, client::HumansCanisterClient},
-    Guard, TimestampNs, ENV_VARS,
+    Guard, ENV_VARS,
 };
 
 #[init]
 fn init_hook() {
-    let bank_state = create_bank_state(ENV_VARS.fmj_canister_id, ENV_VARS.icp_canister_id, time());
+    with_state_mut(|s| {
+        s.fmj_canister_id = ENV_VARS.fmj_canister_id;
+        s.icp_canister_id = ENV_VARS.icp_canister_id;
 
-    install_bank_state(Some(bank_state));
+        let now = time();
+
+        let exchange_rates = btreemap! {
+            (SwapFrom::Storypoint, SwapInto::FMJ) => LinkedList::from([(now, E8s(Nat::from(10000_0000_0000u64)))]),
+            (SwapFrom::Storypoint, SwapInto::ICP) => LinkedList::from([(now, E8s(Nat::from(1_0000_0000u64)))]),
+            (SwapFrom::Hour, SwapInto::FMJ) => LinkedList::from([(now, E8s(Nat::from(10000_0000_0000u64)))]),
+            (SwapFrom::Hour, SwapInto::ICP) => LinkedList::from([(now, E8s(Nat::from(1_0000_0000u64)))]),
+        };
+
+        s.exchange_rates = exchange_rates;
+    });
 }
 
 #[pre_upgrade]
 fn pre_upgrade_hook() {
-    let bank_state = install_bank_state(None);
-
-    stable_save((bank_state,)).expect("Unable to stable save");
+    with_state(|s| stable_save((s,)).expect("Unable to stable save"));
 }
 
 #[post_upgrade]
 fn post_upgrade_hook() {
-    let (bank_state,): (Option<BankState>,) = stable_restore().expect("Unable to stable restore");
+    let (bank_state,): (BankState,) = stable_restore().expect("Unable to stable restore");
 
-    install_bank_state(bank_state);
+    with_state_mut(|s| *s = bank_state);
 }
 
 #[update]
@@ -133,36 +147,22 @@ fn bank__get_fmj_stats(mut req: GetFmjStatsRequest) -> GetFmjStatsResponse {
 }
 
 thread_local! {
-    static BANK_STATE: RefCell<Option<BankState>> = RefCell::default();
-}
-
-pub fn create_bank_state(
-    fmj_canister_id: Principal,
-    icp_canister_id: Principal,
-    now: TimestampNs,
-) -> BankState {
-    BankState::new(fmj_canister_id, icp_canister_id, now)
-}
-
-pub fn install_bank_state(new_state: Option<BankState>) -> Option<BankState> {
-    BANK_STATE.replace(new_state)
+    static BANK_STATE: RefCell<BankState> = RefCell::new(BankState::new(Principal::management_canister(), Principal::management_canister()));
 }
 
 fn with_state<R, F: FnOnce(&BankState) -> R>(f: F) -> R {
     BANK_STATE.with(|s| {
         let state_ref = s.borrow();
-        let state = state_ref.as_ref().expect("Bank state is not initialized");
 
-        f(state)
+        f(&state_ref)
     })
 }
 
 fn with_state_mut<R, F: FnOnce(&mut BankState) -> R>(f: F) -> R {
     BANK_STATE.with(|s| {
         let mut state_ref = s.borrow_mut();
-        let state = state_ref.as_mut().expect("Bank state is not initialized");
 
-        f(state)
+        f(&mut state_ref)
     })
 }
 

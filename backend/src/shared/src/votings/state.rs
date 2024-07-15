@@ -15,7 +15,7 @@ use super::{
 
 const EVENTS_LOG_LEN: usize = 1000;
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Default)]
 pub struct VotingsState {
     pub votings: BTreeMap<VotingId, Voting>,
     pub events: LinkedList<VotingEvent>,

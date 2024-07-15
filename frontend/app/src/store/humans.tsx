@@ -174,7 +174,7 @@ export function HumanStore(props: IChildren) {
   };
 
   const reputationGetBalances = debouncedBatchFetch(
-    async function *(req: { ids: Principal[] }) {
+    async function* (req: { ids: Principal[] }) {
       const reputationActor = newReputationActor(anonymousAgent()!);
 
       return reputationActor.reputation__get_balance(req);
@@ -189,10 +189,10 @@ export function HumanStore(props: IChildren) {
   );
 
   const humansGetProfiles = debouncedBatchFetch(
-    async function *(req: { ids: Principal[] }) {
+    async function* (req: { ids: Principal[] }) {
       const humansActor = newHumansActor(anonymousAgent()!);
 
-      return humansActor.humans__get_profiles(req);
+      return await humansActor.humans__get_profiles(req);
     },
     ({ entries: profiles }, { ids }) => {
       for (let i = 0; i < profiles.length; i++) {
