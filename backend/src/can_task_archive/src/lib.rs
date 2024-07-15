@@ -10,7 +10,7 @@ use shared::{
     task_archive::{
         api::{
             AppendBatchRequest, AppendBatchResponse, GetArchivedTasksByIdRequest,
-            GetArchivedTasksByIdResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
+            GetArchivedTasksByIdResponse, GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse,
             GetArchivedTasksStatsRequest, GetArchivedTasksStatsResponse, SetNextRequest,
             SetNextResponse,
         },
@@ -78,7 +78,7 @@ fn task_archive__get_archived_tasks_by_id(
 
 #[query]
 #[allow(non_snake_case)]
-fn task_archive__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
+fn task_archive__get_archived_tasks(mut req: GetArchivedTaskIdsRequest) -> GetArchivedTaskIdsResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
             .expect("Unable to get archived tasks");

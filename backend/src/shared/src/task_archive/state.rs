@@ -8,9 +8,9 @@ use crate::{
 };
 
 use super::api::{
-    AppendBatchRequest, AppendBatchResponse, GetArchivedTasksByIdRequest,
-    GetArchivedTasksByIdResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
-    GetArchivedTasksStatsRequest, GetArchivedTasksStatsResponse, SetNextRequest, SetNextResponse,
+    AppendBatchRequest, AppendBatchResponse, GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse,
+    GetArchivedTasksByIdRequest, GetArchivedTasksByIdResponse, GetArchivedTasksStatsRequest,
+    GetArchivedTasksStatsResponse, SetNextRequest, SetNextResponse,
 };
 
 #[derive(CandidType, Deserialize, Default)]
@@ -42,17 +42,20 @@ impl TaskArchiveState {
             .map(|id| self.tasks.get(&id).cloned())
             .collect();
 
-        GetArchivedTasksByIdResponse { entries }
+        GetArchivedTasksByIdResponse {
+            entries,
+            next: self.next,
+        }
     }
 
-    pub fn get_archived_tasks(&self, req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
+    pub fn get_archived_tasks(&self, req: GetArchivedTaskIdsRequest) -> GetArchivedTaskIdsResponse {
         let (entries, left): (Vec<_>, u32) = if req.pagination.reversed {
             let mut iter = self.tasks.iter().rev().skip(req.pagination.skip as usize);
 
             let entries = iter
                 .by_ref()
                 .take(req.pagination.take as usize)
-                .map(|(_, it)| it)
+                .map(|(id, _)| id)
                 .cloned()
                 .collect();
 
@@ -65,7 +68,7 @@ impl TaskArchiveState {
             let entries = iter
                 .by_ref()
                 .take(req.pagination.take as usize)
-                .map(|(_, it)| it)
+                .map(|(id, _)| id)
                 .cloned()
                 .collect();
 
@@ -74,7 +77,7 @@ impl TaskArchiveState {
             (entries, left)
         };
 
-        GetArchivedTasksResponse {
+        GetArchivedTaskIdsResponse {
             entries,
             pagination: PageResponse {
                 left,

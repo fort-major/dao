@@ -196,6 +196,7 @@ impl LiquidDemocracyState {
         GetDecisionTopicsResponse { entries }
     }
 
+    #[allow(unused)]
     fn generate_id(&mut self) -> DecisionTopicId {
         let id = self.decision_topic_id_counter;
         self.decision_topic_id_counter += 1;

@@ -1,7 +1,7 @@
 use candid::Principal;
 use ic_cdk::{api::call::CallResult, call};
 
-use crate::task_archive::api::{GetArchivedTasksRequest, GetArchivedTasksResponse};
+use crate::task_archive::api::{GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse};
 
 use super::api::{
     AttachToTaskRequest, AttachToTaskResponse, BackToEditTaskRequest, BackToEditTaskResponse,
@@ -122,8 +122,8 @@ impl TasksCanisterClient {
     #[allow(non_snake_case)]
     pub async fn tasks__get_archived_tasks(
         &self,
-        req: GetArchivedTasksRequest,
-    ) -> CallResult<GetArchivedTasksResponse> {
+        req: GetArchivedTaskIdsRequest,
+    ) -> CallResult<GetArchivedTaskIdsResponse> {
         call(self.canister_id, "tasks__get_archived_tasks", (req,))
             .await
             .map(|(it,)| it)

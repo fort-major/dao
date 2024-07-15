@@ -501,14 +501,14 @@ pub struct GetTasksByIdResponse {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct GetTasksRequest {
+pub struct GetTaskIdsRequest {
     #[garde(dive)]
     pub pagination: PageRequest,
     #[garde(dive)]
     pub filter: TaskFilter,
 }
 
-impl Guard<TasksState> for GetTasksRequest {
+impl Guard<TasksState> for GetTaskIdsRequest {
     fn validate_and_escape(
         &mut self,
         _state: &TasksState,
@@ -520,7 +520,7 @@ impl Guard<TasksState> for GetTasksRequest {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct GetTasksResponse {
+pub struct GetTaskIdsResponse {
     #[garde(skip)]
     pub entries: Vec<TaskId>,
     #[garde(dive)]

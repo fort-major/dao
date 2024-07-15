@@ -60,15 +60,17 @@ impl Guard<TaskArchiveState> for GetArchivedTasksByIdRequest {
 pub struct GetArchivedTasksByIdResponse {
     #[garde(skip)]
     pub entries: Vec<Option<ArchivedTask>>,
+    #[garde(skip)]
+    pub next: Option<Principal>,
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct GetArchivedTasksRequest {
+pub struct GetArchivedTaskIdsRequest {
     #[garde(dive)]
     pub pagination: PageRequest,
 }
 
-impl Guard<TaskArchiveState> for GetArchivedTasksRequest {
+impl Guard<TaskArchiveState> for GetArchivedTaskIdsRequest {
     fn validate_and_escape(
         &mut self,
         _state: &TaskArchiveState,
@@ -79,7 +81,7 @@ impl Guard<TaskArchiveState> for GetArchivedTasksRequest {
     }
 }
 
-impl Guard<TasksState> for GetArchivedTasksRequest {
+impl Guard<TasksState> for GetArchivedTaskIdsRequest {
     fn validate_and_escape(
         &mut self,
         _state: &TasksState,
@@ -91,9 +93,9 @@ impl Guard<TasksState> for GetArchivedTasksRequest {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct GetArchivedTasksResponse {
+pub struct GetArchivedTaskIdsResponse {
     #[garde(skip)]
-    pub entries: Vec<ArchivedTask>,
+    pub entries: Vec<TaskId>,
     #[garde(dive)]
     pub pagination: PageResponse,
 }

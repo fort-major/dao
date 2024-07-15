@@ -3,16 +3,18 @@ import { Btn } from "@components/btn";
 import { EIconKind } from "@components/icon";
 import { Page } from "@components/page";
 import { TaskMini } from "@components/task";
+import { TasksPageTabs } from "@components/tasks-page-tabs";
 import { Title } from "@components/title";
 import { A, useNavigate } from "@solidjs/router";
 import { useAuth } from "@store/auth";
 import { useHumans } from "@store/humans";
-import { taskStageToOrd, useTasks } from "@store/tasks";
+import { taskStageToOrd, TTaskStatus, useTasks } from "@store/tasks";
 import { COLORS } from "@utils/colors";
 import {
   createEffect,
   createSignal,
   For,
+  on,
   onCleanup,
   onMount,
   Show,
@@ -20,17 +22,41 @@ import {
 
 export function TasksPage() {
   const {
-    tasks: t,
-    fetchTasks,
-    archivedTasks: at,
-    fetchArchivedTasks,
+    editTaskIds,
+    preSolveTaskIds,
+    solveTaskIds,
+    evaluateTaskIds,
+    fetchTaskIds,
+    archivedTaskIds,
+    fetchArchivedTaskIds,
   } = useTasks();
   const { isReadyToFetch, isAuthorized, identity } = useAuth();
   const { profiles } = useHumans();
 
+  const [tab, setTab] = createSignal<TTaskStatus>("Solve");
   const [canFetchMore, setCanFetchMore] = createSignal(true);
   const [fetching, setFetching] = createSignal(false);
-  const [fetchArchive, setFetchArchived] = createSignal(false);
+
+  createEffect(
+    on(tab, () => {
+      setCanFetchMore(true);
+    })
+  );
+
+  const ids = () => {
+    switch (tab()) {
+      case "Edit":
+        return editTaskIds;
+      case "PreSolve":
+        return preSolveTaskIds;
+      case "Solve":
+        return solveTaskIds;
+      case "Evaluate":
+        return evaluateTaskIds;
+      case "Archived":
+        return archivedTaskIds;
+    }
+  };
 
   const canCreateTasks = () => {
     if (!isAuthorized()) return false;
@@ -43,17 +69,6 @@ export function TasksPage() {
 
     return !!myProfile.employment;
   };
-
-  const tasks = () =>
-    Object.values(t).sort((a, b) => {
-      const dif = taskStageToOrd(a!.stage) - taskStageToOrd(b!.stage);
-
-      if (dif === 0) return Number(a!.created_at - b!.created_at);
-      else return dif;
-    });
-
-  const archivedTasks = () =>
-    Object.values(at).sort((a, b) => Number(a!.created_at - b!.created_at));
 
   let ref: HTMLDivElement;
 
@@ -68,15 +83,14 @@ export function TasksPage() {
 
   const handleFetch = async () => {
     setFetching(true);
-    const more = fetchArchive()
-      ? await fetchArchivedTasks()
-      : await fetchTasks();
-    if (!more && !fetchArchive()) {
-      setFetchArchived(true);
-      setCanFetchMore(true);
-    } else {
-      setCanFetchMore(more);
-    }
+
+    const more =
+      tab() === "Archived"
+        ? await fetchArchivedTaskIds()
+        : await fetchTaskIds(tab());
+
+    setCanFetchMore(more);
+
     setFetching(false);
   };
 
@@ -95,6 +109,7 @@ export function TasksPage() {
   return (
     <Page ref={ref!} class="self-stretch pt-10">
       <div class="flex flex-col gap-20">
+        <TasksPageTabs onTabChange={setTab} />
         <Show when={canCreateTasks()}>
           <A class="flex flex-col" href={ROOT.$.tasks.$.create.path}>
             <Btn
@@ -108,38 +123,18 @@ export function TasksPage() {
           <Title text="In-Progress Tasks" />
           <For
             fallback={<p class="font-primary font-medium text-2xl">No tasks</p>}
-            each={tasks()}
+            each={ids()}
           >
-            {(task) => (
+            {(id) => (
               <A
-                href={`${ROOT.$.task.path}?id=${task!.id.toString()}`}
+                href={`${ROOT.$.task.path}?id=${id.toString()}`}
                 class="flex flex-col shadow-md p-5"
               >
-                <TaskMini id={task!.id} />
+                <TaskMini id={id} />
               </A>
             )}
           </For>
         </div>
-        <Show when={fetchArchive()}>
-          <div class="flex flex-col gap-10">
-            <Title text="Archive" />
-            <For
-              fallback={
-                <p class="font-primary font-medium text-2xl">No tasks</p>
-              }
-              each={archivedTasks()}
-            >
-              {(task) => (
-                <A
-                  href={`${ROOT.$.task.path}?id=${task!.id.toString()}`}
-                  class="flex flex-col shadow-md p-5"
-                >
-                  <TaskMini id={task!.id} />
-                </A>
-              )}
-            </For>
-          </div>
-        </Show>
       </div>
       <Show when={canFetchMore()}>
         <p class="text-gray-190 font-primary font-light text-md">

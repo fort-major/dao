@@ -12,7 +12,7 @@ import { SolutionSubmitForm } from "@components/solution-submit-form";
 import { Title } from "@components/title";
 import { A } from "@solidjs/router";
 import { useAuth } from "@store/auth";
-import { IArchivedTaskV1, ITask, useTasks } from "@store/tasks";
+import { IArchivedTaskV1, ITask, TTaskStatus, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
 import { timestampToStr } from "@utils/encoding";
@@ -32,8 +32,6 @@ export interface ITaskProps {
   id: TTaskId;
 }
 
-type TStatus = "Edit" | "PreSolve" | "Solve" | "Evaluate" | "Archived";
-
 export function TaskMini(props: ITaskProps) {
   const { tasks, fetchTasksById } = useTasks();
 
@@ -44,7 +42,7 @@ export function TaskMini(props: ITaskProps) {
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
     tasks[props.id.toString()];
 
-  const stage = (): TStatus => {
+  const stage = (): TTaskStatus => {
     const t = task();
 
     if (!t || !t.stage) return "Archived";
@@ -201,7 +199,7 @@ export function Task(props: ITaskProps) {
     if (!task() && isReadyToFetch()) fetchTasksById([props.id]);
   });
 
-  const stage = (): TStatus => {
+  const stage = (): TTaskStatus => {
     const t = task();
 
     if (!t || !t.stage) return "Archived";

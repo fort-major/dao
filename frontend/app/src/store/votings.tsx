@@ -261,7 +261,7 @@ export function VotingsStore(props: IChildren) {
   };
 
   const votingsGetVotings = debouncedBatchFetch(
-    (req: { ids: VotingId[] }) => {
+    async function* (req: { ids: VotingId[] }) {
       const votingsActor = newVotingsActor(anonymousAgent()!);
       return votingsActor.votings__get_votings(req);
     },
@@ -353,7 +353,7 @@ export function VotingsStore(props: IChildren) {
   };
 
   const liquidDemocracyGetFollowersOf = debouncedBatchFetch(
-    (req: GetFolloweesOfRequest) => {
+    async function* (req: GetFolloweesOfRequest) {
       const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
       return liquidDemocracyActor.liquid_democracy__get_followers_of(req);
     },
@@ -366,7 +366,7 @@ export function VotingsStore(props: IChildren) {
   );
 
   const liquidDemocracyGetFolloweesOf = debouncedBatchFetch(
-    (req: GetFolloweesOfRequest) => {
+    async function* (req: GetFolloweesOfRequest) {
       const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
       return liquidDemocracyActor.liquid_democracy__get_followees_of(req);
     },

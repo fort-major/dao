@@ -3,7 +3,7 @@ use ic_cdk::{api::call::CallResult, call};
 
 use super::api::{
     AppendBatchRequest, AppendBatchResponse, GetArchivedTasksByIdRequest,
-    GetArchivedTasksByIdResponse, GetArchivedTasksRequest, GetArchivedTasksResponse,
+    GetArchivedTasksByIdResponse, GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse,
     SetNextRequest, SetNextResponse,
 };
 
@@ -50,8 +50,8 @@ impl TaskArchiveCanisterClient {
     #[allow(non_snake_case)]
     pub async fn task_archive__get_archived_tasks(
         &self,
-        req: GetArchivedTasksRequest,
-    ) -> CallResult<GetArchivedTasksResponse> {
+        req: GetArchivedTaskIdsRequest,
+    ) -> CallResult<GetArchivedTaskIdsResponse> {
         call(self.canister_id, "task_archive__get_archived_tasks", (req,))
             .await
             .map(|(it,)| it)

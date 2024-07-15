@@ -1,5 +1,6 @@
 import {
   Accessor,
+  batch,
   createContext,
   createEffect,
   createSignal,
@@ -12,7 +13,6 @@ import { Principal } from "@dfinity/principal";
 import { useAuth } from "./auth";
 import { E8s } from "../utils/math";
 import {
-  GetTasksStatsResponse,
   SolutionField,
   SolverConstraint,
   TaskStage,
@@ -113,11 +113,16 @@ type TasksStore = Partial<Record<TTaskIdStr, ITask>>;
 type ArchivedTasksStore = Partial<Record<TTaskIdStr, IArchivedTaskV1>>;
 
 export interface ITasksStoreContext {
+  editTaskIds: TTaskId[];
+  preSolveTaskIds: TTaskId[];
+  solveTaskIds: TTaskId[];
+  evaluateTaskIds: TTaskId[];
+  fetchTaskIds: (status: TTaskStatus) => Promise<boolean>;
   tasks: Store<TasksStore>;
-  fetchTasks: () => Promise<boolean>;
   fetchTasksById: (ids: TTaskId[]) => Promise<void>;
+  archivedTaskIds: TTaskId[];
+  fetchArchivedTaskIds: () => Promise<boolean>;
   archivedTasks: Store<ArchivedTasksStore>;
-  fetchArchivedTasks: () => Promise<boolean>;
   fetchArchivedTasksById: (ids: TTaskId[]) => Promise<void>;
   createTask: (args: ICreateTaskArgs) => Promise<TTaskId>;
   editTask: (args: IEditTaskArgs) => Promise<void>;
@@ -137,6 +142,13 @@ export interface ITaskStats {
   readyToSolveTasks: number;
   solvedTasks: number;
 }
+
+export type TTaskStatus =
+  | "Edit"
+  | "PreSolve"
+  | "Solve"
+  | "Evaluate"
+  | "Archived";
 
 const TasksContext = createContext<ITasksStoreContext>();
 
@@ -161,10 +173,24 @@ export function TasksStore(props: IChildren) {
     profileProof,
     identity,
   } = useAuth();
+  const [editTaskIds, setEditTaskIds] = createStore<TTaskId[]>([]);
+  const [editTaskSkip, setEditTaskSkip] = createSignal(0);
+
+  const [preSolveTaskIds, setPreSolveTaskIds] = createStore<TTaskId[]>([]);
+  const [preSolveTaskSkip, setPreSolveTaskSkip] = createSignal(0);
+
+  const [solveTaskIds, setSolveTaskIds] = createStore<TTaskId[]>([]);
+  const [solveTaskSkip, setSolveTaskSkip] = createSignal(0);
+
+  const [evaluateTaskIds, setEvaluateTaskIds] = createStore<TTaskId[]>([]);
+  const [evaluateTaskSkip, setEvaluateTaskSkip] = createSignal(0);
+
   const [tasks, setTasks] = createStore<TasksStore>();
-  const [taskSkip, setTaskSkip] = createSignal(0);
-  const [archivedTasks, setArchivedTasks] = createStore<ArchivedTasksStore>();
+
+  const [archivedTaskIds, setArchivedTaskIds] = createStore<TTaskId[]>([]);
   const [archivedTaskSkip, setArchivedTaskSkip] = createSignal(0);
+  const [archivedTasks, setArchivedTasks] = createStore<ArchivedTasksStore>();
+
   const [taskArchiveActor, setTaskArchiveActor] =
     createSignal<ReturnType<typeof newTaskArchiveActor>>();
   const [taskStats, setTaskStats] = createSignal<ITaskStats>({
@@ -215,16 +241,51 @@ export function TasksStore(props: IChildren) {
     tasksGetTasksById({ ids });
   };
 
-  const fetchTasks: ITasksStoreContext["fetchTasks"] = async () => {
+  const fetchTaskIds: ITasksStoreContext["fetchTaskIds"] = async (status) => {
     assertReadyToFetch();
 
     const tasksActor = newTasksActor(anonymousAgent()!);
 
+    let skip: number = 0;
+    let stage: TaskStage = { Edit: null };
+
+    switch (status) {
+      case "Edit": {
+        skip = editTaskSkip();
+        stage = { Edit: null };
+        break;
+      }
+      case "PreSolve": {
+        skip = preSolveTaskSkip();
+        stage = { PreSolve: null };
+        break;
+      }
+      case "Solve": {
+        skip = solveTaskSkip();
+        stage = { Solve: { until_timestamp: 0n /* ignored on backend */ } };
+        break;
+      }
+      case "Evaluate": {
+        skip = evaluateTaskSkip();
+        stage = { Evaluate: null };
+        break;
+      }
+      case "Archived": {
+        err(
+          ErrorCode.UNREACHEABLE,
+          "Use the specialized method to fetch archived tasks"
+        );
+      }
+    }
+
     const { entries, pagination } = await tasksActor.tasks__get_tasks({
       pagination: {
         reversed: false,
-        skip: taskSkip(),
+        skip,
         take: 20,
+      },
+      filter: {
+        Stage: stage,
       },
     });
 
@@ -233,54 +294,30 @@ export function TasksStore(props: IChildren) {
       result = false;
     }
 
-    setTaskSkip((v) => v + entries.length);
-
-    for (let i = 0; i < entries.length; i++) {
-      const task = entries[i];
-
-      const solutions: [Principal, ISolution][] = task.solutions.map(
-        ([solver, solution]) => {
-          const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
-          const hours = optUnwrap(solution.reward_hours.map(E8s.new));
-          const storypoints = optUnwrap(
-            solution.reward_storypoints.map(E8s.new)
-          );
-
-          const sol: ISolution = {
-            fields: solution.fields.map((it) => optUnwrap(it) ?? ""),
-            attached_at: solution.attached_at,
-            rejected: solution.rejected,
-            evaluation,
-            reward_hours: hours,
-            reward_storypoints: storypoints,
-            want_rep: solution.want_rep,
-          };
-
-          return [solver, sol];
+    batch(() => {
+      switch (status) {
+        case "Edit": {
+          setEditTaskSkip((v) => v + entries.length);
+          setEditTaskIds((v) => [...v, ...entries]);
+          break;
         }
-      );
-
-      const itask: ITask = {
-        id: task.id,
-        solution_fields: task.solution_fields,
-        title: task.title,
-        description: task.description,
-        creator: task.creator,
-        created_at: task.created_at,
-        stage: task.stage,
-        solver_constraints: task.solver_constraints,
-        storypoints_base: E8s.new(task.storypoints_base),
-        storypoints_ext_budget: E8s.new(task.storypoints_ext_budget),
-        hours_base: E8s.new(task.hours_base),
-        days_to_solve: task.days_to_solve,
-        solvers: task.solvers,
-        solutions,
-        decision_topics: task.decision_topics as number[],
-        assignees: optUnwrap(task.assignees),
-      };
-
-      setTasks(itask.id.toString(), itask);
-    }
+        case "PreSolve": {
+          setPreSolveTaskSkip((v) => v + entries.length);
+          setPreSolveTaskIds((v) => [...v, ...entries]);
+          break;
+        }
+        case "Solve": {
+          setSolveTaskSkip((v) => v + entries.length);
+          setSolveTaskIds((v) => [...v, ...entries]);
+          break;
+        }
+        case "Evaluate": {
+          setEvaluateTaskSkip((v) => v + entries.length);
+          setEvaluateTaskIds((v) => [...v, ...entries]);
+          break;
+        }
+      }
+    });
 
     return result;
   };
@@ -290,7 +327,7 @@ export function TasksStore(props: IChildren) {
       taskArchiveGetArchivedTasksById({ ids });
     };
 
-  const fetchArchivedTasks: ITasksStoreContext["fetchArchivedTasks"] =
+  const fetchArchivedTaskIds: ITasksStoreContext["fetchArchivedTaskIds"] =
     async () => {
       assertReadyToFetch();
 
@@ -317,58 +354,7 @@ export function TasksStore(props: IChildren) {
       }
 
       setArchivedTaskSkip((v) => v + entries.length);
-
-      for (let i = 0; i < entries.length; i++) {
-        const task = entries[i];
-
-        if ("V0001" in task) {
-          const taskV1 = task.V0001;
-
-          const solutions: [Principal, ISolution][] = taskV1.solutions.map(
-            ([solver, solution]) => {
-              const evaluation = optUnwrap(solution.evaluation.map(E8s.new));
-              const hours = optUnwrap(solution.reward_hours.map(E8s.new));
-              const storypoints = optUnwrap(
-                solution.reward_storypoints.map(E8s.new)
-              );
-
-              const sol: ISolution = {
-                fields: solution.fields.map((it) => optUnwrap(it) ?? ""),
-                attached_at: solution.attached_at,
-                rejected: solution.rejected,
-                evaluation,
-                reward_hours: hours,
-                reward_storypoints: storypoints,
-                want_rep: solution.want_rep,
-              };
-
-              return [solver, sol];
-            }
-          );
-
-          const itask: IArchivedTaskV1 = {
-            id: taskV1.id,
-            title: taskV1.title,
-            description: taskV1.description,
-            created_at: taskV1.created_at,
-            creator: taskV1.creator,
-            solver_constraints: taskV1.solver_constraints,
-            solution_fields: taskV1.solution_fields,
-            solutions,
-            decision_topics: taskV1.decision_topics as number[],
-            assignees: optUnwrap(taskV1.assignees),
-          };
-
-          setArchivedTasks(itask.id.toString(), itask);
-
-          continue;
-        }
-
-        logErr(
-          ErrorCode.UNKNOWN,
-          `Unknown archived task version received: ${debugStringify(task)}`
-        );
-      }
+      setArchivedTaskIds((v) => [...v, ...entries]);
 
       return result;
     };
@@ -624,7 +610,7 @@ export function TasksStore(props: IChildren) {
   };
 
   const tasksGetTasksById = debouncedBatchFetch(
-    (req: { ids: TTaskId[] }) => {
+    async function* (req: { ids: TTaskId[] }) {
       const tasksActor = newTasksActor(anonymousAgent()!);
       return tasksActor.tasks__get_tasks_by_id(req);
     },
@@ -633,7 +619,8 @@ export function TasksStore(props: IChildren) {
         const task = optUnwrap(tasks[i]);
 
         if (!task) {
-          err(ErrorCode.UNREACHEABLE, `Task ${ids[i]} not found`);
+          taskArchiveGetArchivedTasksById({ ids: [ids[i]] });
+          continue;
         }
 
         const solutions: [Principal, ISolution][] = task.solutions.map(
@@ -684,16 +671,41 @@ export function TasksStore(props: IChildren) {
   );
 
   const taskArchiveGetArchivedTasksById = debouncedBatchFetch(
-    (req: { ids: TTaskId[] }) => {
-      const tasksActor = newTaskArchiveActor(anonymousAgent()!);
-      return tasksActor.task_archive__get_archived_tasks_by_id(req);
+    async function* (req: { ids: TTaskId[] }) {
+      const _req = { ids: [...req.ids] };
+      let canisterId: Principal | undefined = undefined;
+
+      while (true) {
+        const tasksActor = newTaskArchiveActor(anonymousAgent()!, canisterId);
+        const resp = await tasksActor.task_archive__get_archived_tasks_by_id(
+          _req
+        );
+
+        canisterId = optUnwrap(resp.next);
+
+        for (let i = 0; i < resp.entries.length; i++) {
+          if (resp.entries[i].length === 0) {
+            const idToRemove = resp.entries[i][0]!.V0001.id;
+            const idx = _req.ids.indexOf(idToRemove);
+            if (idx >= 0) {
+              _req.ids.splice(idx, 1);
+            }
+          }
+        }
+
+        if (_req.ids.length === 0) {
+          return resp;
+        } else {
+          yield resp;
+        }
+      }
     },
-    ({ entries: tasks }, { ids }) => {
+    ({ entries: tasks }) => {
       for (let i = 0; i < tasks.length; i++) {
         const t = optUnwrap(tasks[i]);
 
         if (!t) {
-          err(ErrorCode.UNREACHEABLE, `Archived Task ${ids[i]} not found`);
+          continue;
         }
 
         if (!("V0001" in t)) {
@@ -749,11 +761,16 @@ export function TasksStore(props: IChildren) {
   return (
     <TasksContext.Provider
       value={{
+        editTaskIds,
+        preSolveTaskIds,
+        solveTaskIds,
+        evaluateTaskIds,
+        fetchTaskIds,
         tasks,
-        fetchTasks,
         fetchTasksById,
+        archivedTaskIds,
+        fetchArchivedTaskIds,
         archivedTasks,
-        fetchArchivedTasks,
         fetchArchivedTasksById,
         createTask,
         editTask,

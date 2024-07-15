@@ -24,7 +24,7 @@ type Req<ID> = { ids: ID[] };
 type Resp<T> = { entries: T[] };
 
 export const debouncedBatchFetch = <ID, T, RESP extends Resp<T>>(
-  fetcher: (req: Req<ID>) => Promise<RESP>,
+  fetcher: (req: Req<ID>) => AsyncGenerator<RESP, RESP, undefined>,
   onSuccess: (resp: RESP, req: Req<ID>) => void,
   onErr: (reason: any, req: Req<ID>) => void
 ) => {
@@ -35,12 +35,16 @@ export const debouncedBatchFetch = <ID, T, RESP extends Resp<T>>(
     clearTimeout(int);
   });
 
-  const execute = () => {
+  const execute = async () => {
     const req = { ids };
 
-    fetcher(req)
-      .then((resp) => onSuccess(resp, req))
-      .catch((reason) => onErr(reason, req));
+    try {
+      for await (let resp of fetcher(req)) {
+        onSuccess(resp, req);
+      }
+    } catch (reason) {
+      onErr(reason, req);
+    }
   };
 
   return (req: { ids: ID[] }) => {

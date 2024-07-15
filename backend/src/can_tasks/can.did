@@ -1,16 +1,3 @@
-type ArchivedTask = variant { V0001 : ArchivedTaskV1 };
-type ArchivedTaskV1 = record {
-  id : nat64;
-  solution_fields : vec SolutionField;
-  title : text;
-  creator : principal;
-  solver_constraints : vec SolverConstraint;
-  description : text;
-  created_at : nat64;
-  decision_topics : vec nat32;
-  assignees : opt vec principal;
-  solutions : vec record { principal; Solution };
-};
 type AttachToTaskRequest = record { id : nat64; detach : bool };
 type BackToEditTaskRequest = record { id : nat64 };
 type CreateTaskRequest = record {
@@ -46,18 +33,21 @@ type EvaluateRequest = record {
   evaluation_per_solution : vec record { principal; opt nat };
 };
 type FinishSolveRequest = record { id : nat64; profile_proof : ProfileProof };
-type GetArchivedTasksRequest = record { pagination : PageRequest };
-type GetArchivedTasksResponse = record {
-  pagination : PageResponse;
-  entries : vec ArchivedTask;
-};
-type GetTasksByIdRequest = record { ids : vec nat64 };
-type GetTasksByIdResponse = record { entries : vec opt Task };
-type GetTasksRequest = record { pagination : PageRequest; filter : TaskFilter };
-type GetTasksResponse = record {
+type GetArchivedTaskIdsRequest = record { pagination : PageRequest };
+type GetArchivedTaskIdsResponse = record {
   pagination : PageResponse;
   entries : vec nat64;
 };
+type GetTaskIdsRequest = record {
+  pagination : PageRequest;
+  filter : TaskFilter;
+};
+type GetTaskIdsResponse = record {
+  pagination : PageResponse;
+  entries : vec nat64;
+};
+type GetTasksByIdRequest = record { ids : vec nat64 };
+type GetTasksByIdResponse = record { entries : vec opt Task };
 type GetTasksStatsResponse = record {
   ready_to_solve_tasks : nat32;
   next : principal;
@@ -127,8 +117,8 @@ type URLKind = variant {
 };
 service : (InitRequest) -> {
   get_archive_error : () -> (opt record { nat64; text }) query;
-  task_archive__get_archived_tasks : (GetArchivedTasksRequest) -> (
-      GetArchivedTasksResponse,
+  task_archive__get_archived_tasks : (GetArchivedTaskIdsRequest) -> (
+      GetArchivedTaskIdsResponse,
     ) query;
   tasks__attach_to_task : (AttachToTaskRequest) -> (record {});
   tasks__back_to_edit_task : (BackToEditTaskRequest) -> (record {});
@@ -138,7 +128,7 @@ service : (InitRequest) -> {
   tasks__evaluate_task : (EvaluateRequest) -> (record {});
   tasks__finish_edit_task : (DeleteRequest) -> (record {});
   tasks__finish_solve_task : (FinishSolveRequest) -> (record {});
-  tasks__get_tasks : (GetTasksRequest) -> (GetTasksResponse) query;
+  tasks__get_tasks : (GetTaskIdsRequest) -> (GetTaskIdsResponse) query;
   tasks__get_tasks_by_id : (GetTasksByIdRequest) -> (
       GetTasksByIdResponse,
     ) query;

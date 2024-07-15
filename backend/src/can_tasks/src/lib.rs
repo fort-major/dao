@@ -11,14 +11,14 @@ use serde::Deserialize;
 use shared::{
     humans::{api::MintRewardsRequest, client::HumansCanisterClient},
     reputation::{api::MintRepRequest, client::ReputationCanisterClient},
-    task_archive::api::{GetArchivedTasksRequest, GetArchivedTasksResponse},
+    task_archive::api::{GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse},
     tasks::{
         api::{
             AttachToTaskRequest, AttachToTaskResponse, BackToEditTaskRequest,
             BackToEditTaskResponse, CreateTaskRequest, CreateTaskResponse, DeleteRequest,
             DeleteResponse, EditTaskRequest, EditTaskResponse, EvaluateRequest, EvaluateResponse,
             FinishEditTaskRequest, FinishEditTaskResponse, FinishSolveRequest, FinishSolveResponse,
-            GetTasksByIdRequest, GetTasksByIdResponse, GetTasksRequest, GetTasksResponse,
+            GetTasksByIdRequest, GetTasksByIdResponse, GetTaskIdsRequest, GetTaskIdsResponse,
             GetTasksStatsRequest, GetTasksStatsResponse, SolveTaskRequest, SolveTaskResponse,
             StartSolveTaskRequest, StartSolveTaskResponse,
         },
@@ -216,23 +216,25 @@ fn tasks__get_tasks_by_id(mut req: GetTasksByIdRequest) -> GetTasksByIdResponse 
 
 #[query]
 #[allow(non_snake_case)]
-fn tasks__get_tasks(mut req: GetTasksRequest) -> GetTasksResponse {
+fn tasks__get_tasks(mut req: GetTaskIdsRequest) -> GetTaskIdsResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
             .expect("Unable to get tasks");
 
-        s.get_tasks(req)
+        s.get_task_ids(req)
     })
 }
 
 #[query]
 #[allow(non_snake_case)]
-fn task_archive__get_archived_tasks(mut req: GetArchivedTasksRequest) -> GetArchivedTasksResponse {
+fn task_archive__get_archived_tasks(
+    mut req: GetArchivedTaskIdsRequest,
+) -> GetArchivedTaskIdsResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
             .expect("Unable to get tasks");
 
-        s.get_archived_tasks(req)
+        s.get_archived_task_ids(req)
     })
 }
 

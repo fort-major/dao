@@ -42,7 +42,7 @@ export function Header(props: IHeaderProps) {
       classList={{ [props.class!]: !!props.class }}
     >
       <Logo />
-      <div class="flex gap-9 px-24 flex-grow items-center">
+      <nav class="flex gap-9 px-24 flex-grow items-center">
         <A class={linkClass} href={ROOT.path}>
           Home
         </A>
@@ -57,7 +57,7 @@ export function Header(props: IHeaderProps) {
             Me
           </A>
         </Show>
-      </div>
+      </nav>
       <Switch>
         <Match when={!isAuthorized()}>
           <Btn
