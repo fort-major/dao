@@ -31,7 +31,11 @@ impl Guard<LiquidDemocracyState> for FollowRequest {
 
         self.proof.assert_valid_for(caller, now)?;
 
-        if !state.followees_of.contains_key(&caller) {
+        if let Some(callers_followees) = state.followees_of.get(&caller) {
+            if callers_followees.len() == 10 {
+                return Err(format!("Only 10 followees are allowed"));
+            }
+        } else {
             return Err(format!("Not registered"));
         }
 

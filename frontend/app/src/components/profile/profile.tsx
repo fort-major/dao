@@ -35,6 +35,8 @@ import { ComingSoonText } from "@components/coming-soon-text";
 import { VotingId } from "@/declarations/votings/votings.did";
 import { VotingWidget } from "@components/voting-widget";
 import { ErrorCode, logErr, logInfo } from "@utils/error";
+import { useNavigate } from "@solidjs/router";
+import { ROOT } from "@/routes";
 
 export interface IProfileProps extends IClass {
   id?: Principal;
@@ -52,6 +54,7 @@ export function ProfileFull(props: IProfileProps) {
     disable,
     enable,
     disabled,
+    deauthorize,
   } = useAuth();
   const {
     createHumansEmployVoting,
@@ -59,6 +62,7 @@ export function ProfileFull(props: IProfileProps) {
     votings,
     fetchVotings,
   } = useVotings();
+  const navigate = useNavigate();
 
   const [newName, setNewName] = createSignal<Result<string, string>>(
     Result.Ok("Anonymous")
@@ -183,6 +187,16 @@ export function ProfileFull(props: IProfileProps) {
   const borderColor = () =>
     isTeamMember() ? COLORS.chartreuse : COLORS.gray[150];
 
+  const handleRefresh = () => {
+    if (props.id) fetchProfiles([props.id]);
+  };
+
+  const handleLogout = async () => {
+    if (await deauthorize()) {
+      navigate(ROOT.path);
+    }
+  };
+
   const metricClass = "flex flex-col gap-1 min-w-36";
 
   return (
@@ -227,6 +241,11 @@ export function ProfileFull(props: IProfileProps) {
             {profile()!.id.toText()}
           </Show>
         </p>
+        <Show when={props.me}>
+          <div class="flex max-w-28">
+            <Btn text="Log Out" onClick={handleLogout} />
+          </div>
+        </Show>
       </div>
       <div class="grid grid-cols-2 gap-4 items-center">
         <div class={metricClass}>
@@ -234,7 +253,7 @@ export function ProfileFull(props: IProfileProps) {
           <MetricWidget
             primary={rep() ? rep()!.toPrecision(2, true) : "0.0"}
             secondary={
-              rep() && totals()
+              rep() && totals() && !totals()!.reputation.isZero()
                 ? rep()!.div(totals()!.reputation).toPercentNum() + "%"
                 : "0.0%"
             }
@@ -329,6 +348,7 @@ export function ProfileFull(props: IProfileProps) {
             id={votingId()!}
             optionIdx={0}
             kind="satisfaction"
+            onRefreshEntity={handleRefresh}
           />
         </Show>
         <Show when={canCreateVotings() && !props.me && !voting()}>

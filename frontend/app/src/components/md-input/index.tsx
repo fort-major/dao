@@ -359,21 +359,30 @@ function isValid(
 ): string | undefined {
   if (!validations || validations.length === 0) return undefined;
 
+  let required = false;
+  let result: string | undefined = undefined;
+
   for (let validation of validations) {
     if ("required" in validation) {
-      if (v.length === 0) return "The field is required";
+      required = true;
     }
 
     if ("minLen" in validation) {
       if (v.length < validation.minLen)
-        return `Min len is ${validation.minLen}`;
+        result = `Min len is ${validation.minLen}`;
     }
 
     if ("maxLen" in validation) {
       if (v.length > validation.maxLen)
-        return `Max len is ${validation.maxLen}`;
+        result = `Max len is ${validation.maxLen}`;
     }
   }
 
-  return undefined;
+  if (required && v.length === 0) {
+    return "The field is required";
+  } else if (v.length === 0) {
+    return undefined;
+  } else {
+    return result;
+  }
 }

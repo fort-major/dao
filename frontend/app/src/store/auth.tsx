@@ -45,6 +45,7 @@ export interface IMyBalance {
 
 export interface IAuthStoreContext {
   authorize: () => Promise<boolean>;
+  deauthorize: () => Promise<boolean>;
   identity: Accessor<Identity | undefined>;
   msqClient: Accessor<MsqClient | undefined>;
 
@@ -105,6 +106,24 @@ export function AuthStore(props: IChildren) {
       fetchMyBalance();
     }
   });
+
+  const deauthorize: IAuthStoreContext["deauthorize"] = async () => {
+    assertAuthorized();
+
+    const msq = msqClient()!;
+
+    const res = await msq.requestLogout();
+
+    if (res) {
+      batch(() => {
+        setAgent(undefined);
+        setMyBalance(undefined);
+        setIdentity(undefined);
+      });
+    }
+
+    return res;
+  };
 
   const authorize: IAuthStoreContext["authorize"] = async () => {
     const msq = msqClient();
@@ -245,6 +264,7 @@ export function AuthStore(props: IChildren) {
       value={{
         identity,
         authorize,
+        deauthorize,
         msqClient,
         agent,
         anonymousAgent,

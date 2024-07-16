@@ -10,6 +10,7 @@ import { useBank } from "@store/bank";
 import { useHumans } from "@store/humans";
 import { useTasks } from "@store/tasks";
 import { COLORS } from "@utils/colors";
+import { Show } from "solid-js";
 
 export function HomePage() {
   const { totals, decentralization } = useHumans();
@@ -124,15 +125,17 @@ export function HomePage() {
             data={fmjStats().totalSupply.toPrecision(2, true)}
             title="total FMJ supply"
           />
-          <Stat
-            data={
-              fmjStats()
-                .avgMonthlyInflation.div(fmjStats().totalSupply)
-                .toPercent()
-                .toPrecision(2, true) + "%"
-            }
-            title="FMJ monthly inflation"
-          />
+          <Show when={!fmjStats().totalSupply.isZero()}>
+            <Stat
+              data={
+                fmjStats()
+                  .avgMonthlyInflation.div(fmjStats().totalSupply)
+                  .toPercent()
+                  .toPrecision(2, true) + "%"
+              }
+              title="FMJ monthly inflation"
+            />
+          </Show>
         </div>
       </div>
       <div class="flex min-h-32 items-center justify-center gap-6">

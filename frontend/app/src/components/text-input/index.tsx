@@ -77,19 +77,22 @@ function isValid(
 ): undefined | string {
   if (!validations || validations.length == 0) return undefined;
 
+  let required = false;
+  let result: string | undefined = undefined;
+
   for (let validation of validations) {
-    if ("required" in validation && s.length === 0) {
-      return `This field is required`;
+    if ("required" in validation) {
+      required = true;
     }
 
     if ("minLen" in validation) {
       if (s.length < validation.minLen)
-        return `Min length is ${validation.minLen}`;
+        result = `Min length is ${validation.minLen}`;
     }
 
     if ("maxLen" in validation) {
       if (s.length > validation.maxLen)
-        return `Max length is ${validation.maxLen}`;
+        result = `Max length is ${validation.maxLen}`;
     }
 
     if ("url" in validation) {
@@ -98,7 +101,7 @@ function isValid(
 
         switch (validation.url) {
           case "Github":
-            if (!u.host.endsWith("github.com")) return "Not a Github url";
+            if (!u.host.endsWith("github.com")) result = "Not a Github url";
             break;
 
           case "Notion":
@@ -106,30 +109,30 @@ function isValid(
               !u.host.endsWith("notion.so") &&
               !u.host.endsWith("notion.site")
             )
-              return "Not a Notion url";
+              result = "Not a Notion url";
             break;
 
           case "Figma":
-            if (!u.host.endsWith("figma.com")) return "Not a Figma url";
+            if (!u.host.endsWith("figma.com")) result = "Not a Figma url";
             break;
 
           case "DfinityForum":
             if (!u.host.endsWith("forum.dfinity.org"))
-              return "Not a Dfinity forum url";
+              result = "Not a Dfinity forum url";
             break;
 
           case "FortMajorSite":
             if (!u.host.endsWith("fort-major.org"))
-              return "Not Fort Major site url";
+              result = "Not Fort Major site url";
             break;
 
           case "Twitter":
             if (!u.host.endsWith("twitter.com") && !u.host.endsWith("x.com"))
-              return "Not a Twitter (X) url";
+              result = "Not a Twitter (X) url";
             break;
         }
       } catch (_) {
-        return "Not a url";
+        result = "Not a url";
       }
     }
 
@@ -137,10 +140,16 @@ function isValid(
       try {
         Principal.fromText(s);
       } catch (_) {
-        return "Not a Principal ID";
+        result = "Not a Principal ID";
       }
     }
   }
 
-  return undefined;
+  if (required && s.length === 0) {
+    return "The field is required";
+  } else if (s.length === 0) {
+    return undefined;
+  } else {
+    return result;
+  }
 }

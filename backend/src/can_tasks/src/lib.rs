@@ -169,12 +169,14 @@ async fn tasks__evaluate_task(mut req: EvaluateRequest) -> EvaluateResponse {
     let humans_canister = HumansCanisterClient::new(ENV_VARS.humans_canister_id);
     let mint_rewards_req = MintRewardsRequest { rewards };
 
-    // TODO: add rescheduling
-    if let Err((code, msg)) = humans_canister.humans__mint_rewards(mint_rewards_req).await {
-        trap(&format!(
-            "FATAL!!! Unable to mint rewards: [{:?}] {}",
-            code, msg
-        ));
+    if !mint_rewards_req.rewards.is_empty() {
+        // TODO: add rescheduling
+        if let Err((code, msg)) = humans_canister.humans__mint_rewards(mint_rewards_req).await {
+            trap(&format!(
+                "FATAL!!! Unable to mint rewards: [{:?}] {}",
+                code, msg
+            ));
+        }
     }
 
     if !mint_rep_req.entries.is_empty() {

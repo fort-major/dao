@@ -1,7 +1,9 @@
+import { VotingId } from "@/declarations/votings/votings.did";
 import { Btn } from "@components/btn";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { EIconKind, Icon } from "@components/icon";
 import { QtyInput } from "@components/qty-input";
+import { useAuth } from "@store/auth";
 import { TPairStr, useBank } from "@store/bank";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
@@ -25,14 +27,30 @@ export interface IExchangeRateProps {
 }
 
 export function ExchangeRate(props: IExchangeRateProps) {
-  const { createBankSetExchangeRateVoting } = useVotings();
+  const { createBankSetExchangeRateVoting, votings, fetchVotings } =
+    useVotings();
   const { exchangeRates } = useBank();
+  const { isReadyToFetch } = useAuth();
 
   const [edited, setEdited] = createSignal(false);
   const [proposing, setProposing] = createSignal(false);
   const [newRate, setNewRate] = createSignal<Result<E8s, E8s>>(
     Result.Ok(E8s.zero())
   );
+
+  const votingId = (): VotingId => ({
+    // @ts-expect-error
+    BankSetExchangeRate: [{ [pair().from]: null }, { [pair().into]: null }],
+  });
+
+  // TODO: we need to somehow get the new rate out from the voting
+  const voting = () => votings[encodeVotingId(votingId())];
+
+  createEffect(() => {
+    if (isReadyToFetch() && !voting()) {
+      fetchVotings([votingId()]);
+    }
+  });
 
   const rate = () => {
     const history = exchangeRates[props.pair];

@@ -259,16 +259,19 @@ pub struct AttachToTaskRequest {
     pub id: TaskId,
     #[garde(skip)]
     pub detach: bool,
+    #[garde(skip)]
+    pub proof: ProfileProof,
 }
 
 impl Guard<TasksState> for AttachToTaskRequest {
     fn validate_and_escape(
         &mut self,
         state: &TasksState,
-        _caller: Principal,
-        _now: crate::TimestampNs,
+        caller: Principal,
+        now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
+        self.proof.assert_valid_for(caller, now)?;
 
         let task = state
             .tasks
@@ -277,6 +280,15 @@ impl Guard<TasksState> for AttachToTaskRequest {
 
         if !task.can_attach() {
             return Err(format!("Access denied"));
+        }
+
+        if task
+            .solver_constraints
+            .contains(&SolverConstraint::TeamOnly)
+        {
+            if !self.proof.body.as_ref().unwrap().is_team_member {
+                return Err(format!("This task can only be solved by team members"));
+            }
         }
 
         if task.assignees.is_some() {

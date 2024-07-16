@@ -11,3 +11,9 @@ Fair, open, robust and transparent digital organization with an uplifting vibe.
 * `./scripts/generate-bind.sh`
 * `./scripts/deploy.backend.sh dev`
 * `cd ./frontend/app && pnpm run dev`
+
+if you redeploying from scratch, don't forget to call `localStorage.clear()` in browser's dev console and reauthorize
+
+### Automatic .did generation
+
+* `./script/extract-did.sh`

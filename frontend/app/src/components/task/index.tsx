@@ -15,6 +15,7 @@ import { Title } from "@components/title";
 import { VotingWidget } from "@components/voting-widget";
 import { A } from "@solidjs/router";
 import { useAuth } from "@store/auth";
+import { useHumans } from "@store/humans";
 import { IArchivedTaskV1, ITask, TTaskStatus, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
@@ -40,6 +41,7 @@ export interface ITaskProps {
 
 export function TaskMini(props: ITaskProps) {
   const { tasks, archivedTasks, fetchTasksById } = useTasks();
+  const { canCreateVotings } = useHumans();
 
   onMount(() => {
     if (!task()) fetchTasksById([props.id]);
@@ -189,6 +191,7 @@ export function Task(props: ITaskProps) {
   } = useAuth();
   const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
     useVotings();
+  const { canCreateVotings } = useHumans();
 
   const [proof] = createResource(agent, getProfProof);
   const [showSolveModal, setShowSolveModal] = createSignal(false);
@@ -356,9 +359,13 @@ export function Task(props: ITaskProps) {
     setShowSolveModal(true);
   };
 
+  const handleRefresh = () => {
+    fetchTasksById([props.id]);
+  };
+
   const button = () => {
     return (
-      <>
+      <div class="flex gap-2">
         <Switch>
           <Match when={canEdit()}>
             <div class="flex gap-4 items-center">
@@ -376,9 +383,10 @@ export function Task(props: ITaskProps) {
               kind="satisfaction"
               id={encodeVotingId(startSolveVotingId())}
               optionIdx={0}
+              onRefreshEntity={handleRefresh}
             />
           </Match>
-          <Match when={readyToEvaluate()}>
+          <Match when={readyToEvaluate() && canCreateVotings()}>
             <Btn
               text="Start Evaluation Phase"
               onClick={handleFinishSolveClick}
@@ -402,7 +410,7 @@ export function Task(props: ITaskProps) {
             />
           </Match>
         </Switch>
-      </>
+      </div>
     );
   };
 
@@ -411,13 +419,16 @@ export function Task(props: ITaskProps) {
     const me = identity()?.getPrincipal();
 
     if (!me || !t || !t.stage) return false;
-
+    if (!("Solve" in t.stage)) return false;
     if (
-      !t ||
-      !t.stage ||
-      !("Solve" in t.stage) ||
-      (t.assignees &&
-        !t.assignees.map((it) => it.toText()).includes(me.toText()))
+      t.assignees &&
+      !t.assignees.map((it) => it.toText()).includes(me.toText())
+    )
+      return false;
+    if (t.solver_constraints.find((it) => "TeamOnly" in it)) return false;
+    if (
+      t.solver_constraints.find((it) => "MaxSolutions" in it)?.MaxSolutions ===
+      t.solutions.length
     )
       return false;
 
@@ -458,6 +469,22 @@ export function Task(props: ITaskProps) {
     const found = solvers.find((id) => id.compareTo(me) === "eq");
 
     return !!found;
+  };
+
+  const canAttach = () => {
+    const t = task();
+    const me = identity()?.getPrincipal();
+
+    if (!t || !me) return false;
+    if (t.assignees && !t.assignees.find((it) => it.compareTo(me) === "eq"))
+      return false;
+    if (
+      t.solver_constraints.find((it) => "TeamOnly" in it) &&
+      !canCreateVotings()
+    )
+      return false;
+
+    return true;
   };
 
   const handleCountMeIn = async () => {
@@ -525,7 +552,7 @@ export function Task(props: ITaskProps) {
                   </div>
                 </div>
               </Match>
-              <Match when={task() && !task()!.assignees}>
+              <Match when={task() && !task()!.assignees && task()?.solvers}>
                 <div class="flex flex-grow flex-col gap-2">
                   <div class="flex items-center justify-between">
                     <Title text="Working On It" />
@@ -542,14 +569,16 @@ export function Task(props: ITaskProps) {
                       {(id) => <ProfileMicro id={id} />}
                     </For>
                   </div>
-                  <div class="flex flex-grow justify-end">
-                    <BooleanInput
-                      labelOff="Won't Do"
-                      labelOn="Count Me It"
-                      value={countMeInValue()}
-                      onChange={handleCountMeIn}
-                    />
-                  </div>
+                  <Show when={canAttach()}>
+                    <div class="flex flex-grow justify-end">
+                      <BooleanInput
+                        labelOn="Won't Do"
+                        labelOff="Count Me It"
+                        value={countMeInValue()}
+                        onChange={handleCountMeIn}
+                      />
+                    </div>
+                  </Show>
                 </div>
               </Match>
             </Switch>

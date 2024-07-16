@@ -89,7 +89,6 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   const canSwap = () => mode() === "swap" && into() && intoAmount().toBool();
 
   const handleTransfer = async () => {
-    const a = amount().unwrapOk();
     const at = amountToTransfer()!;
     const recipient = transferRecipient()!;
 
@@ -107,12 +106,14 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     disable();
     await transfer(
       from() as "ICP" | "FMJ",
-      a,
+      at,
       Principal.fromText(recipient.unwrapOk())
     );
     enable();
 
     await fetchMyBalance();
+    setAmount(Result.Ok(E8s.zero()));
+    setTransferRecipient(Result.Ok(""));
 
     logInfo("Successful transfer");
   };
@@ -159,6 +160,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     }
 
     await fetchMyBalance();
+    setAmount(Result.Ok(E8s.zero()));
 
     logInfo(
       `Successfully swapped ${a.toString()} ${from()} into ${qty.toString()} ${into()}!`

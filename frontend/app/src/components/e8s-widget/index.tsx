@@ -33,14 +33,11 @@ export function E8sWidget(props: IE8sWidgetProps) {
 
   const value = () => {
     if (props.maxValue) {
-      return `from ${props.minValue.toPrecision(
-        4,
-        !props.disallowEmptyTail
-      )} to ${props.minValue
+      return `from ${props.minValue.toString()} to ${props.minValue
         .add(props.maxValue)
-        .toPrecision(4, !props.disallowEmptyTail)}`;
+        .toString()}`;
     } else {
-      return props.minValue.toPrecision(4, !props.disallowEmptyTail);
+      return props.minValue.toString();
     }
   };
 
