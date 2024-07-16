@@ -27,6 +27,11 @@ import {
   DelegationTreeNode,
   GetFolloweesOfRequest,
 } from "@/declarations/liquid_democracy/liquid_democracy.did";
+import {
+  getProfProof,
+  getProfProofCert,
+  getRepProofCert,
+} from "@utils/security";
 
 export type TVotingIdStr = string;
 
@@ -122,9 +127,6 @@ export function VotingsStore(props: IChildren) {
     anonymousAgent,
     assertReadyToFetch,
     isReadyToFetch,
-    profileProofCert,
-    profileProof,
-    reputationProofCert,
     agent,
     assertAuthorized,
   } = useAuth();
@@ -173,7 +175,7 @@ export function VotingsStore(props: IChildren) {
       option_idx: optionIdx,
       proof: {
         body: [],
-        cert_raw: (await reputationProofCert())!,
+        cert_raw: await getRepProofCert(agent()!),
       },
     });
 
@@ -236,11 +238,11 @@ export function VotingsStore(props: IChildren) {
       kind,
       profile_proof: {
         body: [],
-        cert_raw: (await profileProofCert())!,
+        cert_raw: await getProfProofCert(agent()!),
       },
       reputation_proof: {
         body: [],
-        cert_raw: (await reputationProofCert())!,
+        cert_raw: await getRepProofCert(agent()!),
       },
     });
 
@@ -256,7 +258,7 @@ export function VotingsStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, `Voting ${votingId} already exists`);
     }
 
-    const proof = (await profileProof())!;
+    const proof = await getProfProof(agent()!);
 
     if (!proof.is_team_member) {
       err(ErrorCode.UNREACHEABLE, `Only team members can create votings`);
@@ -408,7 +410,7 @@ export function VotingsStore(props: IChildren) {
       topics: [topicset],
       proof: {
         body: [],
-        cert_raw: (await reputationProofCert())!,
+        cert_raw: await getRepProofCert(agent()!),
       },
     });
   };
@@ -422,7 +424,7 @@ export function VotingsStore(props: IChildren) {
       topics: [],
       proof: {
         body: [],
-        cert_raw: (await reputationProofCert())!,
+        cert_raw: await getRepProofCert(agent()!),
       },
     });
   };

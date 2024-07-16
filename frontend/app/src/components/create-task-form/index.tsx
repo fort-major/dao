@@ -64,11 +64,11 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       (it) => "MaxSolutions" in it
     )?.MaxSolutions;
 
-    const solutionFieldTypes: Result<FieldType, FieldType>[] = [];
+    const solutionFieldTypes: FieldType[] = [];
 
     for (let f of t.solution_fields) {
       if ("Md" in f.kind) {
-        solutionFieldTypes.push(Result.Ok("Custom Text"));
+        solutionFieldTypes.push("Custom Text");
         continue;
       }
 
@@ -76,19 +76,19 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         const u = f.kind.Url.kind;
 
         if ("Any" in u) {
-          solutionFieldTypes.push(Result.Ok("Custom Link"));
+          solutionFieldTypes.push("Custom Link");
         } else if ("Github" in u) {
-          solutionFieldTypes.push(Result.Ok("Github Link"));
+          solutionFieldTypes.push("Github Link");
         } else if ("Twitter" in u) {
-          solutionFieldTypes.push(Result.Ok("Twitter Link"));
+          solutionFieldTypes.push("Twitter Link");
         } else if ("Figma" in u) {
-          solutionFieldTypes.push(Result.Ok("Figma Link"));
+          solutionFieldTypes.push("Figma Link");
         } else if ("Notion" in u) {
-          solutionFieldTypes.push(Result.Ok("Notion Link"));
+          solutionFieldTypes.push("Notion Link");
         } else if ("FortMajorSite" in u) {
-          solutionFieldTypes.push(Result.Ok("Fort Major Site Link"));
+          solutionFieldTypes.push("Fort Major Site Link");
         } else if ("DfinityForum" in u) {
-          solutionFieldTypes.push(Result.Ok("Dfinity Forum Link"));
+          solutionFieldTypes.push("Dfinity Forum Link");
         }
       }
     }
@@ -160,9 +160,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     Result.Ok("")
   );
 
-  const [fieldTypes, setFieldsTypes] = createSignal<
-    Result<FieldType, FieldType>[]
-  >([]);
+  const [fieldTypes, setFieldsTypes] = createSignal<FieldType[]>([]);
   const [fieldNames, setFieldNames] = createSignal<Result<string, string>[]>(
     []
   );
@@ -182,7 +180,6 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       hoursReward().isErr() ||
       storypointsBaseReward().isErr() ||
       storypointsAdditionalReward().isErr() ||
-      fieldTypes().some((it) => it.isErr()) ||
       fieldNames().some((it) => it.isErr()) ||
       fieldDescriptions().some((it) => it.isErr()) ||
       assignee().isErr() ||
@@ -193,9 +190,9 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const canSubmit = () =>
     props.id === undefined || (task() && "Edit" in task()!.stage);
 
-  const handleFieldTypeChange = (idx: number, res: Result<string, string>) => {
+  const handleFieldTypeChange = (idx: number, res: string) => {
     setFieldsTypes((v) => {
-      v[idx] = res as Result<FieldType, FieldType>;
+      v[idx] = res as FieldType;
       return [...v];
     });
   };
@@ -227,7 +224,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const handleAddFieldClick = () => {
     batch(() => {
       setFieldsTypes((v) => {
-        v.push(Result.Ok("Twitter Link"));
+        v.push("Twitter Link");
         return [...v];
       });
       setFieldNames((v) => {
@@ -270,7 +267,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     return (
       <div class="flex gap-2 self-stretch">
         <Select
-          value={fieldTypes()[idx].unwrap()}
+          value={fieldTypes()[idx]}
           onChange={(v) => handleFieldTypeChange(idx, v)}
           possibleValues={[
             "Custom Text",
@@ -325,7 +322,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     const fields: SolutionField[] = [];
     for (let i = 0; i < fieldTypes().length; i++) {
       let kind: SolutionFieldKind = { Url: { kind: { Any: null } } };
-      const ty = fieldTypes()[i].unwrapOk();
+      const ty = fieldTypes()[i];
 
       if (ty === "Custom Text") {
         kind = { Md: null };

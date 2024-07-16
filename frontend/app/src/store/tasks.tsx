@@ -25,6 +25,7 @@ import {
 } from "../utils/backend";
 import { debugStringify } from "../utils/encoding";
 import { debouncedBatchFetch } from "@utils/common";
+import { getProfProof, getProfProofCert } from "@utils/security";
 
 export interface ISolution {
   evaluation?: E8s;
@@ -127,14 +128,12 @@ export interface ITasksStoreContext {
   createTask: (args: ICreateTaskArgs) => Promise<TTaskId>;
   editTask: (args: IEditTaskArgs) => Promise<void>;
   deleteTask: (taskId: TTaskId) => Promise<void>;
-  finishEditTask: (taskId: TTaskId) => Promise<void>;
   attachToTask: (taskId: TTaskId) => Promise<void>;
   solveTask: (
     taskId: TTaskId,
     filledInFields?: (string | undefined)[],
     wantRep?: boolean
   ) => Promise<void>;
-  finishSolveTask: (taskId: TTaskId) => Promise<void>;
   taskStats: Accessor<ITaskStats>;
 }
 
@@ -169,8 +168,6 @@ export function TasksStore(props: IChildren) {
     isReadyToFetch,
     assertAuthorized,
     agent,
-    profileProofCert,
-    profileProof,
     identity,
   } = useAuth();
   const [editTaskIds, setEditTaskIds] = createStore<TTaskId[]>([]);
@@ -362,7 +359,7 @@ export function TasksStore(props: IChildren) {
   const createTask: ITasksStoreContext["createTask"] = async (args) => {
     assertAuthorized();
 
-    const proof = (await profileProof())!;
+    const proof = await getProfProof(agent()!);
 
     if (!proof.is_team_member) {
       err(ErrorCode.AUTH, "Only team members can create new tasks");
@@ -380,7 +377,7 @@ export function TasksStore(props: IChildren) {
       storypoints_ext_budget: args.storypoints_ext_budget.toBigIntRaw(),
       profile_proof: {
         body: [],
-        cert_raw: (await profileProofCert())!,
+        cert_raw: await getProfProofCert(agent()!),
       },
       decision_topics: args.decision_topics,
       assignees: opt(args.assignees),
@@ -437,38 +434,6 @@ export function TasksStore(props: IChildren) {
           ? [[]]
           : [[args.new_assignees]],
     });
-  };
-
-  const finishEditTask: ITasksStoreContext["finishEditTask"] = async (id) => {
-    assertAuthorized();
-
-    const task = tasks[id.toString()];
-
-    if (!task) {
-      err(
-        ErrorCode.UNREACHEABLE,
-        `The task ${id.toString()} is not fetched yet`
-      );
-    }
-
-    if (!("Edit" in task.stage)) {
-      err(
-        ErrorCode.AUTH,
-        "At this stage the task can only be edited by a voting"
-      );
-    }
-
-    const principal = identity()!.getPrincipal();
-
-    if (task.creator.compareTo(principal) !== "eq") {
-      err(
-        ErrorCode.AUTH,
-        "Only the creator of the task can transition it to post-edit review"
-      );
-    }
-
-    const tasksActor = newTasksActor(agent()!);
-    await tasksActor.tasks__finish_edit_task({ id });
   };
 
   const deleteTask: ITasksStoreContext["deleteTask"] = async (taskId) => {
@@ -544,7 +509,7 @@ export function TasksStore(props: IChildren) {
       err(ErrorCode.UNREACHEABLE, "The task can no longer be solved");
     }
 
-    const proof = (await profileProof())!;
+    const proof = await getProfProof(agent()!);
 
     if (
       task.solver_constraints.find((it) => "TeamOnly" in it) &&
@@ -567,44 +532,7 @@ export function TasksStore(props: IChildren) {
       want_rep: !!wantRep,
       profile_proof: {
         body: [],
-        cert_raw: (await profileProofCert())!,
-      },
-    });
-  };
-
-  const finishSolveTask: ITasksStoreContext["finishSolveTask"] = async (
-    taskId
-  ) => {
-    assertAuthorized();
-
-    const task = tasks[taskId.toString()];
-
-    if (!task) {
-      err(
-        ErrorCode.UNREACHEABLE,
-        `The task ${taskId.toString()} is not fetched yet`
-      );
-    }
-
-    if (!("Solve" in task.stage)) {
-      err(ErrorCode.UNREACHEABLE, "The task can no longer be solved");
-    }
-
-    const proof = (await profileProof())!;
-
-    if (!proof.is_team_member) {
-      err(
-        ErrorCode.AUTH,
-        "Only team members can transition the task to the evaluation stage"
-      );
-    }
-
-    const tasksActor = newTasksActor(agent()!);
-    await tasksActor.tasks__finish_solve_task({
-      id: taskId,
-      profile_proof: {
-        body: [],
-        cert_raw: (await profileProofCert())!,
+        cert_raw: await getProfProofCert(agent()!),
       },
     });
   };
@@ -684,7 +612,7 @@ export function TasksStore(props: IChildren) {
         canisterId = optUnwrap(resp.next);
 
         for (let i = 0; i < resp.entries.length; i++) {
-          if (resp.entries[i].length === 0) {
+          if (resp.entries[i].length > 0) {
             const idToRemove = resp.entries[i][0]!.V0001.id;
             const idx = _req.ids.indexOf(idToRemove);
             if (idx >= 0) {
@@ -781,8 +709,6 @@ export function TasksStore(props: IChildren) {
         deleteTask,
         attachToTask,
         solveTask,
-        finishSolveTask,
-        finishEditTask,
         taskStats,
       }}
     >

@@ -1,3 +1,16 @@
+type ArchivedTask = variant { V0001 : ArchivedTaskV1 };
+type ArchivedTaskV1 = record {
+  id : nat64;
+  solution_fields : vec SolutionField;
+  title : text;
+  creator : principal;
+  solver_constraints : vec SolverConstraint;
+  description : text;
+  created_at : nat64;
+  decision_topics : vec nat32;
+  assignees : opt vec principal;
+  solutions : vec record { principal; Solution };
+};
 type AttachToTaskRequest = record { id : nat64; detach : bool };
 type BackToEditTaskRequest = record { id : nat64 };
 type CreateTaskRequest = record {
@@ -32,11 +45,17 @@ type EvaluateRequest = record {
   id : nat64;
   evaluation_per_solution : vec record { principal; opt nat };
 };
-type FinishSolveRequest = record { id : nat64; profile_proof : ProfileProof };
+type FinishEditTaskResponse = record { task : Task };
+type FinishSolveResponse = record { task : Task };
 type GetArchivedTaskIdsRequest = record { pagination : PageRequest };
 type GetArchivedTaskIdsResponse = record {
   pagination : PageResponse;
   entries : vec nat64;
+};
+type GetArchivedTasksByIdRequest = record { ids : vec nat64 };
+type GetArchivedTasksByIdResponse = record {
+  next : opt principal;
+  entries : vec opt ArchivedTask;
 };
 type GetTaskIdsRequest = record {
   pagination : PageRequest;
@@ -120,14 +139,17 @@ service : (InitRequest) -> {
   task_archive__get_archived_tasks : (GetArchivedTaskIdsRequest) -> (
       GetArchivedTaskIdsResponse,
     ) query;
+  task_archive__get_archived_tasks_by_id : (GetArchivedTasksByIdRequest) -> (
+      GetArchivedTasksByIdResponse,
+    ) query;
   tasks__attach_to_task : (AttachToTaskRequest) -> (record {});
   tasks__back_to_edit_task : (BackToEditTaskRequest) -> (record {});
   tasks__create_task : (CreateTaskRequest) -> (CreateTaskResponse);
   tasks__delete_task : (DeleteRequest) -> (record {});
   tasks__edit_task : (EditTaskRequest) -> (record {});
   tasks__evaluate_task : (EvaluateRequest) -> (record {});
-  tasks__finish_edit_task : (DeleteRequest) -> (record {});
-  tasks__finish_solve_task : (FinishSolveRequest) -> (record {});
+  tasks__finish_edit_task : (DeleteRequest) -> (FinishEditTaskResponse);
+  tasks__finish_solve_task : (DeleteRequest) -> (FinishSolveResponse);
   tasks__get_tasks : (GetTaskIdsRequest) -> (GetTaskIdsResponse) query;
   tasks__get_tasks_by_id : (GetTasksByIdRequest) -> (
       GetTasksByIdResponse,

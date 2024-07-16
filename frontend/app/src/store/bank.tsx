@@ -55,7 +55,11 @@ export interface IBankStoreContext {
     amount: E8s,
     to: Principal
   ) => Promise<bigint>;
+
   fmjStats: Accessor<IFmjStats>;
+
+  bankIcpBalance: Accessor<E8s>;
+  fetchBankIcpBalance: () => Promise<void>;
 }
 
 const BankContext = createContext<IBankStoreContext>();
@@ -81,16 +85,30 @@ export function BankStore(props: IChildren) {
 
   const [exchangeRates, setExchangeRates] = createStore<ExchangeRatesStore>();
   const [fmjStats, setFmjStats] = createSignal<IFmjStats>({
-    totalSupply: E8s.zero(),
+    totalSupply: E8s.one(),
     avgMonthlyInflation: E8s.zero(),
   });
+  const [bankIcpBalance, setBankIcpBalance] = createSignal<E8s>(E8s.zero());
 
   createEffect(() => {
     if (isReadyToFetch()) {
       fetchFmjStats();
       fetchExchangeRates();
+      fetchBankIcpBalance();
     }
   });
+
+  const fetchBankIcpBalance = async () => {
+    assertReadyToFetch();
+
+    const icpActor = newIcpActor(anonymousAgent()!);
+    const balance = await icpActor.icrc1_balance_of({
+      owner: Principal.fromText(import.meta.env.VITE_BANK_CANISTER_ID),
+      subaccount: [],
+    });
+
+    setBankIcpBalance(E8s.new(balance));
+  };
 
   const fetchFmjStats = async () => {
     assertReadyToFetch();
@@ -180,6 +198,8 @@ export function BankStore(props: IChildren) {
         swapRewards,
         transfer,
         fmjStats,
+        bankIcpBalance,
+        fetchBankIcpBalance,
       }}
     >
       {props.children}

@@ -1,33 +1,18 @@
 {
   "canisters": {
-    "humans": {
-      "candid": "backend/src/can_humans/can.did",
-      "package": "humans",
-      "type": "rust"
-    },
     "bank": {
       "candid": "backend/src/can_bank/can.did",
       "package": "bank",
       "type": "rust"
     },
-    "tasks": {
-      "candid": "backend/src/can_tasks/can.did",
-      "package": "tasks",
-      "type": "rust"
+    "fmj": {
+      "candid": "backend/src/can_fmj/can.did",
+      "type": "custom",
+      "wasm": "backend/src/can_fmj/fmj.wasm"
     },
-    "task_archive": {
-      "candid": "backend/src/can_task_archive/can.did",
-      "package": "task_archive",
-      "type": "rust"
-    },
-    "votings": {
-      "candid": "backend/src/can_votings/can.did",
-      "package": "votings",
-      "type": "rust"
-    },
-    "reputation": {
-      "candid": "backend/src/can_reputation/can.did",
-      "package": "reputation",
+    "humans": {
+      "candid": "backend/src/can_humans/can.did",
+      "package": "humans",
       "type": "rust"
     },
     "liquid_democracy": {
@@ -35,10 +20,121 @@
       "package": "liquid_democracy",
       "type": "rust"
     },
-    "fmj": {
-      "candid": "backend/src/can_fmj/can.did",
-      "wasm": "backend/src/can_fmj/fmj.wasm",
-      "type": "custom"
+    "nns-cycles-minting": {
+      "build": "",
+      "candid": "nns_candid/nns-cycles-minting.did",
+      "remote": {
+        "id": {
+          "ic": "rkp4c-7iaaa-aaaaa-aaaca-cai",
+          "local": "rkp4c-7iaaa-aaaaa-aaaca-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-genesis-token": {
+      "build": "",
+      "candid": "nns_candid/nns-genesis-token.did",
+      "remote": {
+        "id": {
+          "ic": "renrk-eyaaa-aaaaa-aaada-cai",
+          "local": "renrk-eyaaa-aaaaa-aaada-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-governance": {
+      "build": "",
+      "candid": "nns_candid/nns-governance.did",
+      "remote": {
+        "id": {
+          "ic": "rrkah-fqaaa-aaaaa-aaaaq-cai",
+          "local": "rrkah-fqaaa-aaaaa-aaaaq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-ledger": {
+      "build": "",
+      "candid": "nns_candid/nns-ledger.did",
+      "remote": {
+        "id": {
+          "ic": "ryjl3-tyaaa-aaaaa-aaaba-cai",
+          "local": "ryjl3-tyaaa-aaaaa-aaaba-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-lifeline": {
+      "build": "",
+      "candid": "nns_candid/nns-lifeline.did",
+      "remote": {
+        "id": {
+          "ic": "rno2w-sqaaa-aaaaa-aaacq-cai",
+          "local": "rno2w-sqaaa-aaaaa-aaacq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-registry": {
+      "build": "",
+      "candid": "nns_candid/nns-registry.did",
+      "remote": {
+        "id": {
+          "ic": "rwlgt-iiaaa-aaaaa-aaaaa-cai",
+          "local": "rwlgt-iiaaa-aaaaa-aaaaa-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-root": {
+      "build": "",
+      "candid": "nns_candid/nns-root.did",
+      "remote": {
+        "id": {
+          "ic": "r7inp-6aaaa-aaaaa-aaabq-cai",
+          "local": "r7inp-6aaaa-aaaaa-aaabq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-sns-wasm": {
+      "build": "",
+      "candid": "nns_candid/nns-sns-wasm.did",
+      "remote": {
+        "id": {
+          "ic": "qaa6y-5yaaa-aaaaa-aaafa-cai",
+          "local": "qaa6y-5yaaa-aaaaa-aaafa-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "reputation": {
+      "candid": "backend/src/can_reputation/can.did",
+      "package": "reputation",
+      "type": "rust"
+    },
+    "task_archive": {
+      "candid": "backend/src/can_task_archive/can.did",
+      "package": "task_archive",
+      "type": "rust"
+    },
+    "tasks": {
+      "candid": "backend/src/can_tasks/can.did",
+      "package": "tasks",
+      "type": "rust"
+    },
+    "votings": {
+      "candid": "backend/src/can_votings/can.did",
+      "package": "votings",
+      "type": "rust"
     }
   },
   "defaults": {

@@ -1,5 +1,6 @@
 import { EIconKind, Icon } from "@components/icon";
 import { COLORS } from "@utils/colors";
+import { eventHandler } from "@utils/security";
 import { IChildren } from "@utils/types";
 import { onCleanup, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -19,7 +20,6 @@ export function Modal(props: IModalProps) {
 
   onMount(() => {
     ref!.className = "relative flex justify-center p-5";
-    mount.onclick = handleClose;
     mount.style.display = "block";
   });
 

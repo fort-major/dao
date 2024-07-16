@@ -92,6 +92,7 @@ impl VotingsState {
             ),
             Err(event) => {
                 self.save_event(event);
+                self.delete_voting(req.id);
 
                 (
                     CastVoteResponse {
@@ -115,6 +116,8 @@ impl VotingsState {
             Ok(c) => Some(c),
             Err(event) => {
                 self.save_event(event);
+                self.delete_voting(id);
+
                 None
             }
         }

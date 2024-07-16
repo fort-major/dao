@@ -174,7 +174,7 @@ impl Guard<TasksState> for FinishEditTaskRequest {
             .get(&self.id)
             .ok_or(format!("Task {} not found", self.id))?;
 
-        match (task.can_edit(), caller == task.creator) {
+        match (task.can_edit(), caller == ENV_VARS.votings_canister_id) {
             (true, true) => Ok(()),
             _ => Err(format!("Access denied")),
         }
@@ -182,7 +182,10 @@ impl Guard<TasksState> for FinishEditTaskRequest {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct FinishEditTaskResponse {}
+pub struct FinishEditTaskResponse {
+    #[garde(skip)]
+    pub task: Task,
+}
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct StartSolveTaskRequest {
@@ -378,8 +381,6 @@ pub struct SolveTaskResponse {}
 pub struct FinishSolveRequest {
     #[garde(skip)]
     pub id: TaskId,
-    #[garde(dive)]
-    pub profile_proof: ProfileProof,
 }
 
 impl Guard<TasksState> for FinishSolveRequest {
@@ -390,17 +391,14 @@ impl Guard<TasksState> for FinishSolveRequest {
         now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.profile_proof.assert_valid_for(caller, now)?;
 
         let task = state
             .tasks
             .get(&self.id)
             .ok_or(format!("Task {} not found", self.id))?;
 
-        let proof = self.profile_proof.body.as_ref().unwrap();
-
-        if !proof.is_team_member {
-            return Err(format!("Only team members can finish tasks solve stage"));
+        if caller != ENV_VARS.votings_canister_id {
+            return Err(format!("Access denied"));
         }
 
         match task.stage {
@@ -419,7 +417,10 @@ impl Guard<TasksState> for FinishSolveRequest {
 }
 
 #[derive(CandidType, Deserialize, Validate)]
-pub struct FinishSolveResponse {}
+pub struct FinishSolveResponse {
+    #[garde(skip)]
+    pub task: Task,
+}
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct EvaluateRequest {

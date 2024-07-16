@@ -9,7 +9,7 @@ export interface IFromInputProps {
   balance: E8s;
   amount: E8s;
   kind: EE8sKind;
-  onKindChange: (k: Result<EE8sKind, EE8sKind>) => void;
+  onKindChange: (k: EE8sKind) => void;
   onAmountChange: (a: Result<E8s, E8s>) => void;
 }
 
@@ -18,8 +18,8 @@ export function FromInput(props: IFromInputProps) {
     props.onAmountChange(Result.Ok(props.balance));
   });
 
-  const handleHandleKindChange = (kind: Result<string, string>) => {
-    props.onKindChange(kind as Result<EE8sKind, EE8sKind>);
+  const handleHandleKindChange = (kind: string) => {
+    props.onKindChange(kind as EE8sKind);
     props.onAmountChange(Result.Ok(E8s.zero()));
   };
 

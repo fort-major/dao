@@ -11,7 +11,10 @@ use serde::Deserialize;
 use shared::{
     humans::{api::MintRewardsRequest, client::HumansCanisterClient},
     reputation::{api::MintRepRequest, client::ReputationCanisterClient},
-    task_archive::api::{GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse},
+    task_archive::api::{
+        GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse, GetArchivedTasksByIdRequest,
+        GetArchivedTasksByIdResponse,
+    },
     tasks::{
         api::{
             AttachToTaskRequest, AttachToTaskResponse, BackToEditTaskRequest,
@@ -229,9 +232,22 @@ fn task_archive__get_archived_tasks(
 ) -> GetArchivedTaskIdsResponse {
     with_state(|s| {
         req.validate_and_escape(s, caller(), time())
-            .expect("Unable to get tasks");
+            .expect("Unable to get archived tasks");
 
         s.get_archived_task_ids(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn task_archive__get_archived_tasks_by_id(
+    mut req: GetArchivedTasksByIdRequest,
+) -> GetArchivedTasksByIdResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get archived tasks by id");
+
+        s.get_archived_tasks_by_id(req)
     })
 }
 

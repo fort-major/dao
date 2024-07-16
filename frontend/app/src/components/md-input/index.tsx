@@ -5,7 +5,7 @@ import { useAuth } from "@store/auth";
 import { ErrorCode, err } from "@utils/error";
 import { eventHandler } from "@utils/security";
 import { Result } from "@utils/types";
-import { Match, Switch, createSignal } from "solid-js";
+import { Match, Switch, createSignal, onMount } from "solid-js";
 import TextArea from "solid-textarea-autosize";
 
 export type TMdInputValidation =
@@ -31,6 +31,11 @@ export function MdInput(props: IMdInputProps) {
   const d = () => disabled() || props.disabled;
 
   let textAreaRef: HTMLTextAreaElement | undefined;
+
+  onMount(() => {
+    const error = isValid(props.value, props.validations);
+    props.onChange(error ? Result.Err(props.value) : Result.Ok(props.value));
+  });
 
   const pushHistory = (v: Result<string, string>) => {
     setHistory((h) => {

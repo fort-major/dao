@@ -126,10 +126,12 @@ export function HomePage() {
           />
           <Stat
             data={
-              fmjStats().avgMonthlyInflation.toPercent().toPrecision(2, true) +
-              "%"
+              fmjStats()
+                .avgMonthlyInflation.div(fmjStats().totalSupply)
+                .toPercent()
+                .toPrecision(2, true) + "%"
             }
-            title="FMJ yearly inflation"
+            title="FMJ monthly inflation"
           />
         </div>
       </div>

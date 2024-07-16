@@ -26,6 +26,11 @@ export function QtyInput<T extends E8s | number>(props: IQtyInputProps<T>) {
   const d = () => props.disabled || disabled();
   const mode = () => (typeof props.value === "number" ? "num" : "e8s");
 
+  onMount(() => {
+    const error = isValid(mode(), props.value, props.validations);
+    props.onChange(error ? Result.Err(props.value) : Result.Ok(props.value));
+  });
+
   const handleChange = eventHandler(
     (e: Event & { target: HTMLInputElement }) => {
       processChange(e.target.value);

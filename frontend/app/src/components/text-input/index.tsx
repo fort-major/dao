@@ -35,6 +35,11 @@ export function TextInput(props: ITextInputProps) {
 
   const d = () => props.disabled || disabled();
 
+  onMount(() => {
+    const error = isValid(props.value, props.validations);
+    props.onChange(error ? Result.Err(props.value) : Result.Ok(props.value));
+  });
+
   const handleChange = eventHandler(
     (e: Event & { target: HTMLInputElement }) => {
       const v = e.target.value;

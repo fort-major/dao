@@ -19,7 +19,9 @@ import { IArchivedTaskV1, ITask, TTaskStatus, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
 import { encodeVotingId, timestampToStr } from "@utils/encoding";
+import { logInfo } from "@utils/error";
 import { E8s } from "@utils/math";
+import { getProfProof } from "@utils/security";
 import { TTaskId } from "@utils/types";
 import {
   For,
@@ -37,14 +39,14 @@ export interface ITaskProps {
 }
 
 export function TaskMini(props: ITaskProps) {
-  const { tasks, fetchTasksById } = useTasks();
+  const { tasks, archivedTasks, fetchTasksById } = useTasks();
 
   onMount(() => {
     if (!task()) fetchTasksById([props.id]);
   });
 
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
-    tasks[props.id.toString()];
+    tasks[props.id.toString()] || archivedTasks[props.id.toString()];
 
   const stage = (): TTaskStatus => {
     const t = task();
@@ -175,29 +177,23 @@ export function TaskMini(props: ITaskProps) {
 }
 
 export function Task(props: ITaskProps) {
-  const {
-    tasks,
-    fetchTasksById,
-    attachToTask,
-    finishEditTask,
-    finishSolveTask,
-  } = useTasks();
+  const { tasks, archivedTasks, fetchTasksById, attachToTask } = useTasks();
   const {
     identity,
     isAuthorized,
     isReadyToFetch,
-    profileProof,
     authorize,
     enable,
     disable,
+    agent,
   } = useAuth();
-  const { createTasksStartSolveVoting, createTasksEvaluateVoting, votings } =
+  const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
     useVotings();
 
-  const [proof] = createResource(profileProof);
+  const [proof] = createResource(agent, getProfProof);
   const [showSolveModal, setShowSolveModal] = createSignal(false);
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
-    tasks[props.id.toString()];
+    tasks[props.id.toString()] || archivedTasks[props.id.toString()];
 
   createEffect(() => {
     if (!task() && isReadyToFetch()) fetchTasksById([props.id]);
@@ -328,13 +324,11 @@ export function Task(props: ITaskProps) {
     if (!agreed) return;
 
     disable();
-    await finishEditTask(props.id);
     await createTasksStartSolveVoting(props.id);
     enable();
 
-    alert(
-      "The voting has been created! Navigate to the Decisions page to continue."
-    );
+    await fetchTasksById([props.id]);
+    logInfo("The voting has been created!");
   };
 
   const handleFinishSolveClick = async () => {
@@ -345,13 +339,11 @@ export function Task(props: ITaskProps) {
     if (!agreed) return;
 
     disable();
-    await finishSolveTask(props.id);
     await createTasksEvaluateVoting(props.id);
     enable();
 
-    alert(
-      "The voting has been created! Navigate to the Decisions page to continue."
-    );
+    await fetchTasksById([props.id]);
+    logInfo("The voting has been created!");
   };
 
   const handleLogInClick = async () => {

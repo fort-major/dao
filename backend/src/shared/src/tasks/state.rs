@@ -6,7 +6,10 @@ use serde::Deserialize;
 use crate::{
     pagination::PageResponse,
     task_archive::{
-        api::{AppendBatchRequest, GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse},
+        api::{
+            AppendBatchRequest, GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse,
+            GetArchivedTasksByIdRequest, GetArchivedTasksByIdResponse,
+        },
         client::TaskArchiveCanisterClient,
     },
     TimestampNs,
@@ -95,7 +98,7 @@ impl TasksState {
         let task = self.tasks.get_mut(&req.id).unwrap();
         task.finish_edit();
 
-        FinishEditTaskResponse {}
+        FinishEditTaskResponse { task: task.clone() }
     }
 
     pub fn start_solve_task(
@@ -144,7 +147,7 @@ impl TasksState {
         let task = self.tasks.get_mut(&req.id).unwrap();
         task.finish_solve();
 
-        FinishSolveResponse {}
+        FinishSolveResponse { task: task.clone() }
     }
 
     pub fn evaluate_task(&mut self, req: EvaluateRequest) -> (EvaluateResponse, Vec<RewardEntry>) {
@@ -324,6 +327,22 @@ impl TasksState {
                 left,
                 next: Some(self.task_archive_canister_id),
             },
+        }
+    }
+
+    pub fn get_archived_tasks_by_id(
+        &self,
+        req: GetArchivedTasksByIdRequest,
+    ) -> GetArchivedTasksByIdResponse {
+        let entries = req
+            .ids
+            .into_iter()
+            .map(|id| self.archive.get(&id).cloned())
+            .collect();
+
+        GetArchivedTasksByIdResponse {
+            entries,
+            next: Some(self.task_archive_canister_id),
         }
     }
 

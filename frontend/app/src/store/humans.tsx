@@ -54,10 +54,14 @@ export interface IHumansStoreContext {
   profiles: Store<ProfilesStore>;
   reputation: Store<ReputationStore>;
   fetchProfiles: (ids?: Principal[] | TPrincipalStr[]) => Promise<void>;
+
   profileIds: Store<ProfileIdsStore>;
   fetchProfileIds: () => Promise<void>;
+
   totals: Accessor<ITotals>;
   decentralization: () => E8s;
+
+  canCreateVotings: Accessor<boolean>;
 }
 
 const HumansContext = createContext<IHumansStoreContext>();
@@ -105,6 +109,13 @@ export function HumanStore(props: IChildren) {
       fetchProfiles([identity()!.getPrincipal()]);
     }
   });
+
+  const canCreateVotings = (): boolean => {
+    const me = identity()?.getPrincipal();
+    if (!me) return false;
+
+    return !!profiles[me.toText()]?.employment;
+  };
 
   const decentralization = () => {
     const t = totals();
@@ -246,6 +257,7 @@ export function HumanStore(props: IChildren) {
         fetchProfileIds,
         totals,
         decentralization,
+        canCreateVotings,
       }}
     >
       {props.children}

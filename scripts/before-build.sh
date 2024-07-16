@@ -14,7 +14,14 @@ fi
 
 # check if canisters are created
 
-dfx canister --network=$network create --all
+dfx canister --network=$network create bank && \
+dfx canister --network=$network create fmj && \
+dfx canister --network=$network create humans && \
+dfx canister --network=$network create liquid_democracy && \
+dfx canister --network=$network create reputation && \
+dfx canister --network=$network create task_archive && \
+dfx canister --network=$network create tasks && \
+dfx canister --network=$network create votings
 
 # put env vars into backend
 

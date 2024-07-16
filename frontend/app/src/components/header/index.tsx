@@ -93,15 +93,14 @@ export function Header(props: IHeaderProps) {
                 disallowEmptyTail
               />
             </div>
-            <Show when={myRep()}>
-              <div class="min-w-24">
-                <MetricWidget
-                  primary={myRep()!.toPrecision(2, true)}
-                  secondary="Reputation"
-                  white
-                />
-              </div>
-            </Show>
+            <div class="min-w-24">
+              <E8sWidget
+                white
+                kind={EE8sKind.Reputation}
+                minValue={myRep() ? myRep()! : E8s.zero()}
+                disallowEmptyTail
+              />
+            </div>
 
             <ProfileMicro id={identity()?.getPrincipal()} avatarSize="md" />
           </div>

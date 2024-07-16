@@ -8,7 +8,7 @@ import { createSignal, For, Show } from "solid-js";
 export interface ISelectProps {
   possibleValues: string[];
   value: string;
-  onChange: (v: Result<string, string>) => void;
+  onChange: (v: string) => void;
   disabled?: boolean;
 }
 
@@ -26,7 +26,7 @@ export function Select(props: ISelectProps) {
   const handleOptionClick = eventHandler(
     (e: Event & { currentTarget: HTMLDivElement }) => {
       const v = e.currentTarget.innerText;
-      props.onChange(Result.Ok(v));
+      props.onChange(v);
 
       setExpanded(false);
     }

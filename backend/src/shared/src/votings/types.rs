@@ -325,7 +325,11 @@ impl VotingKind {
                     evaluation_per_solution,
                 };
 
-                CallToExecute::new(ENV_VARS.tasks_canister_id, "tasks__evaluate".into(), (req,))
+                CallToExecute::new(
+                    ENV_VARS.tasks_canister_id,
+                    "tasks__evaluate_task".into(),
+                    (req,),
+                )
             }
             VotingKind::BankSetExchangeRate {
                 from,

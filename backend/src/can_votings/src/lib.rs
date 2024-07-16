@@ -8,7 +8,10 @@ use ic_cdk::{
 };
 use shared::{
     liquid_democracy::{state::GENERAL_TOPIC_ID, types::DecisionTopicId},
-    tasks::{api::GetTasksByIdRequest, client::TasksCanisterClient},
+    tasks::{
+        api::{FinishEditTaskRequest, FinishSolveRequest},
+        client::TasksCanisterClient,
+    },
     votings::{
         api::{
             CastVoteRequest, CastVoteResponse, GetVotingEventsRequest, GetVotingEventsResponse,
@@ -161,18 +164,11 @@ async fn validate_voting_related_entity(
         VotingKind::StartSolveTask { task_id } => {
             let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
             let response = tasks_canister
-                .tasks__get_tasks_by_id(GetTasksByIdRequest {
-                    ids: vec![*task_id],
-                })
+                .tasks__finish_edit_task(FinishEditTaskRequest { id: *task_id })
                 .await
-                .map_err(|(c, m)| format!("Unable to fetch tasks - [{:?}]: {}", c, m))?;
+                .map_err(|(c, m)| format!("Unable to finish task edit - [{:?}]: {}", c, m))?;
 
-            let task = response
-                .entries
-                .get(0)
-                .ok_or(format!("Task {} not found", task_id))?
-                .as_ref()
-                .ok_or(format!("Task {} not found", task_id))?;
+            let task = response.task;
 
             if !task.can_approve_to_solve() {
                 return Err(format!("The task is in invalid state"));
@@ -183,18 +179,11 @@ async fn validate_voting_related_entity(
         VotingKind::EvaluateTask { task_id, solutions } => {
             let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
             let response = tasks_canister
-                .tasks__get_tasks_by_id(GetTasksByIdRequest {
-                    ids: vec![*task_id],
-                })
+                .tasks__finish_solve_task(FinishSolveRequest { id: *task_id })
                 .await
-                .map_err(|(c, m)| format!("Unable to fetch tasks - [{:?}]: {}", c, m))?;
+                .map_err(|(c, m)| format!("Unable to finish task edit - [{:?}]: {}", c, m))?;
 
-            let task = response
-                .entries
-                .get(0)
-                .ok_or(format!("Task {} not found", task_id))?
-                .as_ref()
-                .ok_or(format!("Task {} not found", task_id))?;
+            let task = response.task;
 
             if !task.can_evaluate() {
                 return Err(format!("The task is in invalid state"));

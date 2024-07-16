@@ -8,6 +8,7 @@ export enum EE8sKind {
   ICP = "ICP",
   Storypoint = "Storypoint",
   Hour = "Hour",
+  Reputation = "Reputation",
 }
 
 export interface IE8sWidgetProps extends IClass {
@@ -26,6 +27,8 @@ export function E8sWidget(props: IE8sWidgetProps) {
       ? EIconKind.ICP
       : props.kind === EE8sKind.Storypoint
       ? EIconKind.Storypoint
+      : props.kind === EE8sKind.Reputation
+      ? EIconKind.Reputation
       : EIconKind.Hour;
 
   const value = () => {

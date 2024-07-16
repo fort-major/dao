@@ -5,6 +5,8 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  on,
+  onMount,
 } from "solid-js";
 import { IClass, ONE_WEEK_NS, Result } from "../../utils/types";
 import { Avatar } from "../avatar";
@@ -15,6 +17,8 @@ import { Title } from "@components/title";
 import { MetricWidget } from "@components/metric-widget";
 import {
   debugStringify,
+  decodeVotingId,
+  encodeVotingId,
   timestampToDMStr,
   timestampToYearStr,
 } from "@utils/encoding";
@@ -24,10 +28,13 @@ import { EIconKind, Icon } from "@components/icon";
 import { TextInput } from "@components/text-input";
 import { Btn } from "@components/btn";
 import { useAuth } from "@store/auth";
-import { useVotings } from "@store/votings";
+import { TVotingIdStr, useVotings } from "@store/votings";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { avatarSrcFromPrincipal } from "@utils/common";
 import { ComingSoonText } from "@components/coming-soon-text";
+import { VotingId } from "@/declarations/votings/votings.did";
+import { VotingWidget } from "@components/voting-widget";
+import { ErrorCode, logErr, logInfo } from "@utils/error";
 
 export interface IProfileProps extends IClass {
   id?: Principal;
@@ -36,7 +43,8 @@ export interface IProfileProps extends IClass {
 }
 
 export function ProfileFull(props: IProfileProps) {
-  const { profiles, reputation, totals, fetchProfiles } = useHumans();
+  const { profiles, reputation, totals, fetchProfiles, canCreateVotings } =
+    useHumans();
   const {
     editMyProfile,
     myBalance,
@@ -45,7 +53,12 @@ export function ProfileFull(props: IProfileProps) {
     enable,
     disabled,
   } = useAuth();
-  const { createHumansEmployVoting, createHumansUnemployVoting } = useVotings();
+  const {
+    createHumansEmployVoting,
+    createHumansUnemployVoting,
+    votings,
+    fetchVotings,
+  } = useVotings();
 
   const [newName, setNewName] = createSignal<Result<string, string>>(
     Result.Ok("Anonymous")
@@ -53,7 +66,32 @@ export function ProfileFull(props: IProfileProps) {
   const [edited, setEdited] = createSignal(false);
 
   const profile = () => (props.id ? profiles[props.id.toText()] : undefined);
+  const isTeamMember = () => !!profile()?.employment;
   const rep = () => (props.id ? reputation[props.id.toText()] : undefined);
+
+  const votingId = (): TVotingIdStr | undefined =>
+    props.id
+      ? isTeamMember()
+        ? encodeVotingId({ HumansUnemploy: props.id })
+        : encodeVotingId({ HumansEmploy: props.id })
+      : undefined;
+
+  const voting = () => {
+    const id = votingId();
+    if (!id) return undefined;
+
+    return votings[id];
+  };
+
+  createEffect(
+    on(isReadyToFetch, (ready) => {
+      const id = votingId();
+
+      if (ready && !voting() && id) {
+        fetchVotings([decodeVotingId(id)]);
+      }
+    })
+  );
 
   const evr = createMemo(() => {
     const p = profile();
@@ -118,11 +156,11 @@ export function ProfileFull(props: IProfileProps) {
       await createHumansEmployVoting(props.id!, commitment);
       enable();
 
-      alert(
-        "The voting has been created! Navigate to the Decisions page to continue."
-      );
+      await fetchVotings([decodeVotingId(votingId()!)]);
+
+      logInfo("The voting has been created!");
     } catch (e) {
-      alert(`Invalid commitment: ${debugStringify(e)}`);
+      logErr(ErrorCode.VALIDATION, `Invalid commitment: ${debugStringify(e)}`);
     }
   };
 
@@ -137,13 +175,13 @@ export function ProfileFull(props: IProfileProps) {
     await createHumansUnemployVoting(props.id!);
     enable();
 
-    alert(
-      "The voting has been created! Navigate to the Decisions page to continue."
-    );
+    await fetchVotings([decodeVotingId(votingId()!)]);
+
+    logInfo("The voting has been created!");
   };
 
   const borderColor = () =>
-    profile()?.employment ? COLORS.chartreuse : COLORS.gray[150];
+    isTeamMember() ? COLORS.chartreuse : COLORS.gray[150];
 
   const metricClass = "flex flex-col gap-1 min-w-36";
 
@@ -285,28 +323,38 @@ export function ProfileFull(props: IProfileProps) {
             </div>
           </Match>
         </Switch>
-        <Switch>
-          <Match when={!props.me && profile()?.employment}>
-            <div class="flex flex-col col-span-full">
-              <Btn
-                text="Expel"
-                icon={EIconKind.Minus}
-                onClick={handleProposeExpel}
-                iconColor={COLORS.errorRed}
-              />
-            </div>
-          </Match>
-          <Match when={!props.me && !profile()?.employment}>
-            <div class="flex flex-col col-span-full">
-              <Btn
-                text="Admit"
-                icon={EIconKind.Plus}
-                onClick={handleProposeAdmit}
-                iconColor={COLORS.green}
-              />
-            </div>
-          </Match>
-        </Switch>
+        <Show when={!props.me && voting()}>
+          <VotingWidget
+            class="col-span-full"
+            id={votingId()!}
+            optionIdx={0}
+            kind="satisfaction"
+          />
+        </Show>
+        <Show when={canCreateVotings() && !props.me && !voting()}>
+          <Switch>
+            <Match when={isTeamMember()}>
+              <div class="flex flex-col col-span-full">
+                <Btn
+                  text="Expel"
+                  icon={EIconKind.Minus}
+                  onClick={handleProposeExpel}
+                  iconColor={COLORS.errorRed}
+                />
+              </div>
+            </Match>
+            <Match when={!isTeamMember()}>
+              <div class="flex flex-col col-span-full">
+                <Btn
+                  text="Admit"
+                  icon={EIconKind.Plus}
+                  onClick={handleProposeAdmit}
+                  iconColor={COLORS.green}
+                />
+              </div>
+            </Match>
+          </Switch>
+        </Show>
       </div>
     </div>
   );

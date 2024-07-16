@@ -11,20 +11,35 @@ import { Principal } from "@dfinity/principal";
 import { debugStringify } from "@fort-major/msq-shared";
 import { useAuth } from "@store/auth";
 import { useBank } from "@store/bank";
+import { useHumans } from "@store/humans";
 import { COLORS } from "@utils/colors";
 import { pairToStr } from "@utils/encoding";
-import { err, ErrorCode } from "@utils/error";
+import { err, ErrorCode, logInfo } from "@utils/error";
 import { E8s } from "@utils/math";
+import { getProfProof } from "@utils/security";
 import { Result } from "@utils/types";
-import { createResource, createSignal, from, Match, Switch } from "solid-js";
+import {
+  createResource,
+  createSignal,
+  from,
+  Match,
+  Show,
+  Switch,
+} from "solid-js";
 
 export interface ITransferSwapFormProps {}
 
 export function TransferSwapForm(props: ITransferSwapFormProps) {
-  const { myBalance, profileProof, disable, enable, disabled } = useAuth();
-  const { transfer, swapRewards, exchangeRates } = useBank();
+  const { myBalance, fetchMyBalance, disable, enable, agent } = useAuth();
+  const {
+    transfer,
+    swapRewards,
+    exchangeRates,
+    bankIcpBalance,
+    fetchBankIcpBalance,
+  } = useBank();
 
-  const [profProof] = createResource(profileProof);
+  const [profProof] = createResource(agent, getProfProof);
   const [from, setFrom] = createSignal(EE8sKind.Hour);
   const [into, setInto] = createSignal(EE8sKind.FMJ);
   const [amount, setAmount] = createSignal<Result<E8s, E8s>>(
@@ -38,7 +53,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     const b = myBalance();
 
     if (b) {
-      return b[from()];
+      return b[from() as keyof typeof b];
     } else {
       return E8s.zero();
     }
@@ -67,7 +82,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
 
   const canTransfer = () =>
     mode() === "transfer" &&
-    transferRecipient() &&
+    transferRecipient().isOk() &&
     amount().isOk() &&
     amount().unwrap().toBool();
 
@@ -97,11 +112,13 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     );
     enable();
 
-    alert("Successful transfer");
+    await fetchMyBalance();
+
+    logInfo("Successful transfer");
   };
 
-  const handleSelectInto = (into: Result<string, string>) => {
-    setInto(into.unwrap() as EE8sKind);
+  const handleSelectInto = (into: string) => {
+    setInto(into as EE8sKind);
   };
 
   const exchangeRate = () => {
@@ -121,11 +138,11 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   };
 
   const handleSwap = async () => {
-    const a = amount()!;
+    const a = amount()!.unwrapOk();
     const as = intoAmount();
 
     const agreed = confirm(
-      `Are you sure you want to transfer ${a.toString()} ${from()} into ${as.toString()} ${into()}? This action can't be reversed.`
+      `Are you sure you want to swap ${a.toString()} ${from()} into ${as.toString()} ${into()}? This action can't be reversed.`
     );
 
     if (!agreed) return;
@@ -133,11 +150,17 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     disable();
     const { qty } = await swapRewards(
       pairToStr({ from: from(), into: into() }),
-      a.unwrapOk()
+      a
     );
     enable();
 
-    alert(
+    if (into() === EE8sKind.ICP) {
+      fetchBankIcpBalance();
+    }
+
+    await fetchMyBalance();
+
+    logInfo(
       `Successfully swapped ${a.toString()} ${from()} into ${qty.toString()} ${into()}!`
     );
   };
@@ -149,7 +172,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
         amount={amount().unwrap()}
         kind={from()}
         onAmountChange={setAmount}
-        onKindChange={(r) => setFrom(r.unwrapOk())}
+        onKindChange={setFrom}
       />
       <div class="flex flex-col justify-end gap-2">
         <Switch>
@@ -159,7 +182,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
               <TextInput
                 onChange={setTransferRecipient}
                 value={transferRecipient().unwrap()}
-                validations={[{ principal: null }]}
+                validations={[{ principal: null }, { required: null }]}
               />
               <E8sWidget minValue={amountToTransfer()} kind={from()} />
             </div>
@@ -176,10 +199,17 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
             <div class="flex justify-between items-center">
               <Select
                 possibleValues={[EE8sKind.FMJ, EE8sKind.ICP]}
-                value={EE8sKind.FMJ}
+                value={into()}
                 onChange={handleSelectInto}
               />
-              <E8sWidget minValue={intoAmount()} kind={into()} />
+              <div class="flex flex-col gap-2 items-end">
+                <E8sWidget minValue={intoAmount()} kind={into()} />
+                <Show when={into() === EE8sKind.ICP}>
+                  <p class="font-primary text-xs text-gray-150 italic font-thin">
+                    ({bankIcpBalance().toString()} available)
+                  </p>
+                </Show>
+              </div>
             </div>
             <div class="flex justify-between items-center">
               <ExchangeRate

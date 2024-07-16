@@ -56,6 +56,17 @@ impl Guard<TaskArchiveState> for GetArchivedTasksByIdRequest {
     }
 }
 
+impl Guard<TasksState> for GetArchivedTasksByIdRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &TasksState,
+        _caller: Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
 #[derive(CandidType, Deserialize, Validate)]
 pub struct GetArchivedTasksByIdResponse {
     #[garde(skip)]

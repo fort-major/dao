@@ -120,11 +120,11 @@ impl TasksCanisterClient {
     }
 
     #[allow(non_snake_case)]
-    pub async fn tasks__get_archived_tasks(
+    pub async fn tasks__get_archived_task_ids(
         &self,
         req: GetArchivedTaskIdsRequest,
     ) -> CallResult<GetArchivedTaskIdsResponse> {
-        call(self.canister_id, "tasks__get_archived_tasks", (req,))
+        call(self.canister_id, "tasks__get_archived_task_ids", (req,))
             .await
             .map(|(it,)| it)
     }
