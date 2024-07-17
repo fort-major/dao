@@ -38,7 +38,7 @@ type RefundRewardsRequest = record {
   storypoints : nat;
   spender : principal;
 };
-type RegisterRequest = record { name : opt text };
+type RegisterRequest = record { pow : blob; name : opt text; nonce : nat };
 type RewardEntry = record {
   solver : principal;
   reward_hours : nat;

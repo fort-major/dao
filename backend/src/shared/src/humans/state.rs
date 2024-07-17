@@ -161,6 +161,8 @@ impl HumansState {
         self.register(
             RegisterRequest {
                 name: Some("Fort Major Creator".to_string()),
+                pow: [0u8; 32],
+                nonce: Nat::default(),
             },
             caller,
             now,

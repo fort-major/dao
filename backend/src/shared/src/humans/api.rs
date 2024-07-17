@@ -1,18 +1,44 @@
 use candid::{CandidType, Nat, Principal};
 use garde::Validate;
+use ic_cdk::print;
 use serde::Deserialize;
+use sha2::Digest;
 
-use crate::{e8s::E8s, escape_script_tag, tasks::types::RewardEntry, Guard, ENV_VARS};
+use crate::{bufs_le, e8s::E8s, escape_script_tag, tasks::types::RewardEntry, Guard, ENV_VARS};
 
 use super::{
     state::HumansState,
     types::{Profile, ProfileProofBody},
 };
 
+const POW_COMPLEXITY: &[u8] = &[0u8, 0u8, 128u8];
+const POW_DELIMITER: &[u8] = b"\\FMJ-POW-DELIMITER\\";
+const POW_START: &[u8] = b"\\FMJ-POW-START\\";
+const POW_END: &[u8] = b"\\FMJ-POW-END\\";
+
 #[derive(CandidType, Deserialize, Validate)]
 pub struct RegisterRequest {
     #[garde(length(graphemes, min = 2, max = 64))]
     pub name: Option<String>,
+    #[garde(skip)]
+    pub pow: [u8; 32],
+    #[garde(skip)]
+    pub nonce: Nat,
+}
+
+impl RegisterRequest {
+    pub fn hash(&self, caller: &Principal, id: &Principal) -> [u8; 32] {
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(POW_START);
+        hasher.update(id.as_slice());
+        hasher.update(POW_DELIMITER);
+        hasher.update(caller.as_slice());
+        hasher.update(POW_DELIMITER);
+        hasher.update(self.nonce.0.to_bytes_le());
+        hasher.update(POW_END);
+
+        hasher.finalize().into()
+    }
 }
 
 impl Guard<HumansState> for RegisterRequest {
@@ -30,6 +56,18 @@ impl Guard<HumansState> for RegisterRequest {
 
         if let Some(name) = &mut self.name {
             *name = escape_script_tag(&name);
+        }
+
+        if !bufs_le(&self.pow[0..POW_COMPLEXITY.len()], POW_COMPLEXITY) {
+            return Err(format!("The Proof Of Work is of invalid complexity"));
+        }
+
+        let expected = self.hash(&caller, &ENV_VARS.humans_canister_id);
+        if expected != self.pow {
+            return Err(format!(
+                "The Proof Of Work is invalid: expected {:?}, received {:?}",
+                expected, self.pow
+            ));
         }
 
         Ok(())

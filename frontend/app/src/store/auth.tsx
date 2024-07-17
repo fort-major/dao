@@ -34,7 +34,7 @@ import {
 } from "@/declarations/humans/humans.did";
 import { delay, fromCBOR, toCBOR } from "@fort-major/msq-shared";
 import { ReputationProofBody } from "@/declarations/reputation/reputation.did";
-import { PROOF_TTL_MS } from "@utils/security";
+import { generatePoW, PROOF_TTL_MS } from "@utils/security";
 
 export interface IMyBalance {
   Hour: E8s;
@@ -159,13 +159,21 @@ export function AuthStore(props: IChildren) {
       });
 
       if (!profiles[0][0]) {
-        logInfo(`First time here? Registering...`);
+        logInfo(`First time here? Registering, please stand by...`);
 
         const name = await id.getPseudonym();
+        const [pow, nonce] = await generatePoW(
+          id.getPrincipal(),
+          Principal.fromText(import.meta.env.VITE_HUMANS_CANISTER_ID)
+        );
 
         await humansActor.humans__register({
           name: [name],
+          pow,
+          nonce,
         });
+
+        logInfo("Registered!");
       }
 
       batch(() => {

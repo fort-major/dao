@@ -950,6 +950,7 @@ dependencies = [
  "leb128",
  "num-bigint",
  "serde",
+ "sha2",
  "url",
 ]
 

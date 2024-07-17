@@ -71,14 +71,14 @@ export const hexToBytes = (hexString: string): Uint8Array => {
  * @returns
  */
 export const bigIntToBytes = (n: bigint): Uint8Array => {
-  let result = new Uint8Array(32);
-  let i = 0;
+  let result = [];
+
   while (n > 0n) {
-    result[i] = Number(n % 256n);
+    result.push(Number(n % 256n));
     n = n / 256n;
-    i += 1;
   }
-  return result;
+
+  return new Uint8Array(result);
 };
 
 /**

@@ -88,3 +88,17 @@ macro_rules! btreemap {
 pub fn escape_script_tag(s: &str) -> String {
     html_escape::encode_script(s).to_string()
 }
+
+pub fn bufs_le(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+
+    for i in 0..a.len() {
+        if a[i] > b[i] {
+            return false;
+        }
+    }
+
+    true
+}

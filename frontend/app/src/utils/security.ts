@@ -3,10 +3,21 @@ import {
   ReputationDelegationTreeNode,
   ReputationProofBody,
 } from "@/declarations/votings/votings.did";
-import { bytesToHex, debugStringify } from "./encoding";
+import {
+  bigIntToBytes,
+  bytesToHex,
+  debugStringify,
+  strToBytes,
+  timestampToStr,
+} from "./encoding";
 import { ErrorCode, err } from "./error";
 import { ONE_MIN_NS } from "./types";
-import { fromCBOR, hexToBytes, toCBOR } from "@fort-major/msq-shared";
+import {
+  fromCBOR,
+  hexToBytes,
+  Principal,
+  toCBOR,
+} from "@fort-major/msq-shared";
 import { Agent } from "@fort-major/agent-js-fork";
 import {
   newHumansActor,
@@ -14,6 +25,7 @@ import {
   newReputationActor,
 } from "./backend";
 import { E8s } from "./math";
+import { nowNs } from "@components/countdown";
 
 export function eventHandler<E extends Event>(
   fn: (e: E) => void | Promise<void>
@@ -176,4 +188,55 @@ export function totalDelegatedRep(node: ReputationDelegationTreeNode): bigint {
     (prev, cur) => prev + cur.reputation,
     node.reputation
   );
+}
+
+const POW_COMPLEXITY = new Uint8Array([0, 0, 128]);
+const POW_DELIMITER = strToBytes("\\FMJ-POW-DELIMITER\\");
+const POW_START = strToBytes("\\FMJ-POW-START\\");
+const POW_END = strToBytes("\\FMJ-POW-END\\");
+
+export async function hashRegisterPow(
+  myIdBuf: Uint8Array,
+  humansCanisterIdBuf: Uint8Array,
+  nonce: bigint
+): Promise<Uint8Array> {
+  const buf = new Uint8Array([
+    ...POW_START,
+    ...humansCanisterIdBuf,
+    ...POW_DELIMITER,
+    ...myIdBuf,
+    ...POW_DELIMITER,
+    ...bigIntToBytes(nonce),
+    ...POW_END,
+  ]);
+
+  return crypto.subtle.digest("SHA-256", buf).then((it) => new Uint8Array(it));
+}
+function bufsLE(a: Uint8Array, b: Uint8Array) {
+  if (a.length != b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] > b[i]) return false;
+  return true;
+}
+
+export async function generatePoW(
+  myId: Principal,
+  humansCanisterId: Principal
+): Promise<[Uint8Array, bigint]> {
+  let nonce = BigInt(Math.floor(Math.random() * 1000000));
+  const myIdBuf = myId.toUint8Array();
+  const humansCanisterIdBuf = humansCanisterId.toUint8Array();
+
+  let pow = new Uint8Array();
+
+  while (true) {
+    nonce++;
+
+    pow = await hashRegisterPow(myIdBuf, humansCanisterIdBuf, nonce);
+
+    if (bufsLE(pow.slice(0, POW_COMPLEXITY.length), POW_COMPLEXITY)) {
+      break;
+    }
+  }
+
+  return [pow, nonce];
 }
