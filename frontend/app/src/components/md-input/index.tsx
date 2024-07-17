@@ -344,7 +344,10 @@ export function MdInput(props: IMdInputProps) {
             />
           </Match>
           <Match when={mode() === "preview"}>
-            <MdPreview class="font-primary font-light" content={props.value} />
+            <MdPreview
+              class="font-primary font-light p-4"
+              content={props.value}
+            />
           </Match>
         </Switch>
       </div>

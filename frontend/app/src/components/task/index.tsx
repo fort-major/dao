@@ -50,6 +50,9 @@ export function TaskMini(props: ITaskProps) {
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
     tasks[props.id.toString()] || archivedTasks[props.id.toString()];
 
+  const teamOnly = () =>
+    !!task()?.solver_constraints.find((it) => "TeamOnly" in it);
+
   const stage = (): TTaskStatus => {
     const t = task();
 
@@ -135,7 +138,14 @@ export function TaskMini(props: ITaskProps) {
   };
 
   return (
-    <div class="flex flex-col gap-5">
+    <div
+      class="flex flex-col gap-5 shadow-md p-5"
+      classList={{
+        "opacity-50":
+          (!teamOnly() && canCreateVotings()) ||
+          (teamOnly() && !canCreateVotings()),
+      }}
+    >
       <div class="flex flex-col gap-2">
         <div class="flex flex-grow gap-1 items-center">
           <div class="flex flex-grow gap-1 items-baseline">
@@ -425,7 +435,11 @@ export function Task(props: ITaskProps) {
       !t.assignees.map((it) => it.toText()).includes(me.toText())
     )
       return false;
-    if (t.solver_constraints.find((it) => "TeamOnly" in it)) return false;
+    if (
+      !!t.solver_constraints.find((it) => "TeamOnly" in it) &&
+      !canCreateVotings()
+    )
+      return false;
     if (
       t.solver_constraints.find((it) => "MaxSolutions" in it)?.MaxSolutions ===
       t.solutions.length

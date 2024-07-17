@@ -485,7 +485,11 @@ export function TasksStore(props: IChildren) {
     );
 
     const tasksActor = newTasksActor(agent()!);
-    await tasksActor.tasks__attach_to_task({ id: taskId, detach });
+    await tasksActor.tasks__attach_to_task({
+      id: taskId,
+      detach,
+      proof: { cert_raw: await getProfProofCert(agent()!), body: [] },
+    });
   };
 
   // if undefined - delete the solution

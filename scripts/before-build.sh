@@ -44,6 +44,8 @@ mkdir -p /tmp/fmj
 sed "1 c const MODE: &str = \"$mode\";" ./backend/src/shared/build.rs >> /tmp/fmj/build.rs
 mv /tmp/fmj/build.rs ./backend/src/shared/build.rs
 
+cargo build --target wasm32-unknown-unknown --package shared
+
 # pub env vars into frontend
 
 file_frontend="./frontend/app/.env.$mode"

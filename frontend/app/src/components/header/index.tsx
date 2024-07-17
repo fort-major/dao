@@ -26,14 +26,6 @@ export function Header(props: IHeaderProps) {
     return me ? reputation[me.toText()] : undefined;
   };
 
-  createEffect(() => {
-    const me = identity()?.getPrincipal();
-
-    if (isAuthorized() && !myRep() && me) {
-      fetchProfiles([me]);
-    }
-  });
-
   const linkClass = "font-primary font-normal text-white text-xl";
 
   return (

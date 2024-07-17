@@ -20,6 +20,7 @@ pub const DEVELOPMENT_TOPIC_ID: DecisionTopicId = 1;
 pub const MARKETING_TOPIC_ID: DecisionTopicId = 2;
 pub const DESIGN_TOPIC_ID: DecisionTopicId = 3;
 pub const DOCUMENTATION_TOPIC_ID: DecisionTopicId = 4;
+pub const TESTING_TOPIC_ID: DecisionTopicId = 5;
 
 #[derive(CandidType, Deserialize)]
 pub struct LiquidDemocracyState {
@@ -63,6 +64,14 @@ impl LiquidDemocracyState {
             ),
         };
 
+        let testing_topic = DecisionTopic {
+            id: TESTING_TOPIC_ID,
+            name: String::from("Testing"),
+            description: String::from(
+                "Checking if everything works correctly and reporting finding. Notion or similar.",
+            ),
+        };
+
         Self {
             decision_topic_id_counter: 4,
             decision_topics: btreemap! {
@@ -71,6 +80,7 @@ impl LiquidDemocracyState {
                 MARKETING_TOPIC_ID => marketing_topic,
                 DESIGN_TOPIC_ID => design_topic,
                 DOCUMENTATION_TOPIC_ID => documentation_topic,
+                TESTING_TOPIC_ID => testing_topic,
             },
             followees_of: BTreeMap::new(),
             followers_of: BTreeMap::new(),
@@ -81,12 +91,15 @@ impl LiquidDemocracyState {
         use DecisionTopicSet as S;
 
         S::or(
-            S::it(DOCUMENTATION_TOPIC_ID),
+            S::it(TESTING_TOPIC_ID),
             S::or(
-                S::it(GENERAL_TOPIC_ID),
+                S::it(DOCUMENTATION_TOPIC_ID),
                 S::or(
-                    S::it(DEVELOPMENT_TOPIC_ID),
-                    S::or_it(MARKETING_TOPIC_ID, DESIGN_TOPIC_ID),
+                    S::it(GENERAL_TOPIC_ID),
+                    S::or(
+                        S::it(DEVELOPMENT_TOPIC_ID),
+                        S::or_it(MARKETING_TOPIC_ID, DESIGN_TOPIC_ID),
+                    ),
                 ),
             ),
         )

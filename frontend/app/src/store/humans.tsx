@@ -80,6 +80,7 @@ export function HumanStore(props: IChildren) {
   const {
     anonymousAgent,
     assertReadyToFetch,
+    assertAuthorized,
     isReadyToFetch,
     isAuthorized,
     identity,
@@ -96,17 +97,21 @@ export function HumanStore(props: IChildren) {
     contributors: 0,
   });
 
-  createEffect(async () => {
+  createEffect(() => {
     if (isReadyToFetch()) {
-      await fetchTotals();
+      fetchTotals();
     }
+  });
 
+  createEffect(() => {
     if (totals().teamMembers.length > 0) {
       fetchProfiles(totals().teamMembers);
     }
+  });
 
+  createEffect(() => {
     if (isAuthorized()) {
-      fetchProfiles([identity()!.getPrincipal()]);
+      fetchSelfProfile();
     }
   });
 
@@ -164,6 +169,12 @@ export function HumanStore(props: IChildren) {
     for (let id of ids) {
       setProfileIds(id.toText(), true);
     }
+  };
+
+  const fetchSelfProfile = () => {
+    assertAuthorized();
+
+    fetchProfiles([identity()!.getPrincipal()]);
   };
 
   // refetches all known profiles when ids == undefined

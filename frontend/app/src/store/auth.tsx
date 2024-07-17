@@ -154,13 +154,6 @@ export function AuthStore(props: IChildren) {
         ]);
       };
 
-      batch(() => {
-        setIdentity(id as unknown as Identity);
-        setAgent(a);
-      });
-
-      logInfo("Login successful");
-
       const { entries: profiles } = await humansActor.humans__get_profiles({
         ids: [id.getPrincipal()],
       });
@@ -174,6 +167,13 @@ export function AuthStore(props: IChildren) {
           name: [name],
         });
       }
+
+      batch(() => {
+        setIdentity(id as unknown as Identity);
+        setAgent(a);
+      });
+
+      logInfo("Login successful");
 
       return true;
     }

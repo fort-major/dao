@@ -1,5 +1,8 @@
+import { Show } from "solid-js";
+
 export interface ITitleProps {
   text: string;
+  required?: boolean;
   class?: string;
 }
 
@@ -10,7 +13,10 @@ export function Title(props: ITitleProps) {
         props.class ? props.class : ""
       }`}
     >
-      {props.text}
+      {props.text}{" "}
+      <Show when={props.required}>
+        <span class="text-errorRed">*</span>
+      </Show>
     </p>
   );
 }

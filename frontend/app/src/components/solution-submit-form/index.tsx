@@ -1,6 +1,7 @@
 import { SolutionField } from "@/declarations/tasks/tasks.did";
 import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
+import { getSolutionFieldType } from "@components/create-task-form";
 import { MdInput, TMdInputValidation } from "@components/md-input";
 import { TextInput, TTextInputValidation } from "@components/text-input";
 import { Title } from "@components/title";
@@ -95,12 +96,7 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
     return (
       <div class="flex flex-col gap-2">
         <div class="flex flex-col gap-2">
-          <div class="flex gap-1 items-start px-2">
-            <Title text={f.name} />
-            <Show when={f.required}>
-              <Title class="text-errorRed" text="*" />
-            </Show>
-          </div>
+          <Title text={f.name} required={f.required} />
           <p class="font-primary text-xs font-thin text-gray-150 px-2">
             {f.description}
           </p>
@@ -111,6 +107,7 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
               value={values()[idx].unwrap()}
               onChange={handleChange}
               validations={validations() as TMdInputValidation[]}
+              placeholder={getSolutionFieldType(f)}
             />
           </Match>
           <Match when={"Url" in f.kind}>
@@ -118,6 +115,7 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
               value={values()[idx].unwrap()}
               onChange={handleChange}
               validations={validations()}
+              placeholder={getSolutionFieldType(f)}
             />
           </Match>
         </Switch>

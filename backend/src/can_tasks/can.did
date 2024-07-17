@@ -11,7 +11,11 @@ type ArchivedTaskV1 = record {
   assignees : opt vec principal;
   solutions : vec record { principal; Solution };
 };
-type AttachToTaskRequest = record { id : nat64; detach : bool };
+type AttachToTaskRequest = record {
+  id : nat64;
+  detach : bool;
+  proof : ProfileProof;
+};
 type BackToEditTaskRequest = record { id : nat64 };
 type CreateTaskRequest = record {
   solution_fields : vec SolutionField;
