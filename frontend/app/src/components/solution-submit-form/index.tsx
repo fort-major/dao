@@ -146,12 +146,16 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
   return (
     <div class="max-w-3xl flex flex-col gap-5">
       <For each={props.fields}>{(f, idx) => field(f, idx())}</For>
-      <BooleanInput
-        value={wantRep()}
-        onChange={setWantRep}
-        labelOff="I don't need reputation"
-        labelOn="I need reputation"
-      />
+      <div class="flex flex-col gap-1 items-start">
+        <Title text="Only check this if you are willing to participate in governance" />
+        <BooleanInput
+          value={wantRep()}
+          onChange={setWantRep}
+          labelOff="I need reputation"
+          labelOn="I need reputation"
+        />
+      </div>
+
       <div class="flex items-center justify-end gap-2">
         <Show when={prevFields()}>
           <Btn text="Delete" disabled={disabled()} onClick={handleDelete} />

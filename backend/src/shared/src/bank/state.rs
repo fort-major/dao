@@ -107,7 +107,7 @@ impl BankState {
             exchange_rates.push((
                 from.clone(),
                 into.clone(),
-                history.iter().cloned().collect(),
+                history.iter().rev().cloned().collect(),
             ));
         }
 

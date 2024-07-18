@@ -49,6 +49,7 @@ type ExchangeRatesStore = Partial<Record<TPairStr, [TTimestamp, E8s][]>>;
 
 export interface IBankStoreContext {
   exchangeRates: Store<ExchangeRatesStore>;
+  fetchExchangeRates: () => Promise<void>;
   swapRewards: (pairStr: TPairStr, amount: E8s) => Promise<ISwapResponse>;
   transfer: (
     token: "ICP" | "FMJ",
@@ -195,6 +196,7 @@ export function BankStore(props: IChildren) {
     <BankContext.Provider
       value={{
         exchangeRates,
+        fetchExchangeRates,
         swapRewards,
         transfer,
         fmjStats,

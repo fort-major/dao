@@ -173,7 +173,7 @@ fn verify_and_decode<'a, T: CandidType + Deserialize<'a>>(
 
     // verify that the certificate contains the expected response
 
-    match cert
+    let res = match cert
         .tree
         .lookup_path([REQUEST_STATUS_PATH, &request_id, REPLY_PATH])
     {
@@ -183,7 +183,9 @@ fn verify_and_decode<'a, T: CandidType + Deserialize<'a>>(
                 "Unable to find liquid democracy proof in the reply"
             ))
         }
-    }
+    };
+
+    res
 }
 
 fn request_id_of(tree: &HashTree<Vec<u8>>) -> Result<Vec<u8>, String> {

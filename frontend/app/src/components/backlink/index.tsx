@@ -1,15 +1,26 @@
 import { ROOT } from "@/routes";
 import { EIconKind, Icon } from "@components/icon";
-import { A } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
 import { COLORS } from "@utils/colors";
+import { eventHandler } from "@utils/security";
 import { IClass } from "@utils/types";
 
 export function Backlink(props: IClass) {
+  const navigate = useNavigate();
+
+  const handleBack = eventHandler(() => {
+    try {
+      navigate(-1);
+    } catch (_) {
+      navigate(ROOT.$.tasks.path);
+    }
+  });
+
   return (
-    <A
-      class="flex items-center flex-grow justify-start self-stretch gap-1"
+    <div
+      class="flex items-center flex-grow justify-start self-stretch gap-1 cursor-pointer"
       classList={{ [props.class!]: !!props.class }}
-      href={ROOT.$.tasks.path}
+      onClick={handleBack}
     >
       <Icon
         kind={EIconKind.ArrowRight}
@@ -20,6 +31,6 @@ export function Backlink(props: IClass) {
       <p class="font-primary font-light text-sm underline text-gray-150">
         Back
       </p>
-    </A>
+    </div>
   );
 }

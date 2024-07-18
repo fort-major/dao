@@ -9,12 +9,14 @@ import { DecisionTopic } from "@components/decision-topic";
 import { EE8sKind } from "@components/e8s-widget";
 import { EIconKind } from "@components/icon";
 import { MdInput } from "@components/md-input";
+import { PrincipalDropdown } from "@components/principal-dropdown";
 import { QtyInput } from "@components/qty-input";
 import { Select } from "@components/select";
 import { TextInput } from "@components/text-input";
 import { Title } from "@components/title";
 import { Principal } from "@dfinity/principal";
 import { useAuth } from "@store/auth";
+import { useHumans } from "@store/humans";
 import { DecisionTopicId, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
@@ -24,6 +26,7 @@ import { Result, TTaskId } from "@utils/types";
 import {
   batch,
   createEffect,
+  createMemo,
   createSignal,
   For,
   on,
@@ -86,6 +89,9 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
     useTasks();
   const { decisionTopics } = useVotings();
   const { isAuthorized, disable, enable } = useAuth();
+  const { totals } = useHumans();
+
+  const teamMemberIds = () => totals().teamMembers;
 
   const task = () =>
     props.id !== undefined ? tasks[props.id.toString()] : undefined;
@@ -125,7 +131,9 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         setStorypointsAdditionalRewards(Result.Ok(t.storypoints_ext_budget));
         setTopics([...t.decision_topics]);
         if (t.assignees && t.assignees.length > 0)
-          setAssignee(Result.Ok(t.assignees[0].toText()));
+          setAssignees(
+            t.assignees.map((it) => Result.Ok<string, string>(it.toText()))
+          );
 
         setFields(solutionFields);
       });
@@ -143,7 +151,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       setStorypointsBaseRewards(Result.Ok(E8s.zero()));
       setStorypointsAdditionalRewards(Result.Ok(E8s.zero()));
       setTopics([]);
-      setAssignee(Result.Ok(""));
+      setAssignees([]);
       setFields([]);
     });
   };
@@ -168,13 +176,11 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const [storypointsAdditionalReward, setStorypointsAdditionalRewards] =
     createSignal<Result<E8s, E8s>>(Result.Ok(E8s.zero()));
   const [topics, setTopics] = createSignal<number[]>([]);
-  const [assignee, setAssignee] = createSignal<Result<string, string>>(
-    Result.Ok("")
-  );
+  const [assignees, setAssignees] = createStore<Result<string, string>[]>([]);
 
   const [fields, setFields] = createStore<FieldsStoreEntry[]>([]);
 
-  const isErr = () => {
+  const isErr = createMemo(() => {
     return (
       title().isErr() ||
       description().isErr() ||
@@ -184,10 +190,10 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       storypointsBaseReward().isErr() ||
       storypointsAdditionalReward().isErr() ||
       fields.some((it) => it.description.isErr() || it.name.isErr()) ||
-      assignee().isErr() ||
+      assignees.some((it) => it.isErr()) ||
       topics().length === 0
     );
-  };
+  });
 
   const canSubmit = () =>
     props.id === undefined || (task() && "Edit" in task()!.stage);
@@ -312,7 +318,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
       });
     }
 
-    const assig = assignee().unwrapOk();
+    const a = assignees.map((it) => Principal.fromText(it.unwrapOk()));
 
     if (props.id === undefined) {
       const id = await createTask({
@@ -324,7 +330,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         storypoints_base: storypointsBaseReward().unwrapOk(),
         storypoints_ext_budget: storypointsAdditionalReward().unwrapOk(),
         solution_fields: result,
-        assignees: assig ? [Principal.fromText(assig)] : undefined,
+        assignees: a.length > 0 ? a : undefined,
         decision_topics: topics(),
       });
 
@@ -344,7 +350,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         new_storypoints_base: storypointsBaseReward().unwrapOk(),
         new_storypoints_ext_budget: storypointsAdditionalReward().unwrapOk(),
         new_solution_fields: result,
-        new_assignees: assig ? [Principal.fromText(assig)] : null,
+        new_assignees: a.length > 0 ? a : null,
         new_decision_topics: topics(),
       });
 
@@ -378,6 +384,18 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
 
       return [...v];
     });
+  };
+
+  const handleAddAssignee = () => {
+    setAssignees(assignees.length, Result.Err<string, string>(""));
+  };
+
+  const handleRemoveAssignee = (idx: number) => {
+    setAssignees(assignees.filter((_, i) => i != idx));
+  };
+
+  const handleChangeAssignee = (idx: number, val: Result<string, string>) => {
+    setAssignees(idx, val);
   };
 
   const fieldClass = "flex flex-col gap-2";
@@ -418,12 +436,27 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         </div>
       </div>
       <div class={fieldClass}>
-        <Title text="Assignee" />
-        <TextInput
-          value={assignee() ? assignee()!.unwrap()! : ""}
-          onChange={setAssignee}
-          validations={[{ principal: null }]}
-        />
+        <Title text="Assignees" />
+        <div class="flex flex-col gap-1">
+          <For each={assignees}>
+            {(it, idx) => (
+              <div class="flex gap-2 items-center justify-between">
+                <PrincipalDropdown
+                  value={it.unwrap()}
+                  onChange={(res) => handleChangeAssignee(idx(), res)}
+                  listed={teamMemberIds()}
+                  required
+                />
+                <Btn
+                  icon={EIconKind.Minus}
+                  onClick={() => handleRemoveAssignee(idx())}
+                  iconColor={COLORS.errorRed}
+                />
+              </div>
+            )}
+          </For>
+          <Btn icon={EIconKind.Plus} onClick={handleAddAssignee} />
+        </div>
       </div>
       <div class={fieldClass}>
         <Title text="Description" required />

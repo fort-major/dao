@@ -3,6 +3,7 @@ import { Btn } from "@components/btn";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { EIconKind, Icon } from "@components/icon";
 import { QtyInput } from "@components/qty-input";
+import { VotingWidget } from "@components/voting-widget";
 import { useAuth } from "@store/auth";
 import { TPairStr, useBank } from "@store/bank";
 import { useVotings } from "@store/votings";
@@ -29,7 +30,7 @@ export interface IExchangeRateProps {
 export function ExchangeRate(props: IExchangeRateProps) {
   const { createBankSetExchangeRateVoting, votings, fetchVotings } =
     useVotings();
-  const { exchangeRates } = useBank();
+  const { exchangeRates, fetchExchangeRates } = useBank();
   const { isReadyToFetch } = useAuth();
 
   const [edited, setEdited] = createSignal(false);
@@ -43,7 +44,6 @@ export function ExchangeRate(props: IExchangeRateProps) {
     BankSetExchangeRate: [{ [pair().from]: null }, { [pair().into]: null }],
   });
 
-  // TODO: we need to somehow get the new rate out from the voting
   const voting = () => votings[encodeVotingId(votingId())];
 
   createEffect(() => {
@@ -97,54 +97,65 @@ export function ExchangeRate(props: IExchangeRateProps) {
     );
 
     setProposing(false);
+    await fetchVotings([votingId]);
 
-    logInfo(
-      `The voting (${encodeVotingId(
-        votingId
-      )}) has been created! Navigate to decisions tab to vote.`
-    );
+    logInfo(`The voting has been created!`);
+  };
+
+  const handleRefresh = () => {
+    fetchExchangeRates();
   };
 
   return (
-    <div class="flex items-center gap-2 px-2 h-[40px]">
-      <Switch>
-        <Match when={!edited()}>
-          <div class="flex items-center gap-1">
-            <E8sWidget minValue={E8s.one()} kind={pair().from as EE8sKind} />
-            <p>=</p>
-            <E8sWidget
-              minValue={rate() ? rate()! : E8s.zero()}
-              kind={pair().into as EE8sKind}
-            />
-          </div>
-          <Show when={props.editable && !proposing()}>
-            <Icon
-              kind={EIconKind.Edit}
-              onClick={handleEditClick}
-              color={COLORS.gray[150]}
-              class="cursor-pointer"
-            />
-          </Show>
-        </Match>
-        <Match when={edited()}>
-          <div class="flex items-center gap-1">
-            <E8sWidget minValue={E8s.one()} kind={pair().from as EE8sKind} />
-            <p>=</p>
-            <QtyInput
-              value={newRate().unwrap()}
-              onChange={setNewRate}
-              symbol={pair().into}
-            />
-            <Btn
-              icon={EIconKind.CheckRect}
-              iconColor={COLORS.green}
-              text="Propose"
-              onClick={handleProposeClick}
-              disabled={proposing()}
-            />
-          </div>
-        </Match>
-      </Switch>
+    <div class="flex flex-col">
+      <div class="flex items-center gap-2 px-2 h-[40px]">
+        <Switch>
+          <Match when={!edited()}>
+            <div class="flex items-center gap-1">
+              <E8sWidget minValue={E8s.one()} kind={pair().from as EE8sKind} />
+              <p>=</p>
+              <E8sWidget
+                minValue={rate() ? rate()! : E8s.zero()}
+                kind={pair().into as EE8sKind}
+              />
+            </div>
+            <Show when={props.editable && !proposing()}>
+              <Icon
+                kind={EIconKind.Edit}
+                onClick={handleEditClick}
+                color={COLORS.gray[150]}
+                class="cursor-pointer"
+              />
+            </Show>
+          </Match>
+          <Match when={edited()}>
+            <div class="flex items-center gap-1">
+              <E8sWidget minValue={E8s.one()} kind={pair().from as EE8sKind} />
+              <p>=</p>
+              <QtyInput
+                value={newRate().unwrap()}
+                onChange={setNewRate}
+                symbol={pair().into}
+              />
+              <Btn
+                icon={EIconKind.CheckRect}
+                iconColor={COLORS.green}
+                text="Propose"
+                onClick={handleProposeClick}
+                disabled={proposing()}
+              />
+            </div>
+          </Match>
+        </Switch>
+      </div>
+      <Show when={voting()}>
+        <VotingWidget
+          id={encodeVotingId(votingId())}
+          kind="satisfaction"
+          optionIdx={0}
+          onRefreshEntity={handleRefresh}
+        />
+      </Show>
     </div>
   );
 }

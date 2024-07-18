@@ -522,7 +522,10 @@ export function TasksStore(props: IChildren) {
       err(ErrorCode.AUTH, "This task can only be solved by a team member");
     }
 
-    if (task.assignees && !task.assignees.includes(proof.id)) {
+    if (
+      task.assignees &&
+      !task.assignees.find((it) => it.compareTo(proof.id) === "eq")
+    ) {
       err(
         ErrorCode.AUTH,
         "This task can only be solved by a pre-defined set of assignees"

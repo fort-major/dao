@@ -26,6 +26,8 @@ export interface ITextInputProps {
   placeholder?: string;
   validations?: TTextInputValidation[];
   disabled?: boolean;
+  noShadow?: boolean;
+  noMountCb?: boolean;
 }
 
 export function TextInput(props: ITextInputProps) {
@@ -36,6 +38,8 @@ export function TextInput(props: ITextInputProps) {
   const d = () => props.disabled || disabled();
 
   onMount(() => {
+    if (props.noMountCb) return;
+
     const error = isValid(props.value, props.validations);
     props.onChange(error ? Result.Err(props.value) : Result.Ok(props.value));
   });
@@ -55,11 +59,12 @@ export function TextInput(props: ITextInputProps) {
     <div class="flex flex-col gap-1 flex-1">
       <input
         type="text"
-        class="flex p-2 font-primary focus:outline-none text-sm leading-6 flex-1 shadow-md"
+        class="flex p-2 font-primary focus:outline-none text-sm leading-6 flex-1"
         classList={{
           italic: props.value === "",
           "shadow-errorRed": !!error(),
           "bg-gray-190": d(),
+          "shadow-md": !props.noShadow,
         }}
         placeholder={props.placeholder ?? "Type here"}
         value={props.value}

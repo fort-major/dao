@@ -1,4 +1,5 @@
 import {
+  For,
   Match,
   Show,
   Switch,
@@ -45,7 +46,7 @@ export interface IProfileProps extends IClass {
 }
 
 export function ProfileFull(props: IProfileProps) {
-  const { profiles, reputation, totals, fetchProfiles, canCreateVotings } =
+  const { profiles, reputation, totals, fetchProfiles, meIsTeamMember } =
     useHumans();
   const {
     editMyProfile,
@@ -61,6 +62,10 @@ export function ProfileFull(props: IProfileProps) {
     createHumansUnemployVoting,
     votings,
     fetchVotings,
+    followersOf,
+    fetchFollowersOf,
+    followeesOf,
+    fetchFolloweesOf,
   } = useVotings();
   const navigate = useNavigate();
 
@@ -72,6 +77,22 @@ export function ProfileFull(props: IProfileProps) {
   const profile = () => (props.id ? profiles[props.id.toText()] : undefined);
   const isTeamMember = () => !!profile()?.employment;
   const rep = () => (props.id ? reputation[props.id.toText()] : undefined);
+  const followers = createMemo(() =>
+    props.id
+      ? followersOf[props.id?.toText()]
+        ? followersOf[props.id?.toText()]!.followers
+        : []
+      : []
+  );
+  const followees = createMemo(() =>
+    props.id
+      ? followeesOf[props.id?.toText()]
+        ? Object.keys(followeesOf[props.id?.toText()]!).map((it) =>
+            Principal.fromText(it)
+          )
+        : []
+      : []
+  );
 
   const votingId = (): TVotingIdStr | undefined =>
     props.id
@@ -93,6 +114,15 @@ export function ProfileFull(props: IProfileProps) {
 
       if (ready && !voting() && id) {
         fetchVotings([decodeVotingId(id)]);
+      }
+    })
+  );
+
+  createEffect(
+    on(isReadyToFetch, (ready) => {
+      if (ready && props.id) {
+        fetchFollowersOf([props.id]);
+        fetchFolloweesOf([props.id]);
       }
     })
   );
@@ -197,6 +227,13 @@ export function ProfileFull(props: IProfileProps) {
     }
   };
 
+  const handleCopyPrincipal = () => {
+    if (props.id) {
+      navigator.clipboard.writeText(props.id.toText());
+      logInfo("Copied!");
+    }
+  };
+
   const metricClass = "flex flex-col gap-1 min-w-36";
 
   return (
@@ -236,9 +273,17 @@ export function ProfileFull(props: IProfileProps) {
             </Switch>
           </Show>
         </p>
-        <p class="font-primary font-normal items-center text-center text-xs text-gray-150">
-          <Show when={profile()?.id} fallback={Principal.anonymous().toText()}>
-            {profile()!.id.toText()}
+        <p class="font-primary font-normal text-center text-xs text-gray-150">
+          <Show when={props.id} fallback={Principal.anonymous().toText()}>
+            {props.id!.toText()}{" "}
+            <Icon
+              kind={EIconKind.Copy}
+              size={18}
+              color={COLORS.gray[150]}
+              hoverColor={COLORS.black}
+              onClick={handleCopyPrincipal}
+              class="inline cursor-pointer"
+            />
           </Show>
         </p>
         <Show when={props.me}>
@@ -342,6 +387,24 @@ export function ProfileFull(props: IProfileProps) {
             </div>
           </Match>
         </Switch>
+        <Show when={followees().length > 0}>
+          <div class="flex flex-col gap-1">
+            <Title text="Followees" />
+            <div class="flex flex-wrap">
+              <For each={followees()}>{(id) => <ProfileMicro id={id} />}</For>
+            </div>
+          </div>
+        </Show>
+        <Show when={followers().length > 0}>
+          <div class="flex flex-col gap-1">
+            <Title text="Followers" />
+            <div class="flex flex-wrap">
+              <For each={followers()}>
+                {(it) => <ProfileMicro id={it.id} />}
+              </For>
+            </div>
+          </div>
+        </Show>
         <Show when={!props.me && voting()}>
           <VotingWidget
             class="col-span-full"
@@ -351,7 +414,7 @@ export function ProfileFull(props: IProfileProps) {
             onRefreshEntity={handleRefresh}
           />
         </Show>
-        <Show when={canCreateVotings() && !props.me && !voting()}>
+        <Show when={meIsTeamMember() && !props.me && !voting()}>
           <Switch>
             <Match when={isTeamMember()}>
               <div class="flex flex-col col-span-full">

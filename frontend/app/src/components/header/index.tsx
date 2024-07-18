@@ -60,38 +60,40 @@ export function Header(props: IHeaderProps) {
           />
         </Match>
         <Match when={isAuthorized()}>
-          <div class="flex gap-2 items-center">
-            <div class="min-w-24">
-              <E8sWidget
-                white
-                kind={EE8sKind.FMJ}
-                minValue={myBalance() ? myBalance()!.FMJ : E8s.zero()}
-                disallowEmptyTail
-              />
-            </div>
-            <div class="min-w-24">
-              <E8sWidget
-                white
-                kind={EE8sKind.Hour}
-                minValue={myBalance() ? myBalance()!.Hour : E8s.zero()}
-                disallowEmptyTail
-              />
-            </div>
-            <div class="min-w-24">
-              <E8sWidget
-                white
-                kind={EE8sKind.Storypoint}
-                minValue={myBalance() ? myBalance()!.Storypoint : E8s.zero()}
-                disallowEmptyTail
-              />
-            </div>
-            <div class="min-w-24">
-              <E8sWidget
-                white
-                kind={EE8sKind.Reputation}
-                minValue={myRep() ? myRep()! : E8s.zero()}
-                disallowEmptyTail
-              />
+          <div class="flex gap-4 items-center">
+            <div class="grid gap-x-4 gap-y-1 grid-cols-2 grid-rows-2">
+              <div class="min-w-24">
+                <E8sWidget
+                  white
+                  kind={EE8sKind.FMJ}
+                  minValue={myBalance() ? myBalance()!.FMJ : E8s.zero()}
+                  disallowEmptyTail
+                />
+              </div>
+              <div class="min-w-24">
+                <E8sWidget
+                  white
+                  kind={EE8sKind.Reputation}
+                  minValue={myRep() ? myRep()! : E8s.zero()}
+                  disallowEmptyTail
+                />
+              </div>
+              <div class="min-w-24">
+                <E8sWidget
+                  white
+                  kind={EE8sKind.Hour}
+                  minValue={myBalance() ? myBalance()!.Hour : E8s.zero()}
+                  disallowEmptyTail
+                />
+              </div>
+              <div class="min-w-24">
+                <E8sWidget
+                  white
+                  kind={EE8sKind.Storypoint}
+                  minValue={myBalance() ? myBalance()!.Storypoint : E8s.zero()}
+                  disallowEmptyTail
+                />
+              </div>
             </div>
 
             <ProfileMicro id={identity()?.getPrincipal()} avatarSize="md" />

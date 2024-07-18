@@ -41,7 +41,8 @@ export interface ITaskProps {
 
 export function TaskMini(props: ITaskProps) {
   const { tasks, archivedTasks, fetchTasksById } = useTasks();
-  const { canCreateVotings } = useHumans();
+  const { meIsTeamMember } = useHumans();
+  const { identity } = useAuth();
 
   onMount(() => {
     if (!task()) fetchTasksById([props.id]);
@@ -52,6 +53,42 @@ export function TaskMini(props: ITaskProps) {
 
   const teamOnly = () =>
     !!task()?.solver_constraints.find((it) => "TeamOnly" in it);
+
+  const meIsTaskCreator = () => {
+    const me = identity()?.getPrincipal();
+    if (!me) return false;
+
+    const t = task();
+    if (!t) return false;
+
+    return t.creator.compareTo(me) === "eq";
+  };
+
+  const assignees = () => {
+    const t = task();
+    if (!t) return undefined;
+
+    return t.assignees;
+  };
+
+  const meIsAssignee = () => {
+    const me = identity()?.getPrincipal();
+    if (!me) return false;
+
+    const a = assignees();
+    if (a === undefined) return true;
+
+    return a.find((it) => it.compareTo(me) === "eq");
+  };
+
+  const interestingToMe = () => {
+    return (
+      meIsTaskCreator() ||
+      meIsAssignee() ||
+      (teamOnly() && meIsTeamMember()) ||
+      (!teamOnly() && !meIsTeamMember())
+    );
+  };
 
   const stage = (): TTaskStatus => {
     const t = task();
@@ -141,9 +178,7 @@ export function TaskMini(props: ITaskProps) {
     <div
       class="flex flex-col gap-5 shadow-md p-5"
       classList={{
-        "opacity-50":
-          (!teamOnly() && canCreateVotings()) ||
-          (teamOnly() && !canCreateVotings()),
+        "opacity-50": !interestingToMe(),
       }}
     >
       <div class="flex flex-col gap-2">
@@ -201,7 +236,7 @@ export function Task(props: ITaskProps) {
   } = useAuth();
   const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
     useVotings();
-  const { canCreateVotings } = useHumans();
+  const { meIsTeamMember } = useHumans();
 
   const [proof] = createResource(agent, getProfProof);
   const [showSolveModal, setShowSolveModal] = createSignal(false);
@@ -396,7 +431,7 @@ export function Task(props: ITaskProps) {
               onRefreshEntity={handleRefresh}
             />
           </Match>
-          <Match when={readyToEvaluate() && canCreateVotings()}>
+          <Match when={readyToEvaluate() && meIsTeamMember()}>
             <Btn
               text="Start Evaluation Phase"
               onClick={handleFinishSolveClick}
@@ -412,7 +447,7 @@ export function Task(props: ITaskProps) {
               onClick={handleSolveClick}
             />
           </Match>
-          <Match when={canSolve() && !proof()}>
+          <Match when={!isAuthorized()}>
             <Btn
               text="Log In to Contribute"
               icon={EIconKind.MetaMask}
@@ -437,7 +472,7 @@ export function Task(props: ITaskProps) {
       return false;
     if (
       !!t.solver_constraints.find((it) => "TeamOnly" in it) &&
-      !canCreateVotings()
+      !meIsTeamMember()
     )
       return false;
     if (
@@ -494,7 +529,7 @@ export function Task(props: ITaskProps) {
       return false;
     if (
       t.solver_constraints.find((it) => "TeamOnly" in it) &&
-      !canCreateVotings()
+      !meIsTeamMember()
     )
       return false;
 

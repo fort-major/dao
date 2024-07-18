@@ -61,7 +61,7 @@ export interface IHumansStoreContext {
   totals: Accessor<ITotals>;
   decentralization: () => E8s;
 
-  canCreateVotings: Accessor<boolean>;
+  meIsTeamMember: Accessor<boolean>;
 }
 
 const HumansContext = createContext<IHumansStoreContext>();
@@ -115,7 +115,7 @@ export function HumanStore(props: IChildren) {
     }
   });
 
-  const canCreateVotings = (): boolean => {
+  const meIsTeamMember = (): boolean => {
     const me = identity()?.getPrincipal();
     if (!me) return false;
 
@@ -268,7 +268,7 @@ export function HumanStore(props: IChildren) {
         fetchProfileIds,
         totals,
         decentralization,
-        canCreateVotings,
+        meIsTeamMember: meIsTeamMember,
       }}
     >
       {props.children}

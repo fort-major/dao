@@ -33,7 +33,7 @@ export function E8sWidget(props: IE8sWidgetProps) {
 
   const value = () => {
     if (props.maxValue) {
-      return `from ${props.minValue.toString()} to ${props.minValue
+      return `${props.minValue.toString()} to ${props.minValue
         .add(props.maxValue)
         .toString()}`;
     } else {
