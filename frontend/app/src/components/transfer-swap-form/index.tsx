@@ -27,7 +27,9 @@ import {
   Switch,
 } from "solid-js";
 
-export interface ITransferSwapFormProps {}
+export interface ITransferSwapFormProps {
+  class?: string;
+}
 
 export function TransferSwapForm(props: ITransferSwapFormProps) {
   const { myBalance, fetchMyBalance, disable, enable, agent } = useAuth();
@@ -168,7 +170,10 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   };
 
   return (
-    <div class="flex flex-col gap-5">
+    <div
+      class="flex flex-col gap-5"
+      classList={{ [props.class!]: !!props.class }}
+    >
       <FromInput
         balance={balance()}
         amount={amount().unwrap()}

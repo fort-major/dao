@@ -104,7 +104,7 @@ impl ReputationDelegationTreeNode {
         }
 
         for _follower in self.followers.iter() {
-            self.traverse(f, depth + 1);
+            _follower.traverse(f, depth + 1);
         }
     }
 }

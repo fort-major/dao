@@ -28,19 +28,12 @@ impl Guard<LiquidDemocracyState> for FollowRequest {
         now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-
         self.proof.assert_valid_for(caller, now)?;
 
         if let Some(callers_followees) = state.followees_of.get(&caller) {
             if callers_followees.len() == 10 {
                 return Err(format!("Only 10 followees are allowed"));
             }
-        } else {
-            return Err(format!("Not registered"));
-        }
-
-        if !state.followees_of.contains_key(&self.followee) {
-            return Err(format!("The followee is not registered"));
         }
 
         Ok(())
@@ -130,7 +123,7 @@ impl Guard<LiquidDemocracyState> for GetLiquidDemocracyProofRequest {
     }
 }
 
-#[derive(CandidType, Deserialize, Validate)]
+#[derive(CandidType, Deserialize, Validate, Debug)]
 pub struct GetLiquidDemocracyProofResponse {
     #[garde(skip)]
     pub marker: String,

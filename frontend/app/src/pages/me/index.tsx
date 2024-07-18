@@ -1,3 +1,4 @@
+import { FollowForm } from "@components/follow-form";
 import { Page } from "@components/page";
 import { ProfileFull } from "@components/profile/profile";
 import { TransferSwapForm } from "@components/transfer-swap-form";
@@ -10,8 +11,11 @@ export function MePage() {
 
   return (
     <Page slim>
-      <ProfileFull id={me()} me />
-      <TransferSwapForm />
+      <div class="grid grid-cols-2 gap-5">
+        <ProfileFull id={me()} me />
+        <TransferSwapForm class="flex-grow self-end" />
+      </div>
+      <FollowForm />
     </Page>
   );
 }

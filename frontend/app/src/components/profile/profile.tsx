@@ -77,22 +77,22 @@ export function ProfileFull(props: IProfileProps) {
   const profile = () => (props.id ? profiles[props.id.toText()] : undefined);
   const isTeamMember = () => !!profile()?.employment;
   const rep = () => (props.id ? reputation[props.id.toText()] : undefined);
-  const followers = createMemo(() =>
-    props.id
-      ? followersOf[props.id?.toText()]
-        ? followersOf[props.id?.toText()]!.followers
-        : []
-      : []
-  );
-  const followees = createMemo(() =>
-    props.id
-      ? followeesOf[props.id?.toText()]
-        ? Object.keys(followeesOf[props.id?.toText()]!).map((it) =>
-            Principal.fromText(it)
-          )
-        : []
-      : []
-  );
+  const followers = createMemo(() => {
+    if (!props.id) return [];
+    const f = followersOf[props.id.toText()];
+
+    if (!f) return [];
+
+    return f.followers.map((it) => it.id);
+  });
+  const followees = createMemo(() => {
+    if (!props.id) return [];
+    const f = followeesOf[props.id.toText()];
+
+    if (!f) return [];
+
+    return Object.keys(f).map((it) => Principal.fromText(it));
+  });
 
   const votingId = (): TVotingIdStr | undefined =>
     props.id
@@ -399,9 +399,7 @@ export function ProfileFull(props: IProfileProps) {
           <div class="flex flex-col gap-1">
             <Title text="Followers" />
             <div class="flex flex-wrap">
-              <For each={followers()}>
-                {(it) => <ProfileMicro id={it.id} />}
-              </For>
+              <For each={followers()}>{(it) => <ProfileMicro id={it} />}</For>
             </div>
           </div>
         </Show>

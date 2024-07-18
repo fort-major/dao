@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use candid::{encode_args, utils::ArgumentEncoder, CandidType, Principal};
 use garde::Validate;
-use ic_cdk::api::call::call_raw;
+use ic_cdk::{api::call::call_raw, print};
 
 use serde::Deserialize;
 
@@ -142,6 +142,8 @@ impl Voting {
                 }
 
                 let can_cast = option_votes.revert_prev_vote(&node.id, depth);
+
+                print(format!("{}: {:?}", depth, node));
 
                 if !can_cast {
                     return false;

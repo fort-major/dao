@@ -1,9 +1,13 @@
+use std::fmt::Debug;
+
 use candid::{decode_args, CandidType, Principal};
 use garde::Validate;
 use ic_cbor::CertificateToCbor;
+use ic_cdk::api::performance_counter;
+use ic_cdk::print;
 use ic_certificate_verification::VerifyCertificate;
 use ic_certification::{hash_tree::HashTree, Certificate, LookupResult};
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize};
 
 use crate::{
     humans::{
@@ -39,11 +43,13 @@ pub struct ReputationProof {
 
 impl ReputationProof {
     pub fn assert_valid_for(&mut self, caller: Principal, now: TimestampNs) -> Result<(), String> {
-        let cert = self.get_cert()?;
-
         // verify that the certificate contains the expected response
-        let get_reputation_proof_response =
-            verify_and_decode::<GetRepProofResponse>(&cert, &ENV_VARS.reputation_canister_id, now)?;
+        let get_reputation_proof_response = verify_and_decode::<GetRepProofResponse>(
+            &self.cert_raw,
+            &ENV_VARS.reputation_canister_id,
+            now,
+            "reputation proof",
+        )?;
 
         if get_reputation_proof_response.marker != REPUTATION_PROOF_MARKER {
             return Err(format!("Inavalid reputation proof marker"));
@@ -65,10 +71,6 @@ impl ReputationProof {
 
         Ok(())
     }
-
-    fn get_cert(&self) -> Result<Certificate, String> {
-        Certificate::from_cbor(&self.cert_raw).map_err(|e| e.to_string())
-    }
 }
 
 #[derive(CandidType, Deserialize, Validate)]
@@ -81,13 +83,12 @@ pub struct ProfileProof {
 
 impl ProfileProof {
     pub fn assert_valid_for(&mut self, caller: Principal, now: TimestampNs) -> Result<(), String> {
-        let cert = self.get_cert()?;
-
         // verify that the certificate contains the expected response
         let get_proof_response = verify_and_decode::<GetProfileProofsResponse>(
-            &cert,
+            &self.cert_raw,
             &ENV_VARS.humans_canister_id,
             now,
+            "profile proof",
         )?;
 
         if get_proof_response.marker != PROFILE_PROOFS_MARKER {
@@ -119,13 +120,12 @@ pub struct LiquidDemocracyProof {
 
 impl LiquidDemocracyProof {
     pub fn assert_valid_for(&mut self, caller: Principal, now: TimestampNs) -> Result<(), String> {
-        let cert = self.get_cert()?;
-
         // verify that the certificate contains the expected response
         let get_proof_response = verify_and_decode::<GetLiquidDemocracyProofResponse>(
-            &cert,
+            &self.cert_raw,
             &ENV_VARS.liquid_democracy_canister_id,
             now,
+            "liquid democracy proof",
         )?;
 
         if get_proof_response.marker != LIQUID_DEMOCRACY_PROOF_MARKER {
@@ -143,22 +143,29 @@ impl LiquidDemocracyProof {
 
         Ok(())
     }
-
-    fn get_cert(&self) -> Result<Certificate, String> {
-        Certificate::from_cbor(&self.cert_raw).map_err(|e| e.to_string())
-    }
 }
 
-fn verify_and_decode<'a, T: CandidType + Deserialize<'a>>(
-    cert: &'a Certificate,
+fn verify_and_decode<T: CandidType + DeserializeOwned + Debug>(
+    cert_raw: &[u8],
     issuer_id: &Principal,
-    now: TimestampNs,
+    now: u64,
+    label: &'static str,
 ) -> Result<T, String> {
+    let before = performance_counter(0);
+
+    let cert = Certificate::from_cbor(&cert_raw).map_err(|e| e.to_string())?;
+
+    let after_decoding_cert = performance_counter(0);
+
     let request_id = request_id_of(&cert.tree)?;
+
+    let after_request_id = performance_counter(0);
 
     // verify that the certificate indeed comes from an IC's canister
     cert.verify(issuer_id.as_slice(), &ENV_VARS.ic_root_key)
         .map_err(|e| e.to_string())?;
+
+    let after_verification = performance_counter(0);
 
     // verify that the certificate is not expired
     if let LookupResult::Found(mut date_bytes) = cert.tree.lookup_path(&["time"]) {
@@ -171,13 +178,15 @@ fn verify_and_decode<'a, T: CandidType + Deserialize<'a>>(
         return Err(format!("Unable to find 'time' field in the certificate"));
     }
 
+    let after_checking_time = performance_counter(0);
+
     // verify that the certificate contains the expected response
 
     let res = match cert
         .tree
         .lookup_path([REQUEST_STATUS_PATH, &request_id, REPLY_PATH])
     {
-        LookupResult::Found(blob) => Ok(decode_args::<(T,)>(blob).map_err(|e| e.to_string())?.0),
+        LookupResult::Found(blob) => decode_args::<(T,)>(blob).map_err(|e| e.to_string())?.0,
         _ => {
             return Err(format!(
                 "Unable to find liquid democracy proof in the reply"
@@ -185,7 +194,36 @@ fn verify_and_decode<'a, T: CandidType + Deserialize<'a>>(
         }
     };
 
-    res
+    let after_decoding = performance_counter(0);
+
+    print(format!(
+        "------------ {label} ({}) ---------------",
+        after_decoding - before
+    ));
+    print(format!(
+        "\tcbor decoding cert: {}",
+        after_decoding_cert - before
+    ));
+    print(format!(
+        "\trequest id search: {}",
+        after_request_id - after_decoding_cert
+    ));
+    print(format!(
+        "\tsignature verification: {}",
+        after_verification - after_request_id
+    ));
+    print(format!(
+        "\tcheck if expired: {}",
+        after_checking_time - after_verification
+    ));
+    print(format!(
+        "\tdecoding: {}",
+        after_decoding - after_checking_time
+    ));
+    print(format!("{:?}", res));
+    print("");
+
+    Ok(res)
 }
 
 fn request_id_of(tree: &HashTree<Vec<u8>>) -> Result<Vec<u8>, String> {

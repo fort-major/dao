@@ -30,6 +30,7 @@ import {
 import {
   getProfProof,
   getProfProofCert,
+  getRepProof,
   getRepProofCert,
 } from "@utils/security";
 
@@ -134,8 +135,8 @@ export function VotingsStore(props: IChildren) {
   const [votings, setVotings] = createStore<VotingsStore>();
   const [decisionTopics, setDecisionTopics] =
     createStore<DecisionTopicsStore>();
-  const [followersOf, setFollowersOf] = createStore<FollowersOfStore>();
-  const [followeesOf, setFolloweesOf] = createStore<FolloweesOfStore>();
+  const [followersOf, setFollowersOf] = createStore<FollowersOfStore>({});
+  const [followeesOf, setFolloweesOf] = createStore<FolloweesOfStore>({});
 
   createEffect(() => {
     if (isReadyToFetch()) {
@@ -362,9 +363,9 @@ export function VotingsStore(props: IChildren) {
       const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
       return liquidDemocracyActor.liquid_democracy__get_followers_of(req);
     },
-    ({ entries: followersOf }, req) => {
+    ({ entries }, req) => {
       for (let i = 0; i < req.ids.length; i++) {
-        setFollowersOf(req.ids[i].toText(), followersOf[i]);
+        setFollowersOf(req.ids[i].toText(), entries[i]);
       }
     },
     (e) => err(ErrorCode.NETWORK, `Unable to fetch followers of: ${e}`)
@@ -375,10 +376,14 @@ export function VotingsStore(props: IChildren) {
       const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
       return liquidDemocracyActor.liquid_democracy__get_followees_of(req);
     },
-    ({ entries: followeesOf }, req) => {
+    ({ entries }, req) => {
       for (let i = 0; i < req.ids.length; i++) {
-        for (let [followee, topicset] of followeesOf[i]) {
-          setFolloweesOf(req.ids[i].toText(), followee.toText(), topicset);
+        let id = req.ids[i].toText();
+
+        setFolloweesOf(id, {});
+
+        for (let [followee, topicset] of entries[i]) {
+          setFolloweesOf(id, followee.toText(), topicset);
         }
       }
     },

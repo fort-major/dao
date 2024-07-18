@@ -1,5 +1,9 @@
 # Fort Major
 
+# TODO
+* make stars work properly
+* purge old data when new is requested
+
 Fair, open, robust and transparent digital organization with an uplifting vibe.
 
 ## Local development

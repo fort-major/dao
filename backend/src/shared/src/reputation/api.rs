@@ -97,7 +97,7 @@ impl Guard<ReputationState> for GetRepProofRequest {
     }
 }
 
-#[derive(CandidType, Deserialize, Validate)]
+#[derive(CandidType, Deserialize, Validate, Debug)]
 pub struct GetRepProofResponse {
     #[garde(skip)]
     pub marker: String,

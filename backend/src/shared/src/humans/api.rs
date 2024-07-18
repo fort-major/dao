@@ -351,7 +351,7 @@ impl Guard<HumansState> for GetProfileProofsRequest {
     }
 }
 
-#[derive(CandidType, Deserialize, Validate)]
+#[derive(CandidType, Deserialize, Validate, Debug)]
 pub struct GetProfileProofsResponse {
     #[garde(skip)]
     pub marker: String,

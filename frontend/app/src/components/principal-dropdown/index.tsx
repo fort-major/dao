@@ -35,8 +35,8 @@ export function PrincipalDropdown(props: IPrincipalDropdownProps) {
 
   return (
     <div
-      class="flex flex-col flex-grow shadow-md bg-white"
-      classList={{ "bg-gray-150": d() }}
+      class="flex flex-col flex-grow shadow-md"
+      classList={{ "bg-gray-190": d(), "bg-white": !d() }}
     >
       <div class="flex gap-2 flex-grow items-center">
         <TextInput
