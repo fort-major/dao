@@ -1,5 +1,13 @@
 {
   "canisters": {
+    "frontend": {
+      "build": [""],
+      "frontend": {
+        "entrypoint": "./frontend/app/index.html"
+      },
+      "source": ["./frontend/app/dist"],
+      "type": "assets"
+    },
     "bank": {
       "candid": "backend/src/can_bank/can.did",
       "package": "bank",
