@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, LinkedList};
 
 use candid::{CandidType, Principal};
+use ic_cdk::print;
 use serde::Deserialize;
 
 use crate::{liquid_democracy::types::DecisionTopicId, TimestampNs};

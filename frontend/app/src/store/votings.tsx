@@ -1,5 +1,5 @@
 import { createContext, createEffect, useContext } from "solid-js";
-import { Store, createStore } from "solid-js/store";
+import { Store, createStore, produce } from "solid-js/store";
 import { IChildren, TPrincipalStr, TTaskId, TTimestamp } from "../utils/types";
 import { ErrorCode, err } from "../utils/error";
 import { Principal } from "@dfinity/principal";
@@ -130,6 +130,7 @@ export function VotingsStore(props: IChildren) {
     isReadyToFetch,
     agent,
     assertAuthorized,
+    identity,
   } = useAuth();
 
   const [votings, setVotings] = createStore<VotingsStore>();
@@ -268,7 +269,14 @@ export function VotingsStore(props: IChildren) {
 
   const votingsGetVotings = debouncedBatchFetch(
     async function* (req: { ids: VotingId[] }) {
-      const votingsActor = newVotingsActor(anonymousAgent()!);
+      let a;
+      if (agent()) {
+        a = agent()!;
+      } else {
+        a = anonymousAgent()!;
+      };
+
+      const votingsActor = newVotingsActor(a);
       return votingsActor.votings__get_votings(req);
     },
     ({ entries: votings }, { ids }) => {
@@ -353,9 +361,12 @@ export function VotingsStore(props: IChildren) {
     const { entries: topics } =
       await liquidDemocracyActor.liquid_democracy__get_decision_topics({});
 
-    for (let topic of topics) {
-      setDecisionTopics(topic.id, topic);
-    }
+    const t = topics.reduce(
+      (prev, topic) => Object.assign(prev, { [topic.id]: topic }),
+      {}
+    );
+
+    setDecisionTopics(t);
   };
 
   const liquidDemocracyGetFollowersOf = debouncedBatchFetch(
@@ -380,11 +391,13 @@ export function VotingsStore(props: IChildren) {
       for (let i = 0; i < req.ids.length; i++) {
         let id = req.ids[i].toText();
 
-        setFolloweesOf(id, {});
+        const f = entries[i].reduce((prev, [followee, topicset]) => {
+          prev[followee.toText()] = topicset;
 
-        for (let [followee, topicset] of entries[i]) {
-          setFolloweesOf(id, followee.toText(), topicset);
-        }
+          return prev;
+        }, {} as Record<string, DecisionTopicSet>);
+
+        setFolloweesOf(id, f);
       }
     },
     (e) => err(ErrorCode.NETWORK, `Unable to fetch followees of: ${e}`)
@@ -432,6 +445,14 @@ export function VotingsStore(props: IChildren) {
         cert_raw: await getRepProofCert(agent()!),
       },
     });
+
+    const me = identity()!.getPrincipal();
+    setFolloweesOf(
+      me.toText(),
+      produce((myFollowees) => {
+        delete myFollowees?.[id.toText()];
+      })
+    );
   };
 
   return (

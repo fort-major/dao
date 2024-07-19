@@ -36,7 +36,7 @@ pub enum VotingId {
     HumansUnemploy(#[garde(skip)] Principal),
 }
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Deserialize, Clone, Debug)]
 pub struct Voting {
     pub id: VotingId,
     pub base: VotingBase,
@@ -207,7 +207,12 @@ impl Voting {
             .base
             .votes_per_option
             .iter()
-            .map(|votes| (votes.total_voted.clone(), votes.votes.get(&caller).cloned()))
+            .map(|option_votes| {
+                (
+                    option_votes.total_voted.clone(),
+                    option_votes.votes.get(&caller).cloned(),
+                )
+            })
             .collect();
 
         VotingExt {
@@ -234,13 +239,13 @@ impl Voting {
     }
 }
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Deserialize, Clone, Debug)]
 pub enum VotingStage {
     InProgress,
     Executing,
 }
 
-#[derive(CandidType, Deserialize, Validate, Clone)]
+#[derive(CandidType, Deserialize, Validate, Clone, Debug)]
 pub enum VotingKind {
     StartSolveTask {
         #[garde(skip)]
@@ -398,7 +403,7 @@ impl VotingKind {
     }
 }
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Deserialize, Clone, Debug)]
 pub struct VotingBase {
     pub creator: Principal,
     pub created_at: TimestampNs,
@@ -493,7 +498,7 @@ impl VotingBase {
     }
 }
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Deserialize, Clone, Debug)]
 pub struct Vote {
     // defines override rules for votes - the vote can only be overriden by a caster with depth <= the previous depth
     // the lower the depth, the closer was the delegate to the voter in the tree
@@ -597,7 +602,7 @@ pub enum VotingEventV1 {
     },
 }
 
-#[derive(CandidType, Deserialize, Clone, Default)]
+#[derive(CandidType, Deserialize, Clone, Default, Debug)]
 pub struct OptionVotes {
     pub votes: BTreeMap<Principal, Vote>,
     pub total_voted: E8s,

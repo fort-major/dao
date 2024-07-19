@@ -17,6 +17,7 @@ import {
   createMemo,
   createResource,
   createSignal,
+  on,
   Show,
 } from "solid-js";
 
@@ -41,7 +42,7 @@ function stageToStatus(
 }
 
 export function VotingWidget(props: IVotingWidgetProps) {
-  const { isReadyToFetch, agent } = useAuth();
+  const { isReadyToFetch, isAuthorized, agent } = useAuth();
   const { castVote, votings, fetchVotings } = useVotings();
 
   const [repProof] = createResource(agent, getRepProof);
@@ -80,31 +81,29 @@ export function VotingWidget(props: IVotingWidgetProps) {
     err(ErrorCode.UNREACHEABLE, "Unknown voting kind");
   };
 
-  const myVoteTriggersFinishEarly = createMemo(() => {
-    const v = voting();
-    const t = totalVoted();
-    const rep = repProof();
-
-    if (!v || !t || !rep) return false;
-
-    const myPrevV = myVote();
-    // don't trigger on re-vote
-    if (myPrevV) return false;
-
-    const myCur = E8s.new(totalDelegatedRep(rep.reputation_delegation_tree));
-
-    return v.finish_early.le(myCur.add(t));
-  });
-
   createEffect(() => {
     const v = voting();
 
     if (!v && isReadyToFetch()) {
       fetchVotings([decodeVotingId(props.id)]);
-    } else if (v) {
-      setStatus(stageToStatus(v.stage));
     }
   });
+
+  createEffect(
+    on(isAuthorized, (ready) => {
+      if (ready) {
+        fetchVotings([decodeVotingId(props.id)]);
+      }
+    })
+  );
+
+  createEffect(
+    on(voting, (v) => {
+      if (v) {
+        setStatus(stageToStatus(v.stage));
+      }
+    })
+  );
 
   const isDisabled = () => {
     const p = repProof();
@@ -129,9 +128,9 @@ export function VotingWidget(props: IVotingWidgetProps) {
 
     setStatus(stageToStatus(v.stage, "casting"));
 
-    await castVote(props.id, props.optionIdx, args[0]);
+    const decisionMade = await castVote(props.id, props.optionIdx, args[0]);
 
-    if (myVoteTriggersFinishEarly()) {
+    if (decisionMade) {
       props.onRefreshEntity?.();
     }
 
@@ -194,7 +193,7 @@ export function VotingWidget(props: IVotingWidgetProps) {
         finishEarly={voting()?.finish_early ?? E8s.one()}
         myRep={
           repProof()
-            ? E8s.new(repProof()!.reputation_delegation_tree.reputation)
+            ? E8s.new(totalDelegatedRep(repProof()!.reputation_delegation_tree))
             : undefined
         }
       />

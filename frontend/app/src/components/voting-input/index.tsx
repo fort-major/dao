@@ -182,19 +182,19 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
 }
 
 function levelToStars(level: E8s): number {
-  if (level.ge(E8s.f0_8())) {
+  if (level.gt(E8s.f0_8())) {
     return 5;
   }
 
-  if (level.ge(E8s.f0_6())) {
+  if (level.gt(E8s.f0_6())) {
     return 4;
   }
 
-  if (level.ge(E8s.f0_4())) {
+  if (level.gt(E8s.f0_4())) {
     return 3;
   }
 
-  if (level.ge(E8s.f0_2())) {
+  if (level.gt(E8s.f0_2())) {
     return 2;
   }
 

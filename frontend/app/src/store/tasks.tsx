@@ -294,23 +294,55 @@ export function TasksStore(props: IChildren) {
     batch(() => {
       switch (status) {
         case "Edit": {
+          setEditTaskIds((v) => {
+            for (let entry of entries) {
+              if (v.indexOf(entry) === -1) {
+                v.push(entry);
+              }
+            }
+
+            return [...v];
+          });
           setEditTaskSkip((v) => v + entries.length);
-          setEditTaskIds((v) => [...v, ...entries]);
           break;
         }
         case "PreSolve": {
+          setPreSolveTaskIds((v) => {
+            for (let entry of entries) {
+              if (v.indexOf(entry) === -1) {
+                v.push(entry);
+              }
+            }
+
+            return [...v];
+          });
           setPreSolveTaskSkip((v) => v + entries.length);
-          setPreSolveTaskIds((v) => [...v, ...entries]);
           break;
         }
         case "Solve": {
+          setSolveTaskIds((v) => {
+            for (let entry of entries) {
+              if (v.indexOf(entry) === -1) {
+                v.push(entry);
+              }
+            }
+
+            return [...v];
+          });
           setSolveTaskSkip((v) => v + entries.length);
-          setSolveTaskIds((v) => [...v, ...entries]);
           break;
         }
         case "Evaluate": {
+          setEvaluateTaskIds((v) => {
+            for (let entry of entries) {
+              if (v.indexOf(entry) === -1) {
+                v.push(entry);
+              }
+            }
+
+            return [...v];
+          });
           setEvaluateTaskSkip((v) => v + entries.length);
-          setEvaluateTaskIds((v) => [...v, ...entries]);
           break;
         }
       }
@@ -350,8 +382,16 @@ export function TasksStore(props: IChildren) {
         }
       }
 
+      setArchivedTaskIds((v) => {
+        for (let entry of entries) {
+          if (v.indexOf(entry) === -1) {
+            v.push(entry);
+          }
+        }
+
+        return [...v];
+      });
       setArchivedTaskSkip((v) => v + entries.length);
-      setArchivedTaskIds((v) => [...v, ...entries]);
 
       return result;
     };

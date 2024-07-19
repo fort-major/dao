@@ -38,6 +38,14 @@ export function TasksPage() {
   const [fetching, setFetching] = createSignal(false);
 
   createEffect(
+    on(isReadyToFetch, (r) => {
+      if (r) {
+        handleFetch();
+      }
+    })
+  );
+
+  createEffect(
     on(tab, () => {
       setCanFetchMore(true);
     })

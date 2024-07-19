@@ -32,7 +32,7 @@ export function E8sWidget(props: IE8sWidgetProps) {
       : EIconKind.Hour;
 
   const value = () => {
-    if (props.maxValue) {
+    if (props.maxValue && !props.maxValue.isZero()) {
       return `${props.minValue.toString()} to ${props.minValue
         .add(props.maxValue)
         .toString()}`;

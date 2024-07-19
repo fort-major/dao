@@ -22,22 +22,6 @@ import {
   Show,
 } from "solid-js";
 
-const GENERAL_TOPIC_ID: DecisionTopicId = 0;
-const DEVELOPMENT_TOPIC_ID: DecisionTopicId = 1;
-const MARKETING_TOPIC_ID: DecisionTopicId = 2;
-const DESIGN_TOPIC_ID: DecisionTopicId = 3;
-const DOCUMENTATION_TOPIC_ID: DecisionTopicId = 4;
-const TESTING_TOPIC_ID: DecisionTopicId = 5;
-
-const allTopics = [
-  GENERAL_TOPIC_ID,
-  DEVELOPMENT_TOPIC_ID,
-  MARKETING_TOPIC_ID,
-  DESIGN_TOPIC_ID,
-  DOCUMENTATION_TOPIC_ID,
-  TESTING_TOPIC_ID,
-];
-
 function makeOrTopicSet(topics: DecisionTopicId[]): DecisionTopicSet {
   if (topics.length == 0)
     err(ErrorCode.UNREACHEABLE, "At least one topic should be provided");
@@ -80,6 +64,13 @@ export function FollowForm() {
   const [followee, setFollowee] = createSignal<Result<string, string>>(
     Result.Err("")
   );
+
+  const allTopics = () => Object.keys(decisionTopics).map((it) => parseInt(it));
+
+  const clear = () => {
+    setTopicset([]);
+    setFollowee(Result.Err<string, string>(""));
+  };
 
   const isErr = () => topicset().length === 0 || followee().isErr();
   const me = () => identity()?.getPrincipal();
@@ -130,12 +121,15 @@ export function FollowForm() {
     disable();
     await follow(Principal.fromText(id), makeOrTopicSet(topicset()));
     await fetchFolloweesOf([me()!]);
+    clear();
     enable();
 
     logInfo("Followed!");
   };
 
   const handleUnfollow = async (id: string) => {
+    if (!me()) return;
+
     const agreed = confirm(`Are you sure you want to unfollow ${id}?`);
     if (!agreed) return;
 
@@ -195,7 +189,7 @@ export function FollowForm() {
       <div class="flex flex-col gap-2">
         <Title text="Topics To Follow" required />
         <div class="flex flex-wrap gap-1">
-          <For each={allTopics}>
+          <For each={allTopics()}>
             {(id) => (
               <DecisionTopic
                 id={id}

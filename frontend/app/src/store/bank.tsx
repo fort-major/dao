@@ -131,14 +131,18 @@ export function BankStore(props: IChildren) {
     const bankActor = newBankActor(anonymousAgent()!);
     const { exchange_rates } = await bankActor.bank__get_exchange_rates({});
 
-    for (let [from, into, history] of exchange_rates) {
-      const pair = wrapPair(from, into);
+    const rates = exchange_rates.reduce((prev, [from, into, history]) => {
+      const pair = pairToStr(wrapPair(from, into));
 
-      setExchangeRates(
-        pairToStr(pair),
-        history.map(([timestamp, rate]) => [timestamp, E8s.new(rate)])
-      );
-    }
+      prev[pair] = history.map(([timestamp, rate]) => [
+        timestamp,
+        E8s.new(rate),
+      ]);
+
+      return prev;
+    }, {} as ExchangeRatesStore);
+
+    setExchangeRates(rates);
   };
 
   const swapRewards: IBankStoreContext["swapRewards"] = async (
