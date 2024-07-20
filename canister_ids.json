@@ -1,0 +1,29 @@
+{
+  "bank": {
+    "ic": "qz32s-aqaaa-aaaag-alfya-cai"
+  },
+  "fmj": {
+    "ic": "q624g-niaaa-aaaag-alfyq-cai"
+  },
+  "frontend": {
+    "ic": "rbspr-oqaaa-aaaag-alf4a-cai"
+  },
+  "humans": {
+    "ic": "qxzx2-3aaaa-aaaag-alfza-cai"
+  },
+  "liquid_democracy": {
+    "ic": "qqyro-wyaaa-aaaag-alfzq-cai"
+  },
+  "reputation": {
+    "ic": "qf7ad-xqaaa-aaaag-alf2a-cai"
+  },
+  "task_archive": {
+    "ic": "qc6gx-2iaaa-aaaag-alf2q-cai"
+  },
+  "tasks": {
+    "ic": "ql5nl-maaaa-aaaag-alf3a-cai"
+  },
+  "votings": {
+    "ic": "qm4l7-byaaa-aaaag-alf3q-cai"
+  }
+}
