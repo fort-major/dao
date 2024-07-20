@@ -1,13 +1,13 @@
-use std::fmt::Debug;
+use std::{cell::RefCell, fmt::Debug, num::NonZeroUsize};
 
 use candid::{decode_args, CandidType, Principal};
 use garde::Validate;
 use ic_cbor::CertificateToCbor;
-use ic_cdk::api::performance_counter;
-use ic_cdk::print;
 use ic_certificate_verification::VerifyCertificate;
 use ic_certification::{hash_tree::HashTree, Certificate, LookupResult};
+use lru::LruCache;
 use serde::{de::DeserializeOwned, Deserialize};
+use sha2::Digest;
 
 use crate::{
     humans::{
@@ -48,7 +48,6 @@ impl ReputationProof {
             &self.cert_raw,
             &ENV_VARS.reputation_canister_id,
             now,
-            "reputation proof",
         )?;
 
         if get_reputation_proof_response.marker != REPUTATION_PROOF_MARKER {
@@ -88,7 +87,6 @@ impl ProfileProof {
             &self.cert_raw,
             &ENV_VARS.humans_canister_id,
             now,
-            "profile proof",
         )?;
 
         if get_proof_response.marker != PROFILE_PROOFS_MARKER {
@@ -125,7 +123,6 @@ impl LiquidDemocracyProof {
             &self.cert_raw,
             &ENV_VARS.liquid_democracy_canister_id,
             now,
-            "liquid democracy proof",
         )?;
 
         if get_proof_response.marker != LIQUID_DEMOCRACY_PROOF_MARKER {
@@ -149,23 +146,20 @@ fn verify_and_decode<T: CandidType + DeserializeOwned + Debug>(
     cert_raw: &[u8],
     issuer_id: &Principal,
     now: u64,
-    label: &'static str,
 ) -> Result<T, String> {
-    let before = performance_counter(0);
-
     let cert = Certificate::from_cbor(&cert_raw).map_err(|e| e.to_string())?;
-
-    let after_decoding_cert = performance_counter(0);
-
     let request_id = request_id_of(&cert.tree)?;
 
-    let after_request_id = performance_counter(0);
+    // check cache
+    let proof_hash = hash_cert(cert_raw);
+    if !cache_has(&proof_hash) {
+        // verify that the certificate indeed comes from an IC's canister
+        cert.verify(issuer_id.as_slice(), &ENV_VARS.ic_root_key)
+            .map_err(|e| e.to_string())?;
 
-    // verify that the certificate indeed comes from an IC's canister
-    cert.verify(issuer_id.as_slice(), &ENV_VARS.ic_root_key)
-        .map_err(|e| e.to_string())?;
-
-    let after_verification = performance_counter(0);
+        // only put if verify is good
+        cache_put(proof_hash, cert_raw.to_vec());
+    }
 
     // verify that the certificate is not expired
     if let LookupResult::Found(mut date_bytes) = cert.tree.lookup_path(&["time"]) {
@@ -177,8 +171,6 @@ fn verify_and_decode<T: CandidType + DeserializeOwned + Debug>(
     } else {
         return Err(format!("Unable to find 'time' field in the certificate"));
     }
-
-    let after_checking_time = performance_counter(0);
 
     // verify that the certificate contains the expected response
 
@@ -194,35 +186,6 @@ fn verify_and_decode<T: CandidType + DeserializeOwned + Debug>(
         }
     };
 
-    let after_decoding = performance_counter(0);
-
-    print(format!(
-        "------------ {label} ({}) ---------------",
-        after_decoding - before
-    ));
-    print(format!(
-        "\tcbor decoding cert: {}",
-        after_decoding_cert - before
-    ));
-    print(format!(
-        "\trequest id search: {}",
-        after_request_id - after_decoding_cert
-    ));
-    print(format!(
-        "\tsignature verification: {}",
-        after_verification - after_request_id
-    ));
-    print(format!(
-        "\tcheck if expired: {}",
-        after_checking_time - after_verification
-    ));
-    print(format!(
-        "\tdecoding: {}",
-        after_decoding - after_checking_time
-    ));
-    print(format!("{:?}", res));
-    print("");
-
     Ok(res)
 }
 
@@ -236,4 +199,23 @@ fn request_id_of(tree: &HashTree<Vec<u8>>) -> Result<Vec<u8>, String> {
         .expect("Unreacheable")
         .as_bytes()
         .to_vec())
+}
+
+thread_local! {
+    static CACHE: RefCell<lru::LruCache<[u8; 32], Vec<u8>>> = RefCell::new(LruCache::new(NonZeroUsize::new(256).unwrap()));
+}
+
+fn cache_put(proof_hash: [u8; 32], proof: Vec<u8>) {
+    CACHE.with_borrow_mut(|c| c.put(proof_hash, proof));
+}
+
+fn cache_has(proof_hash: &[u8; 32]) -> bool {
+    CACHE.with_borrow_mut(|c| c.contains(proof_hash))
+}
+
+fn hash_cert(cert_raw: &[u8]) -> [u8; 32] {
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(cert_raw);
+
+    hasher.finalize().into()
 }

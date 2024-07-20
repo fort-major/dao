@@ -24,6 +24,7 @@ leb128 = { workspace = true }
 derivative = { workspace = true }
 num-bigint = { workspace = true }
 sha2 = { workspace = true }
+lru = { workspace = true }
 
 [build-dependencies]
 dotenv = "0.15"
