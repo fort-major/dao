@@ -84,6 +84,7 @@ type VotingId = variant {
   HumansEmploy : principal;
   HumansUnemploy : principal;
   StartSolveTask : nat64;
+  DeleteTask : nat64;
   EvaluateTask : nat64;
   BankSetExchangeRate : record { SwapFrom; SwapInto };
 };
@@ -94,6 +95,7 @@ type VotingKind = variant {
   };
   HumansUnemploy : record { team_member : principal };
   StartSolveTask : record { task_id : nat64 };
+  DeleteTask : record { task_id : nat64 };
   EvaluateTask : record { task_id : nat64; solutions : vec principal };
   BankSetExchangeRate : record {
     from : SwapFrom;

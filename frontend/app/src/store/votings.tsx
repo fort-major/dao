@@ -46,6 +46,7 @@ export type TVotingKind =
   | { HumansUnemploy: { team_member: Principal } }
   | { EvaluateTask: { task_id: bigint; solutions: Array<Principal> } }
   | { StartSolveTask: { task_id: bigint } }
+  | { DeleteTask: { task_id: bigint } }
   | {
       BankSetExchangeRate: {
         from: SwapFrom;
@@ -97,6 +98,7 @@ export interface IVotingsStoreContext {
   createHumansUnemployVoting: (teamMember: Principal) => Promise<VotingId>;
   createTasksEvaluateVoting: (taskId: TTaskId) => Promise<VotingId>;
   createTasksStartSolveVoting: (taskId: TTaskId) => Promise<VotingId>;
+  createTasksDeleteVoting: (taskId: TTaskId) => Promise<VotingId>;
   createBankSetExchangeRateVoting: (
     from: SwapFrom,
     into: SwapInto,
@@ -223,6 +225,13 @@ export function VotingsStore(props: IChildren) {
       return startVoting({ StartSolveTask: { task_id: taskId } });
     };
 
+  const createTasksDeleteVoting: IVotingsStoreContext["createTasksDeleteVoting"] =
+    async (taskId) => {
+      await assertVotingCanBeCreated(encodeVotingId({ DeleteTask: taskId }));
+
+      return startVoting({ DeleteTask: { task_id: taskId } });
+    };
+
   const createBankSetExchangeRateVoting: IVotingsStoreContext["createBankSetExchangeRateVoting"] =
     async (from, into, newRate) => {
       await assertVotingCanBeCreated(
@@ -274,7 +283,7 @@ export function VotingsStore(props: IChildren) {
         a = agent()!;
       } else {
         a = anonymousAgent()!;
-      };
+      }
 
       const votingsActor = newVotingsActor(a);
       return votingsActor.votings__get_votings(req);
@@ -466,6 +475,7 @@ export function VotingsStore(props: IChildren) {
         createTasksEvaluateVoting,
         createTasksStartSolveVoting: createTasksStartSolveVoting,
         createBankSetExchangeRateVoting,
+        createTasksDeleteVoting,
         decisionTopics,
         followersOf,
         fetchFollowersOf,

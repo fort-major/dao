@@ -1,6 +1,6 @@
 use candid::{CandidType, Nat, Principal};
 use garde::Validate;
-use ic_cdk::print;
+
 use serde::Deserialize;
 use sha2::Digest;
 

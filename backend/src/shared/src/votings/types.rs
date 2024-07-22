@@ -16,7 +16,7 @@ use crate::{
     liquid_democracy::types::DecisionTopicId,
     reputation::types::ReputationDelegationTreeNode,
     tasks::{
-        api::{BackToEditTaskRequest, EvaluateRequest, StartSolveTaskRequest},
+        api::{BackToEditTaskRequest, DeleteRequest, EvaluateRequest, StartSolveTaskRequest},
         types::TaskId,
     },
     DurationNs, TimestampNs, ENV_VARS,
@@ -31,6 +31,7 @@ pub const ONE_MONTH_NS: u64 = ONE_WEEK_NS * 30;
 pub enum VotingId {
     StartSolveTask(#[garde(skip)] TaskId),
     EvaluateTask(#[garde(skip)] TaskId),
+    DeleteTask(#[garde(skip)] TaskId),
     BankSetExchangeRate(#[garde(skip)] (SwapFrom, SwapInto)),
     HumansEmploy(#[garde(skip)] Principal),
     HumansUnemploy(#[garde(skip)] Principal),
@@ -70,6 +71,13 @@ impl Voting {
                 E8s::f0_5(),
                 &total_supply * E8s::f0_67(),
                 solutions.len() as u32,
+            ),
+            VotingKind::DeleteTask { task_id: _ } => (
+                ONE_WEEK_NS,
+                &total_supply * E8s::f0_2(),
+                E8s::f0_5(),
+                &total_supply * E8s::f0_67(),
+                1,
             ),
             VotingKind::BankSetExchangeRate {
                 from: _,
@@ -258,6 +266,10 @@ pub enum VotingKind {
         #[garde(skip)]
         solutions: Vec<Principal>,
     },
+    DeleteTask {
+        #[garde(skip)]
+        task_id: TaskId,
+    },
     BankSetExchangeRate {
         #[garde(skip)]
         from: SwapFrom,
@@ -286,6 +298,7 @@ impl VotingKind {
                 task_id,
                 solutions: _,
             } => VotingId::EvaluateTask(*task_id),
+            VotingKind::DeleteTask { task_id } => VotingId::DeleteTask(*task_id),
             VotingKind::BankSetExchangeRate {
                 from,
                 into,
@@ -335,6 +348,21 @@ impl VotingKind {
                 CallToExecute::new(
                     ENV_VARS.tasks_canister_id,
                     "tasks__evaluate_task".into(),
+                    (req,),
+                )
+            }
+            VotingKind::DeleteTask { task_id } => {
+                let result = base.calc_binary_results()[0];
+
+                if !result {
+                    return None;
+                }
+
+                let req = DeleteRequest { id: *task_id };
+
+                CallToExecute::new(
+                    ENV_VARS.tasks_canister_id,
+                    "tasks__delete_task".into(),
                     (req,),
                 )
             }

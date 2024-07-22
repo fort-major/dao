@@ -1,4 +1,4 @@
-use std::{cell::RefCell, time::Duration};
+use std::{cell::RefCell, time::Duration, vec};
 
 use ic_cdk::{
     api::time,
@@ -9,7 +9,7 @@ use ic_cdk::{
 use shared::{
     liquid_democracy::{state::GENERAL_TOPIC_ID, types::DecisionTopicId},
     tasks::{
-        api::{FinishEditTaskRequest, FinishSolveRequest},
+        api::{FinishEditTaskRequest, FinishSolveRequest, GetTasksByIdRequest},
         client::TasksCanisterClient,
     },
     votings::{
@@ -173,6 +173,24 @@ async fn validate_voting_related_entity(
             if !task.can_approve_to_solve() {
                 return Err(format!("The task is in invalid state"));
             }
+
+            Ok(task.decision_topics.clone().into_iter().collect())
+        }
+        VotingKind::DeleteTask { task_id } => {
+            let tasks_canister = TasksCanisterClient::new(ENV_VARS.tasks_canister_id);
+            let resp = tasks_canister
+                .tasks__get_tasks_by_id(GetTasksByIdRequest {
+                    ids: vec![*task_id],
+                })
+                .await
+                .map_err(|(c, m)| format!("Unable to finish task edit - [{:?}]: {}", c, m))?;
+
+            let task = resp
+                .entries
+                .get(0)
+                .expect("Task not found")
+                .as_ref()
+                .expect("Task not found");
 
             Ok(task.decision_topics.clone().into_iter().collect())
         }

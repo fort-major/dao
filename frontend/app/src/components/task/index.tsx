@@ -32,6 +32,7 @@ import {
   createEffect,
   createResource,
   createSignal,
+  on,
   onMount,
 } from "solid-js";
 
@@ -234,8 +235,13 @@ export function Task(props: ITaskProps) {
     disable,
     agent,
   } = useAuth();
-  const { createTasksStartSolveVoting, createTasksEvaluateVoting } =
-    useVotings();
+  const {
+    createTasksStartSolveVoting,
+    createTasksEvaluateVoting,
+    createTasksDeleteVoting,
+    votings,
+    fetchVotings,
+  } = useVotings();
   const { meIsTeamMember } = useHumans();
 
   const [proof] = createResource(agent, getProfProof);
@@ -247,13 +253,25 @@ export function Task(props: ITaskProps) {
     if (!task() && isReadyToFetch()) fetchTasksById([props.id]);
   });
 
-  const startSolveVotingId: () => VotingId = () => ({
+  const startSolveVotingId = (): VotingId => ({
     StartSolveTask: props.id,
   });
 
-  const evaluateVotingId: () => VotingId = () => ({
+  const evaluateVotingId = (): VotingId => ({
     EvaluateTask: props.id,
   });
+
+  const taskDeleteVotingId = (): VotingId => ({ DeleteTask: props.id });
+
+  const taskDeleteVoting = () => votings[encodeVotingId(taskDeleteVotingId())];
+
+  createEffect(
+    on(isReadyToFetch, (ready) => {
+      if (ready) {
+        fetchVotings([taskDeleteVotingId()]);
+      }
+    })
+  );
 
   const maxSolutions = () => {
     const t = task();
@@ -408,6 +426,20 @@ export function Task(props: ITaskProps) {
     fetchTasksById([props.id]);
   };
 
+  const handleDeleteVoteClick = async () => {
+    const agreed = confirm(
+      `Are you sure you want to start a voting to delete the task #${props.id.toString()}?`
+    );
+
+    if (!agreed) return;
+
+    disable();
+    await createTasksDeleteVoting(props.id);
+    enable();
+
+    logInfo("Voting created!");
+  };
+
   const button = () => {
     return (
       <div class="flex gap-2">
@@ -452,6 +484,31 @@ export function Task(props: ITaskProps) {
               text="Log In to Contribute"
               icon={EIconKind.MetaMask}
               onClick={handleLogInClick}
+            />
+          </Match>
+        </Switch>
+        <Switch>
+          <Match
+            when={
+              stage() !== "Archived" && meIsTeamMember() && !taskDeleteVoting()
+            }
+          >
+            <Btn
+              text="Delete Task"
+              icon={EIconKind.CancelCircle}
+              iconColor={COLORS.errorRed}
+              onClick={handleDeleteVoteClick}
+            />
+          </Match>
+          <Match
+            when={
+              stage() !== "Archived" && meIsTeamMember() && taskDeleteVoting()
+            }
+          >
+            <VotingWidget
+              id={encodeVotingId(taskDeleteVotingId())}
+              kind="satisfaction"
+              optionIdx={0}
             />
           </Match>
         </Switch>

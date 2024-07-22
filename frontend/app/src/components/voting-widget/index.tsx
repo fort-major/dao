@@ -66,6 +66,10 @@ export function VotingWidget(props: IVotingWidgetProps) {
       return "Evaluate the solution";
     }
 
+    if ("DeleteTask" in v.kind) {
+      return "Vote to delete the task";
+    }
+
     if ("BankSetExchangeRate" in v.kind) {
       return `Vote to set new exchange rate to ${v.kind.BankSetExchangeRate.new_rate.toString()}`;
     }
