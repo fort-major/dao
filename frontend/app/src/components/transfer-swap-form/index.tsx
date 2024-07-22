@@ -66,7 +66,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
 
     if (a.isErr()) return E8s.zero();
 
-    const fee = E8s.new(1000n);
+    const fee = E8s.new(10_000n);
     const am = a.unwrapOk();
 
     if (am.le(fee)) return E8s.zero();

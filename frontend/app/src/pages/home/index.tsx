@@ -94,6 +94,75 @@ export function HomePage() {
       </div>
 
       <div class="flex flex-col gap-10">
+        <h3 class="font-primary font-bold text-2xl">About</h3>
+        <div class="grid grid-cols-2 gap-y-5 gap-x-10">
+          <div class="flex flex-col gap-3">
+            <h4 class="font-primary font-bold">Same Rules for Everyone</h4>
+            <p>
+              Both: Raputation and FMJ can only be minted when a task is solved.
+              There is no special allocation for the Team. There are no seed,
+              pre-seed or other investors. We're all in the same boat here.
+            </p>
+          </div>
+          <div class="flex flex-col gap-3">
+            <h4 class="font-primary font-bold">Reputation = Ownership</h4>
+            <p>
+              When you solve a task, you have a right to request Reputation for
+              your commitment. This gives you the ability to express your
+              opinion in various votings happening within Fort Major. The more
+              Reputation you have, the stronger your voice. Reputation is
+              Soulbound - you can't buy or sell it.
+            </p>
+          </div>
+          <div class="flex flex-col gap-3">
+            <h4 class="font-primary font-bold">Fair Distribution</h4>
+            <p>
+              We want to build a DAO that is fully owned by those, who
+              contribute to it. We have all the tools to do it in a fair way.
+              The more tasks you do, and the harder they are, the more
+              Reputation and Rewards you get.
+            </p>
+          </div>
+          <div class="flex flex-col gap-3">
+            <h4 class="font-primary font-bold">Flexible and Inclusive</h4>
+            <p>
+              If you can't find a task matching your skillset, or you have a
+              creative idea for something you could do, don't hesitate to reach
+              us out via Telegram - we could use any help, and we'll make sure
+              to reward you fairly.
+            </p>
+          </div>
+          <div class="flex flex-col gap-3">
+            <h4 class="font-primary font-bold">Good Side Hustle</h4>
+            <p>
+              Anyone can become a contributor and solve public tasks. We do our
+              best to keep plenty of tasks available for you to participate at
+              any time. By the way, you can remain completely anonymous while
+              contributing.
+            </p>
+          </div>
+          <div class="flex flex-col gap-3">
+            <h4 class="font-primary font-bold">The Team</h4>
+            <p>
+              The Team itself follows the same exact rules. We also create tasks
+              for ourselves, solve them and then anyone with Reputation
+              evaluates our solutions. There is more power in being a Team
+              member, but it is also a bigger responsibility.
+            </p>
+          </div>
+          <div class="flex flex-col gap-3">
+            <h4 class="font-primary font-bold">Ready for More?</h4>
+            <p>
+              If you want to join the Team, and you're feeling comfortable being
+              paid in a new cryptocurrency without a lot of liquidity (FMJ),
+              reach us out via Telegram. We have a plenty of open positions and
+              we're looking forward to meet you.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-10">
         <h3 class="font-primary font-bold text-2xl">Statistics</h3>
         <div class="flex flex-wrap gap-x-24 gap-y-5 justify-between">
           <Stat

@@ -1,10 +1,13 @@
 # Fort Major
 
-# TODO
-* make stars work properly
-* purge old data when new is requested
-
 Fair, open, robust and transparent digital organization with an uplifting vibe.
+
+## Docs
+
+Our DAO is fully expressed via two entities:
+
+* [tasks](./docs/tasks.md), which add some kind of value to our projects;
+* humans, who manage, solve and evaluate the tasks.
 
 ## Local development
 
