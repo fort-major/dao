@@ -80,16 +80,9 @@ export function TasksPage() {
 
   let ref: HTMLDivElement;
 
-  const listener = () => {
-    const shouldFetch =
-      ref && ref.scrollTop + ref.clientHeight >= ref.scrollHeight;
-
-    if (shouldFetch) {
-      handleFetch();
-    }
-  };
-
   const handleFetch = async () => {
+    if (fetching()) return;
+
     setFetching(true);
 
     const more =
@@ -100,18 +93,6 @@ export function TasksPage() {
     setCanFetchMore(more);
     setFetching(false);
   };
-
-  onMount(() => {
-    window.addEventListener("scroll", listener);
-  });
-
-  onCleanup(() => {
-    window.removeEventListener("scroll", listener);
-  });
-
-  createEffect(() => {
-    if (isReadyToFetch()) handleFetch();
-  });
 
   return (
     <Page ref={ref!} class="self-stretch pt-10">
@@ -147,11 +128,14 @@ export function TasksPage() {
         </div>
       </div>
       <Show when={canFetchMore()}>
-        <p class="text-gray-190 font-primary font-light text-md">
-          <Show when={fetching()} fallback="Scroll down to load more">
+        <Show
+          when={fetching()}
+          fallback={<Btn text="Load More" onClick={handleFetch} />}
+        >
+          <p class="text-gray-190 font-primary font-light text-md">
             Loading...
-          </Show>
-        </p>
+          </p>
+        </Show>
       </Show>
     </Page>
   );

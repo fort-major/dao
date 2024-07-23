@@ -18,6 +18,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
   return (
     <nav class="flex gap-5 p-5 items-center justify-center">
       <A
+        noScroll
         href={`${ROOT.$.tasks.path}?tab=Solve`}
         class="font-primary text-gray-150 font-bold text-lg"
         classList={{ underline: curTab() === "Solve" }}
@@ -25,6 +26,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
         {tabText("Solve")}
       </A>
       <A
+        noScroll
         href={`${ROOT.$.tasks.path}?tab=Evaluate`}
         class="font-primary text-gray-150 font-bold text-lg"
         classList={{ underline: curTab() === "Evaluate" }}
@@ -32,6 +34,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
         {tabText("Evaluate")}
       </A>
       <A
+        noScroll
         href={`${ROOT.$.tasks.path}?tab=PreSolve`}
         class="font-primary text-gray-150 font-bold text-lg"
         classList={{ underline: curTab() === "PreSolve" }}
@@ -39,6 +42,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
         {tabText("PreSolve")}
       </A>
       <A
+        noScroll
         href={`${ROOT.$.tasks.path}?tab=Edit`}
         class="font-primary text-gray-150 font-bold text-lg"
         classList={{ underline: curTab() === "Edit" }}
@@ -46,6 +50,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
         {tabText("Edit")}
       </A>
       <A
+        noScroll
         href={`${ROOT.$.tasks.path}?tab=Archived`}
         class="font-primary text-gray-150 font-bold text-lg"
         classList={{ underline: curTab() === "Archived" }}

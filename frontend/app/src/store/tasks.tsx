@@ -6,7 +6,7 @@ import {
   createSignal,
   useContext,
 } from "solid-js";
-import { Store, createStore } from "solid-js/store";
+import { Store, createStore, produce } from "solid-js/store";
 import { IChildren } from "../utils/types";
 import { ErrorCode, err, logErr } from "../utils/error";
 import { Principal } from "@dfinity/principal";
@@ -294,54 +294,54 @@ export function TasksStore(props: IChildren) {
     batch(() => {
       switch (status) {
         case "Edit": {
-          setEditTaskIds((v) => {
-            for (let entry of entries) {
-              if (v.indexOf(entry) === -1) {
-                v.push(entry);
+          setEditTaskIds(
+            produce((v) => {
+              for (let entry of entries) {
+                if (v.indexOf(entry) === -1) {
+                  v.push(entry);
+                }
               }
-            }
-
-            return [...v];
-          });
+            })
+          );
           setEditTaskSkip((v) => v + entries.length);
           break;
         }
         case "PreSolve": {
-          setPreSolveTaskIds((v) => {
-            for (let entry of entries) {
-              if (v.indexOf(entry) === -1) {
-                v.push(entry);
+          setPreSolveTaskIds(
+            produce((v) => {
+              for (let entry of entries) {
+                if (v.indexOf(entry) === -1) {
+                  v.push(entry);
+                }
               }
-            }
-
-            return [...v];
-          });
+            })
+          );
           setPreSolveTaskSkip((v) => v + entries.length);
           break;
         }
         case "Solve": {
-          setSolveTaskIds((v) => {
-            for (let entry of entries) {
-              if (v.indexOf(entry) === -1) {
-                v.push(entry);
+          setSolveTaskIds(
+            produce((v) => {
+              for (let entry of entries) {
+                if (v.indexOf(entry) === -1) {
+                  v.push(entry);
+                }
               }
-            }
-
-            return [...v];
-          });
+            })
+          );
           setSolveTaskSkip((v) => v + entries.length);
           break;
         }
         case "Evaluate": {
-          setEvaluateTaskIds((v) => {
-            for (let entry of entries) {
-              if (v.indexOf(entry) === -1) {
-                v.push(entry);
+          setEvaluateTaskIds(
+            produce((v) => {
+              for (let entry of entries) {
+                if (v.indexOf(entry) === -1) {
+                  v.push(entry);
+                }
               }
-            }
-
-            return [...v];
-          });
+            })
+          );
           setEvaluateTaskSkip((v) => v + entries.length);
           break;
         }
@@ -382,15 +382,15 @@ export function TasksStore(props: IChildren) {
         }
       }
 
-      setArchivedTaskIds((v) => {
-        for (let entry of entries) {
-          if (v.indexOf(entry) === -1) {
-            v.push(entry);
+      setArchivedTaskIds(
+        produce((v) => {
+          for (let entry of entries) {
+            if (v.indexOf(entry) === -1) {
+              v.push(entry);
+            }
           }
-        }
-
-        return [...v];
-      });
+        })
+      );
       setArchivedTaskSkip((v) => v + entries.length);
 
       return result;
