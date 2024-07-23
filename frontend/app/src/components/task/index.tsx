@@ -3,6 +3,7 @@ import { ROOT } from "@/routes";
 import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
 import { daysLeft, nowNs } from "@components/countdown";
+import { getSolutionFieldType } from "@components/create-task-form";
 import { DecisionTopic } from "@components/decision-topic";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { EIconKind, Icon } from "@components/icon";
@@ -175,6 +176,16 @@ export function TaskMini(props: ITaskProps) {
     );
   };
 
+  const solverKind = () => {
+    const t = task();
+    if (!t) return "Public";
+
+    if (t.assignees && t.assignees.length > 0) return "Assigned";
+    if (t.solver_constraints.find((it) => "TeamOnly" in it)) return "Team Only";
+
+    return "Public";
+  };
+
   return (
     <div
       class="flex flex-col gap-5 shadow-md p-5"
@@ -195,6 +206,9 @@ export function TaskMini(props: ITaskProps) {
           </div>
         </div>
         <div class="flex gap-2">
+          <div class="flex py-2 px-4 gap-1 rounded-md font-primary font-bold text-xs bg-black text-white">
+            {solverKind()}
+          </div>
           <For each={task()?.decision_topics ? task()!.decision_topics : []}>
             {(topicId) => <DecisionTopic id={topicId} />}
           </For>
@@ -435,6 +449,7 @@ export function Task(props: ITaskProps) {
 
     disable();
     await createTasksDeleteVoting(props.id);
+    await fetchVotings([taskDeleteVotingId()]);
     enable();
 
     logInfo("Voting created!");
@@ -606,6 +621,16 @@ export function Task(props: ITaskProps) {
     fetchTasksById([props.id]);
   };
 
+  const solverKind = () => {
+    const t = task();
+    if (!t) return "Public";
+
+    if (t.assignees && t.assignees.length > 0) return "Assigned";
+    if (t.solver_constraints.find((it) => "TeamOnly" in it)) return "Team Only";
+
+    return "Public";
+  };
+
   return (
     <>
       <div class="flex flex-col gap-5">
@@ -622,6 +647,9 @@ export function Task(props: ITaskProps) {
             </div>
           </div>
           <div class="flex gap-2">
+            <div class="flex py-2 px-4 gap-1 rounded-md font-primary font-bold text-xs bg-black text-white">
+              {solverKind()}
+            </div>
             <For each={task()?.decision_topics ? task()!.decision_topics : []}>
               {(topicId) => <DecisionTopic id={topicId} />}
             </For>
@@ -630,6 +658,39 @@ export function Task(props: ITaskProps) {
         <div class="flex flex-col py-2">
           <MdPreview content={task() ? task()!.description : "Loading..."} />
         </div>
+        <Show when={stage() === "PreSolve" || stage() === "Edit"}>
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+              <Title text="Days To Solve" />
+              <p>{task()!.days_to_solve!.toString()}</p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <Title text="Max Solutions" />
+              <p>{maxSolutions()}</p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <Title text="Solution Fields" />
+              <div class="flex flex-col gap-1">
+                <div class="grid grid-cols-4 gap-2">
+                  <p class="font-bold">Type</p>
+                  <p class="font-bold">Name</p>
+                  <p class="font-bold">Description</p>
+                  <p class="font-bold">Is Required?</p>
+                </div>
+                <For each={task()!.solution_fields}>
+                  {(field) => (
+                    <div class="grid grid-cols-4 gap-2">
+                      <p>{getSolutionFieldType(field)}</p>
+                      <p>{field.name}</p>
+                      <p>{field.description}</p>
+                      <p>{field.required ? "required" : "optional"}</p>
+                    </div>
+                  )}
+                </For>
+              </div>
+            </div>
+          </div>
+        </Show>
         <div class="flex flex-col gap-2">
           <div class="flex flex-grow gap-5">
             <div class="flex flex-grow flex-col gap-1">

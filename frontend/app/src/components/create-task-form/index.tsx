@@ -84,6 +84,35 @@ export function getSolutionFieldType(f: SolutionField): SolutionFieldType {
   err(ErrorCode.UNREACHEABLE, "Unknown solution field kind");
 }
 
+const defaultDescription = `# Overview
+
+<Required>
+<Describe the task in details>
+
+# Steps
+
+<Required>
+<Describe step by step what has to be done to solve the task>
+
+# Requirements
+
+<Optional>
+<Define if there are any special requirements for the solution>
+<For example if the task is about making a tweet it might be a good idea to say that only tweets younger than 3 days are allowed>
+
+# Solution Definition
+
+<Optional>
+<Describe what has to be provided as a solution> 
+<What solution field should be filled with what information>
+
+# Reward Justification
+
+<Required>
+<Explain why did you defined this exact set of rewards.> 
+<Remember tasks that do not add value to any project directly (like meetings, bugfixes, etc.) can't be rewarded with storypoints.>
+`;
+
 export function CreateTaskForm(props: ICreateTaskFormProps) {
   const { tasks, fetchTasksById, editTask, createTask, deleteTask } =
     useTasks();
@@ -143,10 +172,10 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const clear = () => {
     batch(() => {
       setTitle(Result.Ok(""));
-      setDescription(Result.Ok(""));
+      setDescription(Result.Ok(defaultDescription));
       setTeamOnly(true);
-      setDaysToSolve(Result.Ok(7));
-      setMaxSolutionsNum(Result.Ok(100));
+      setDaysToSolve(Result.Ok(0));
+      setMaxSolutionsNum(Result.Ok(10));
       setHoursReward(Result.Ok(E8s.zero()));
       setStorypointsBaseRewards(Result.Ok(E8s.zero()));
       setStorypointsAdditionalRewards(Result.Ok(E8s.zero()));
@@ -159,14 +188,14 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
   const [title, setTitle] = createSignal<Result<string, string>>(Result.Ok(""));
   const [teamOnly, setTeamOnly] = createSignal(true);
   const [description, setDescription] = createSignal<Result<string, string>>(
-    Result.Ok("")
+    Result.Ok(defaultDescription)
   );
   const [daysToSolve, setDaysToSolve] = createSignal<Result<number, number>>(
-    Result.Ok(7)
+    Result.Ok(0)
   );
   const [maxSolutionsNum, setMaxSolutionsNum] = createSignal<
     Result<number, number>
-  >(Result.Ok(100));
+  >(Result.Ok(10));
   const [hoursReward, setHoursReward] = createSignal<Result<E8s, E8s>>(
     Result.Ok(E8s.zero())
   );
