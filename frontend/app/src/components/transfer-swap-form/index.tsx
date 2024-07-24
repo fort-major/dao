@@ -174,6 +174,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
       class="flex flex-col gap-5"
       classList={{ [props.class!]: !!props.class }}
     >
+      <Title class="p-2" text={mode() === "swap" ? "Swap From" : "Transfer"} />
       <FromInput
         balance={balance()}
         amount={amount().unwrap()}

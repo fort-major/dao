@@ -14,7 +14,7 @@ export function TaskPage() {
 
   return (
     <Page slim>
-      <Backlink />
+      <Backlink class="mt-10" />
       <Show when={id() !== undefined} fallback={"Loading..."}>
         <Task id={id()!} />
       </Show>

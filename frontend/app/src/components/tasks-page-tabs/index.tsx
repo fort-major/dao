@@ -20,7 +20,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
       <A
         noScroll
         href={`${ROOT.$.tasks.path}?tab=Solve`}
-        class="font-primary text-gray-150 font-bold text-lg"
+        class="font-primary text-gray-150 font-bold text-xs sm:text-sm md:text-md lg:text-lg"
         classList={{ underline: curTab() === "Solve" }}
       >
         {tabText("Solve")}
@@ -28,7 +28,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
       <A
         noScroll
         href={`${ROOT.$.tasks.path}?tab=Evaluate`}
-        class="font-primary text-gray-150 font-bold text-lg"
+        class="font-primary text-gray-150 font-bold text-xs sm:text-sm md:text-md lg:text-lg"
         classList={{ underline: curTab() === "Evaluate" }}
       >
         {tabText("Evaluate")}
@@ -36,7 +36,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
       <A
         noScroll
         href={`${ROOT.$.tasks.path}?tab=PreSolve`}
-        class="font-primary text-gray-150 font-bold text-lg"
+        class="font-primary text-gray-150 font-bold text-xs sm:text-sm md:text-md lg:text-lg"
         classList={{ underline: curTab() === "PreSolve" }}
       >
         {tabText("PreSolve")}
@@ -44,7 +44,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
       <A
         noScroll
         href={`${ROOT.$.tasks.path}?tab=Edit`}
-        class="font-primary text-gray-150 font-bold text-lg"
+        class="font-primary text-gray-150 font-bold text-xs sm:text-sm md:text-md lg:text-lg"
         classList={{ underline: curTab() === "Edit" }}
       >
         {tabText("Edit")}
@@ -52,7 +52,7 @@ export function TasksPageTabs(props: ITasksPageTabs) {
       <A
         noScroll
         href={`${ROOT.$.tasks.path}?tab=Archived`}
-        class="font-primary text-gray-150 font-bold text-lg"
+        class="font-primary text-gray-150 font-bold text-xs sm:text-sm md:text-md lg:text-lg"
         classList={{ underline: curTab() === "Archived" }}
       >
         {tabText("Archived")}

@@ -136,7 +136,7 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
   return (
     <div class="flex items-center gap-1 p-3">
       <Icon
-        kind={EIconKind.CancelCircle}
+        kind={EIconKind.Stop}
         hoverColor={d() ? COLORS.gray[150] : COLORS.errorRed}
         color={rejectColor()}
         onClick={() => props.onChange(Result.Ok(null))}
@@ -258,7 +258,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
   return (
     <div class="flex items-center gap-1 p-3">
       <Icon
-        kind={EIconKind.CancelCircle}
+        kind={EIconKind.Stop}
         hoverColor={d() ? COLORS.gray[150] : COLORS.errorRed}
         color={rejectColor()}
         onClick={() => props.onChange(Result.Ok(null))}

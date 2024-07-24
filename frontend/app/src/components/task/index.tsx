@@ -199,7 +199,7 @@ export function TaskMini(props: ITaskProps) {
             <p class="font-primary font-medium text-xs text-gray-150">
               {props.id.toString()}
             </p>
-            <h3 class="flex-grow font-primary font-medium text-4xl text-black">
+            <h3 class="flex-grow font-primary font-medium text-2xl sm:text-4xl text-black">
               {task() ? task()!.title : "Loading..."}
             </h3>
             <div class="flex flex-col items-center py-2">{statusIcon()}</div>
@@ -215,9 +215,9 @@ export function TaskMini(props: ITaskProps) {
         </div>
       </div>
       <Show when={stage() !== "Archived"}>
-        <div class="flex gap-1 justify-between items-center">
+        <div class="flex flex-col lg:flex-row gap-1 justify-between items-end lg:items-center">
           {stageLabel()}
-          <div class="flex gap-1 items-center">
+          <div class="flex gap-1 lg:items-center">
             <E8sWidget
               kind={EE8sKind.Hour}
               minValue={task()?.hours_base ? task()!.hours_base! : E8s.zero()}
@@ -324,7 +324,7 @@ export function Task(props: ITaskProps) {
   const stageLabel = () => {
     const t = task();
 
-    const pClass = "font-primary font-normal text-md text-gray-150";
+    const pClass = "font-primary font-normal text-md text-gray-150 text-right";
     const spanClass = "font-bold text-black text-xl";
     const n = nowNs();
 
@@ -457,7 +457,7 @@ export function Task(props: ITaskProps) {
 
   const button = () => {
     return (
-      <div class="flex gap-2">
+      <div class="flex gap-4 flex-grow flex-col sm:flex-row">
         <Switch>
           <Match when={canEdit()}>
             <div class="flex gap-4 items-center">
@@ -640,7 +640,7 @@ export function Task(props: ITaskProps) {
               <p class="font-primary font-medium text-xs text-gray-150">
                 {props.id.toString()}
               </p>
-              <h3 class="flex-grow font-primary font-medium text-4xl text-black">
+              <h3 class="flex-grow font-primary font-medium text-3xl sm:text-4xl text-black">
                 {task() ? task()!.title : "Loading..."}
               </h3>
               <div class="flex flex-col items-center py-2">{statusIcon()}</div>
@@ -658,41 +658,8 @@ export function Task(props: ITaskProps) {
         <div class="flex flex-col py-2">
           <MdPreview content={task() ? task()!.description : "Loading..."} />
         </div>
-        <Show when={stage() === "PreSolve" || stage() === "Edit"}>
-          <div class="flex flex-col gap-4">
-            <div class="flex flex-col gap-2">
-              <Title text="Days To Solve" />
-              <p>{task()!.days_to_solve!.toString()}</p>
-            </div>
-            <div class="flex flex-col gap-2">
-              <Title text="Max Solutions" />
-              <p>{maxSolutions()}</p>
-            </div>
-            <div class="flex flex-col gap-2">
-              <Title text="Solution Fields" />
-              <div class="flex flex-col gap-1">
-                <div class="grid grid-cols-4 gap-2">
-                  <p class="font-bold">Type</p>
-                  <p class="font-bold">Name</p>
-                  <p class="font-bold">Description</p>
-                  <p class="font-bold">Is Required?</p>
-                </div>
-                <For each={task()!.solution_fields}>
-                  {(field) => (
-                    <div class="grid grid-cols-4 gap-2">
-                      <p>{getSolutionFieldType(field)}</p>
-                      <p>{field.name}</p>
-                      <p>{field.description}</p>
-                      <p>{field.required ? "required" : "optional"}</p>
-                    </div>
-                  )}
-                </For>
-              </div>
-            </div>
-          </div>
-        </Show>
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-grow gap-5">
+        <div class="flex flex-col gap-5">
+          <div class="flex flex-col sm:flex-row flex-grow gap-5">
             <div class="flex flex-grow flex-col gap-1">
               <div class="flex items-center justify-between">
                 <Title text="Created By" />
@@ -714,7 +681,7 @@ export function Task(props: ITaskProps) {
                   </div>
                   <div class="flex flex-wrap gap-1 items-center">
                     <For each={task()!.assignees!}>
-                      {(id) => <ProfileMicro id={id} />}
+                      {(id) => <ProfileMini id={id} />}
                     </For>
                   </div>
                 </div>
@@ -750,7 +717,7 @@ export function Task(props: ITaskProps) {
               </Match>
             </Switch>
           </div>
-          <div class="flex flex-grow gap-2">
+          <div class="flex flex-grow gap-5 flex-col">
             <div class="flex flex-grow flex-col gap-1">
               <Title text="Rewards" />
               <E8sWidget
@@ -767,7 +734,40 @@ export function Task(props: ITaskProps) {
                 maxValue={task()?.storypoints_ext_budget}
               />
             </div>
-            <div class="flex flex-grow flex-col gap-1 justify-end items-end">
+            <Show when={stage() === "PreSolve" || stage() === "Edit"}>
+              <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-2">
+                  <Title text="Days To Solve" />
+                  <p>{task()!.days_to_solve!.toString()}</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <Title text="Max Solutions" />
+                  <p>{maxSolutions()}</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <Title text="Solution Fields" />
+                  <div class="flex flex-col gap-1 text-xs">
+                    <div class="grid grid-cols-4 gap-2">
+                      <p class="font-bold">Type</p>
+                      <p class="font-bold">Name</p>
+                      <p class="font-bold">Description</p>
+                      <p class="font-bold">Is Required?</p>
+                    </div>
+                    <For each={task()!.solution_fields}>
+                      {(field) => (
+                        <div class="grid grid-cols-4 gap-2">
+                          <p>{getSolutionFieldType(field)}</p>
+                          <p>{field.name}</p>
+                          <p>{field.description}</p>
+                          <p>{field.required ? "required" : "optional"}</p>
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </div>
+              </div>
+            </Show>
+            <div class="flex flex-grow flex-col gap-1">
               {stageLabel()}
               {button()}
             </div>

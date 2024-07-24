@@ -24,16 +24,16 @@ export function HumansPage() {
   });
 
   return (
-    <Page>
+    <Page class="pt-10">
       <div class="flex flex-col gap-10">
         <Title text="Team Members" />
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 gap-4">
           <For fallback={"No such humans founds"} each={teamMemberIds()}>
             {(id) => <ProfileFull id={id} />}
           </For>
         </div>
         <Title text="Contributors" />
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 gap-4">
           <For fallback={"No such humans founds"} each={ids()}>
             {(id) => <ProfileFull id={id} />}
           </For>

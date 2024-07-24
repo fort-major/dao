@@ -21,12 +21,12 @@ export function HomePage() {
 
   return (
     <Page>
-      <div class="flex gap-5 items-center justify-center min-h-[700px]">
-        <h1 class="font-primary font-bold text-[250px] leading-[0.8]">
+      <div class="flex flex-col gap-12 lg:flex-row lg:gap-5 items-center justify-center min-h-[calc(100vh-48px)] lg:min-h-[calc(100vh-100px)]">
+        <h1 class="font-primary font-bold text-[10rem] lg:text-[12rem] xl:text-[15.625rem] leading-[0.8]">
           <i class="italic">F</i>ort <br /> <i class="italic">M</i>ajor
         </h1>
-        <div class="flex flex-col items-center justify-center gap-8">
-          <h2 class="font-primary font-normal text-4xl text-center">
+        <div class="flex flex-col self-stretch lg:self-auto items-center justify-center gap-20 lg:gap-10">
+          <h2 class="font-primary font-normal text-2xl lg:text-3xl xl:text-4xl text-center">
             A Fair, Open, Robust and Transparent digital organization with an
             uplifting vibe
           </h2>
@@ -45,37 +45,24 @@ export function HomePage() {
         </div>
       </div>
       <div class="flex flex-col gap-10">
-        <h3 class="font-primary font-bold text-2xl">Our Projects</h3>
-        <div class="flex gap-5 justify-between flex-wrap">
-          <a href="https://icp.msq.tech" target="_blank">
-            <ProjectCard kind="msq" class={cardClass} />
-          </a>
-          <A href={ROOT.path}>
-            <ProjectCard kind="fmj" class={cardClass} />
-          </A>
-          <ProjectCard kind="soon" class={cardClass} />
-          <ProjectCard kind="soon" class={cardClass} />
-        </div>
-      </div>
-      <div class="flex flex-col gap-10">
         <h3 class="font-primary font-bold text-2xl">How It Works</h3>
         <div class="flex flex-col gap-2">
           <div class="flex gap-16 items-center">
             <p class="font-mono italic font-bold text-9xl">1</p>
-            <h4 class="font-primary font-normal text-4xl">
+            <h4 class="font-primary font-normal text-2xl xl:text-4xl">
               Solve <b class="font-bold">Tasks</b>
             </h4>
           </div>
           <div class="flex gap-16 items-center">
             <p class="font-mono italic font-bold text-9xl">2</p>
-            <h4 class="font-primary font-normal text-4xl">
+            <h4 class="font-primary font-normal text-2xl xl:text-4xl">
               Earn <b class="font-bold">Rewards</b> and{" "}
               <b class="font-bold">Reputation</b>
             </h4>
           </div>
           <div class="flex gap-16 items-center">
             <p class="font-mono italic font-bold text-9xl">3</p>
-            <h4 class="font-primary font-normal text-4xl">
+            <h4 class="font-primary font-normal text-2xl xl:text-4xl">
               Exchange <b class="font-bold">Rewards</b> for{" "}
               <b class="font-bold">FMJ</b>, <b class="font-bold">ICP</b> or{" "}
               <ComingSoonText /> other tokens
@@ -83,7 +70,7 @@ export function HomePage() {
           </div>
           <div class="flex gap-16 items-center">
             <p class="font-mono italic font-bold text-9xl">4</p>
-            <h4 class="font-primary font-normal text-4xl">
+            <h4 class="font-primary font-normal text-2xl xl:text-4xl">
               Use <b class="font-bold">Reputation</b> to{" "}
               <b class="font-bold">govern</b> the DAO,{" "}
               <b class="font-bold">evaluate</b> task solutions and{" "}
@@ -94,12 +81,30 @@ export function HomePage() {
       </div>
 
       <div class="flex flex-col gap-10">
+        <h3 class="font-primary font-bold text-2xl">Our Projects</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-5">
+          <a href="https://icp.msq.tech" target="_blank" class="flex">
+            <ProjectCard kind="msq" class={cardClass} />
+          </a>
+          <A href={ROOT.path} class="flex">
+            <ProjectCard kind="fmj" class={cardClass} />
+          </A>
+          <a class="flex">
+            <ProjectCard kind="soon" class={cardClass} />
+          </a>
+          <a class="flex">
+            <ProjectCard kind="soon" class={cardClass} />
+          </a>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-10">
         <h3 class="font-primary font-bold text-2xl">About</h3>
-        <div class="grid grid-cols-2 gap-y-5 gap-x-10">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-y-5 gap-x-10">
           <div class="flex flex-col gap-3">
             <h4 class="font-primary font-bold">Same Rules for Everyone</h4>
             <p>
-              Both: Raputation and FMJ can only be minted when a task is solved.
+              Both: Reputation and FMJ can only be minted when a task is solved.
               There is no special allocation for the Team. There are no seed,
               pre-seed or other investors. We're all in the same boat here.
             </p>
@@ -164,38 +169,50 @@ export function HomePage() {
 
       <div class="flex flex-col gap-10">
         <h3 class="font-primary font-bold text-2xl">Statistics</h3>
-        <div class="flex flex-wrap gap-x-24 gap-y-5 justify-between">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <Stat
+            class="items-start text-left"
             data={totals().reputation.toPrecision(2, true)}
             title="total reputation"
           />
           <Stat
+            class="items-end text-left sm:items-center sm:text-center"
             data={decentralization().toPercent().toPrecision(2, true) + "%"}
             title="decentralization"
           />
           <Stat
+            class="items-start text-left sm:items-end sm:text-right"
             data={totals().storypoints.toPrecision(2, true)}
             title="total storypoints"
           />
           <Stat
+            class="items-end text-right sm:items-start sm:text-left"
             data={totals().hours.toPrecision(2, true)}
             title="total hours"
           />
-          <Stat data={totals().contributors.toString()} title="contributors" />
           <Stat
+            class="items-start text-left sm:items-center sm:text-center"
+            data={totals().contributors.toString()}
+            title="contributors"
+          />
+          <Stat
+            class="items-end text-right"
             data={taskStats().readyToSolveTasks.toString()}
             title="in-progress tasks"
           />
           <Stat
+            class="items-start text-left"
             data={taskStats().solvedTasks.toString()}
             title="solved tasks"
           />
           <Stat
+            class="items-end text-right sm:items-center sm:text-center"
             data={fmjStats().totalSupply.toPrecision(2, true)}
             title="total FMJ supply"
           />
           <Show when={!fmjStats().totalSupply.isZero()}>
             <Stat
+              class="items-end text-ri"
               data={
                 fmjStats()
                   .avgMonthlyInflation.div(fmjStats().totalSupply)

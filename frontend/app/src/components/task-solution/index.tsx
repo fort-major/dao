@@ -58,7 +58,9 @@ export function TaskSolution(props: ITaskSolutionProps) {
             !props.solution.rejected
           }
         >
-          <p>Reputation requested</p>
+          <p class="italic text-xs text-right text-gray-165">
+            Reputation requested
+          </p>
         </Show>
       </div>
 

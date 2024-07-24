@@ -10,7 +10,7 @@ export function Page(props: IPageProps) {
   return (
     <div
       ref={props.ref}
-      class="flex flex-col items-center px-40 pt-20 text-black font-primary"
+      class="flex flex-col items-center px-2 lg:px-40 text-black font-primary"
     >
       <div
         class="flex flex-col w-full relative gap-20"

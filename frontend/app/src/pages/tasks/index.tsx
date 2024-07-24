@@ -47,6 +47,14 @@ export function TasksPage() {
 
   createEffect(
     on(tab, () => {
+      if (isReadyToFetch()) {
+        handleFetch();
+      }
+    })
+  );
+
+  createEffect(
+    on(tab, () => {
       setCanFetchMore(true);
     })
   );

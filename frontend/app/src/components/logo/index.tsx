@@ -1,14 +1,10 @@
 export interface ILogoProps {
-  w?: number;
-  h?: number;
   class?: string;
 }
 
 export function Logo(props: ILogoProps) {
   return (
     <svg
-      width={props.w ? props.w : 125}
-      height={props.h ? props.h : 52}
       viewBox="0 0 125 52"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

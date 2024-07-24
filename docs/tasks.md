@@ -140,7 +140,7 @@ Given this, here are some guidelines on how to estimate particular types of task
 
 Each task allows to define Base and Additional Storypoint reward. The Base reward will be given to every solver, whose solution was not rejected. The additional reward will only be given to a solver if their solution is evaluated positively and the actual received amount depends on the evaluation of a particular solution. 
 
-For example let's imagine we set the Base reward for 10 Storypoints and the Additional reward for another 10 Storypoints. This means that an approved solver would receive at least 10 Storypoints and at most 20 Storypoints, depending on the evaluation. If they score 5.0 points (stars), they get all 20 (10 Base + 10 Additional) Storypoints. If they score 2.5 stars, they get 15 (10 Base + 5 Additional) Storypoints. If they score 1 star, they get 11 (10 Base + 1 Additional) Storypoints.
+For example let's imagine we set the Base reward for 10 Storypoints and the Additional reward for another 10 Storypoints. This means that an approved solver would receive at least 10 Storypoints and at most 20 Storypoints, depending on the evaluation. If they score 5.0 points (stars), they get all 20 (10 Base + 10 Additional) Storypoints. If they score 2.5 stars, they get 15 (10 Base + 5 Additional) Storypoints. If they score 1 star, they get 12 (10 Base + 2 Additional) Storypoints.
 
 This way we can differentiate solutions by quality/creativity/etc and reward better solutions more.
 
