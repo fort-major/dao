@@ -286,7 +286,7 @@ export function VotingsStore(props: IChildren) {
       }
 
       const votingsActor = newVotingsActor(a);
-      return votingsActor.votings__get_votings(req);
+      return await votingsActor.votings__get_votings(req);
     },
     ({ entries: votings }, { ids }) => {
       for (let i = 0; i < votings.length; i++) {
@@ -381,7 +381,8 @@ export function VotingsStore(props: IChildren) {
   const liquidDemocracyGetFollowersOf = debouncedBatchFetch(
     async function* (req: GetFolloweesOfRequest) {
       const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
-      return liquidDemocracyActor.liquid_democracy__get_followers_of(req);
+
+      return await liquidDemocracyActor.liquid_democracy__get_followers_of(req);
     },
     ({ entries }, req) => {
       for (let i = 0; i < req.ids.length; i++) {
@@ -394,7 +395,8 @@ export function VotingsStore(props: IChildren) {
   const liquidDemocracyGetFolloweesOf = debouncedBatchFetch(
     async function* (req: GetFolloweesOfRequest) {
       const liquidDemocracyActor = newLiquidDemocracyActor(anonymousAgent()!);
-      return liquidDemocracyActor.liquid_democracy__get_followees_of(req);
+
+      return await liquidDemocracyActor.liquid_democracy__get_followees_of(req);
     },
     ({ entries }, req) => {
       for (let i = 0; i < req.ids.length; i++) {

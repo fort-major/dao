@@ -22,7 +22,7 @@ export function HomePage() {
   return (
     <Page>
       <div class="flex flex-col gap-12 lg:flex-row lg:gap-5 items-center justify-center min-h-[calc(100vh-48px)] lg:min-h-[calc(100vh-100px)]">
-        <h1 class="font-primary font-bold text-[10rem] lg:text-[12rem] xl:text-[15.625rem] leading-[0.8]">
+        <h1 class="font-primary font-bold text-9xl lg:text-[12rem] xl:text-[15.625rem] leading-[0.8]">
           <i class="italic">F</i>ort <br /> <i class="italic">M</i>ajor
         </h1>
         <div class="flex flex-col self-stretch lg:self-auto items-center justify-center gap-20 lg:gap-10">
@@ -212,7 +212,7 @@ export function HomePage() {
           />
           <Show when={!fmjStats().totalSupply.isZero()}>
             <Stat
-              class="items-end text-ri"
+              class="items-start text-left sm:items-end sm:text-right"
               data={
                 fmjStats()
                   .avgMonthlyInflation.div(fmjStats().totalSupply)

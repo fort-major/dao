@@ -587,7 +587,8 @@ export function TasksStore(props: IChildren) {
   const tasksGetTasksById = debouncedBatchFetch(
     async function* (req: { ids: TTaskId[] }) {
       const tasksActor = newTasksActor(anonymousAgent()!);
-      return tasksActor.tasks__get_tasks_by_id(req);
+      
+      return await tasksActor.tasks__get_tasks_by_id(req);
     },
     ({ entries: tasks }, { ids }) => {
       for (let i = 0; i < tasks.length; i++) {

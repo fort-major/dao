@@ -199,7 +199,7 @@ export function HumanStore(props: IChildren) {
     async function* (req: { ids: Principal[] }) {
       const reputationActor = newReputationActor(anonymousAgent()!);
 
-      return reputationActor.reputation__get_balance(req);
+      return await reputationActor.reputation__get_balance(req);
     },
     ({ entries: balances }, { ids }) => {
       for (let i = 0; i < balances.length; i++) {
