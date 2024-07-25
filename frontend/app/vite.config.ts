@@ -1,9 +1,10 @@
 import path from "path";
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
+import viteCompression from "vite-plugin-compression";
 
 export default defineConfig({
-  plugins: [solidPlugin()],
+  plugins: [solidPlugin(), viteCompression()],
   build: {
     target: "esnext",
   },

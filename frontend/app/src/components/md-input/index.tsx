@@ -240,15 +240,15 @@ export function MdInput(props: IMdInputProps) {
 
     textAreaRef.focus();
 
-    if (newFrom) {
+    if (typeof newFrom === "number") {
       textAreaRef.selectionStart = newFrom;
-    } else if (newFrom === null) {
+    } else {
       textAreaRef.selectionStart = from;
     }
 
-    if (newTo) {
+    if (typeof newTo === "number") {
       textAreaRef.selectionEnd = newTo;
-    } else if (newFrom === null) {
+    } else {
       textAreaRef.selectionEnd = to + replacement.length - selected.length;
     }
   };

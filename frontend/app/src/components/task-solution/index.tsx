@@ -83,12 +83,14 @@ export function TaskSolution(props: ITaskSolutionProps) {
               minValue={props.solution.reward_storypoints!}
               kind={EE8sKind.Storypoint}
             />
-            <E8sWidget
-              minValue={props.solution.reward_storypoints!.add(
-                props.solution.reward_hours!
-              )}
-              kind={EE8sKind.Reputation}
-            />
+            <Show when={props.solution.want_rep}>
+              <E8sWidget
+                minValue={props.solution.reward_storypoints!.add(
+                  props.solution.reward_hours!
+                )}
+                kind={EE8sKind.Reputation}
+              />
+            </Show>
           </div>
         </div>
       </Show>

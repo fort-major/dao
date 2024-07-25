@@ -2,7 +2,7 @@ import { VotingId } from "@/declarations/votings/votings.did";
 import { ROOT } from "@/routes";
 import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
-import { daysLeft, nowNs } from "@components/countdown";
+import { Countdown, daysLeft, nowNs } from "@components/countdown";
 import { getSolutionFieldType } from "@components/create-task-form";
 import { DecisionTopic } from "@components/decision-topic";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
@@ -115,7 +115,8 @@ export function TaskMini(props: ITaskProps) {
   const stageLabel = () => {
     const t = task();
 
-    const pClass = "font-primary font-normal text-md text-gray-150";
+    const pClass =
+      "font-primary font-normal text-md text-gray-150 flex gap-2 items-center justify-end";
     const spanClass = "font-bold text-black text-xl";
     const n = nowNs();
 
@@ -134,16 +135,15 @@ export function TaskMini(props: ITaskProps) {
         </Match>
         <Match when={t && t.stage && "Solve" in t.stage}>
           <p class={pClass}>
-            accepts solutions for{" "}
-            <span class={spanClass}>
-              {daysLeft(
-                n,
+            <span class={spanClass}>accepts</span> solutions for{" "}
+            <Countdown
+              timestampNs={n}
+              durationNs={
                 (t!.stage as { Solve: { until_timestamp: bigint } }).Solve
-                  .until_timestamp - n,
-                n
-              ).toString()}
-            </span>{" "}
-            more days
+                  .until_timestamp - n
+              }
+              elapsedText="a little more"
+            />
           </p>
         </Match>
         <Match when={t && t.stage && "Evaluate" in t.stage}>
@@ -324,7 +324,8 @@ export function Task(props: ITaskProps) {
   const stageLabel = () => {
     const t = task();
 
-    const pClass = "font-primary font-normal text-md text-gray-150 text-right";
+    const pClass =
+      "font-primary font-normal text-md text-gray-150 text-right flex gap-2 items-center justify-end";
     const spanClass = "font-bold text-black text-xl";
     const n = nowNs();
 
@@ -343,16 +344,15 @@ export function Task(props: ITaskProps) {
         </Match>
         <Match when={t && t.stage && "Solve" in t.stage}>
           <p class={pClass}>
-            accepts solutions for{" "}
-            <span class={spanClass}>
-              {daysLeft(
-                n,
+            <span class={spanClass}>accepts</span> solutions for{" "}
+            <Countdown
+              timestampNs={n}
+              durationNs={
                 (t!.stage as { Solve: { until_timestamp: bigint } }).Solve
-                  .until_timestamp - n,
-                n
-              ).toString()}
-            </span>{" "}
-            more days
+                  .until_timestamp - n
+              }
+              elapsedText="a little more"
+            />
           </p>
         </Match>
         <Match when={t && t.stage && "Evaluate" in t.stage}>
@@ -718,22 +718,26 @@ export function Task(props: ITaskProps) {
             </Switch>
           </div>
           <div class="flex flex-grow gap-5 flex-col">
-            <div class="flex flex-grow flex-col gap-1">
-              <Title text="Rewards" />
-              <E8sWidget
-                kind={EE8sKind.Hour}
-                minValue={task()?.hours_base ? task()!.hours_base! : E8s.zero()}
-              />
-              <E8sWidget
-                kind={EE8sKind.Storypoint}
-                minValue={
-                  task()?.storypoints_base
-                    ? task()!.storypoints_base!
-                    : E8s.zero()
-                }
-                maxValue={task()?.storypoints_ext_budget}
-              />
-            </div>
+            <Show when={stage() !== "Archived"}>
+              <div class="flex flex-grow flex-col gap-1">
+                <Title text="Rewards" />
+                <E8sWidget
+                  kind={EE8sKind.Hour}
+                  minValue={
+                    task()?.hours_base ? task()!.hours_base! : E8s.zero()
+                  }
+                />
+                <E8sWidget
+                  kind={EE8sKind.Storypoint}
+                  minValue={
+                    task()?.storypoints_base
+                      ? task()!.storypoints_base!
+                      : E8s.zero()
+                  }
+                  maxValue={task()?.storypoints_ext_budget}
+                />
+              </div>
+            </Show>
             <Show when={stage() === "PreSolve" || stage() === "Edit"}>
               <div class="flex flex-col gap-4">
                 <div class="flex flex-col gap-2">

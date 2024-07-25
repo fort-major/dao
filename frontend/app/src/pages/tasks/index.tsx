@@ -93,10 +93,14 @@ export function TasksPage() {
 
     setFetching(true);
 
-    const more =
-      tab() === "Archived"
-        ? await fetchArchivedTaskIds()
-        : await fetchTaskIds(tab());
+    let more = false;
+
+    if (tab() === "Archived") {
+      await fetchArchivedTaskIds();
+      more = await fetchArchivedTaskIds();
+    } else {
+      await fetchTaskIds(tab());
+    }
 
     setCanFetchMore(more);
     setFetching(false);

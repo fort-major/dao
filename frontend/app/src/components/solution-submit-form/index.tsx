@@ -125,6 +125,18 @@ export function SolutionSubmitForm(props: ISolutionSubmitFormProps) {
 
   const handleSubmit = async () => {
     disable();
+
+    if (wantRep()) {
+      const agreed = confirm(
+        "Are you sure you want to request reputation for your solution? Only agree if you PROMISE to participate in EVERY voting! Otherwise, uncheck 'I need Reputation' and try again."
+      );
+
+      if (!agreed) {
+        enable();
+        return;
+      }
+    }
+
     await solveTask(
       props.taskId,
       values().map((it) => it.unwrapOk()),
