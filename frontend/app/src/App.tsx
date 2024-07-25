@@ -28,10 +28,9 @@ const AppRoot = (props: IChildren) => (
             <TasksStore>
               <BankStore>
                 <Header />
-                <main class="flex flex-col flex-grow self-stretch pt-12 lg:pt-[100px] pb-16">
+                <main class="flex flex-col flex-grow self-stretch pt-12 lg:pt-[80px]">
                   {props.children}
                 </main>
-                <Footer />
               </BankStore>
             </TasksStore>
           </HumanStore>

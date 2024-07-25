@@ -35,11 +35,11 @@ export function Header(props: IHeaderProps) {
 
   return (
     <header
-      class="fixed z-50 top-0 left-0 right-0 w-full bg-black flex flex-col px-2 py-3 lg:px-5 lg:py-6 lg:flex-row lg:justify-between"
+      class="fixed z-50 top-0 left-0 right-0 w-full bg-black flex flex-col px-5 py-3 lg:h-20 lg:px-20 lg:py-4 lg:flex-row lg:justify-between lg:border-b lg:border-b-gray-120"
       classList={{ [props.class!]: !!props.class }}
     >
       <div class="flex justify-between items-center lg:justify-start">
-        <Logo class="h-6 lg:h-12" />
+        <Logo class="h-6 w-12 lg:h-12 lg:w-24 relative bottom-[2px] lg:bottom-1" />
 
         <Icon
           class="lg:hidden cursor-pointer"
@@ -54,7 +54,7 @@ export function Header(props: IHeaderProps) {
         class="lg:flex flex-col flex-grow lg:flex-row"
         classList={{ flex: expanded(), hidden: !expanded() }}
       >
-        <nav class="flex flex-col gap-4 py-4 items-end lg:flex-row lg:gap-9 lg:px-24 lg:py-0 lg:flex-grow lg:items-center">
+        <nav class="flex flex-col gap-4 py-4 items-end lg:flex-row lg:gap-9 lg:pl-24 lg:pr-0 lg:py-0 lg:flex-grow lg:items-center">
           <A onClick={handleUnexpand} class={linkClass} href={ROOT.path}>
             Home
           </A>
@@ -95,7 +95,7 @@ export function Header(props: IHeaderProps) {
             />
           </Match>
           <Match when={isAuthorized()}>
-            <div class="gap-4 items-center hidden lg:flex">
+            <div class="gap-4 items-center hidden lg:flex pl-4 border-l border-l-gray-120">
               <div class="grid gap-x-4 gap-y-1 grid-cols-2 grid-rows-2">
                 <div class="min-w-24">
                   <E8sWidget
