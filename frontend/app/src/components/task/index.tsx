@@ -837,6 +837,7 @@ export function Task(props: ITaskProps) {
                       ? { EvaluateTask: props.id }
                       : undefined
                   }
+                  stars={!!task()?.storypoints_ext_budget?.toBool()}
                 />
               )}
             </For>

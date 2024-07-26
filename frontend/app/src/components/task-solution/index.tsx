@@ -19,6 +19,7 @@ export interface ITaskSolutionProps {
   solution: ISolution;
   fields: SolutionField[];
   votingId?: VotingId;
+  stars?: boolean;
 }
 
 export function TaskSolution(props: ITaskSolutionProps) {
@@ -98,7 +99,7 @@ export function TaskSolution(props: ITaskSolutionProps) {
         <VotingWidget
           id={encodeVotingId(props.votingId!)}
           optionIdx={props.idx}
-          kind="evaluation"
+          kind={props.stars ? "evaluation" : "binary"}
         />
       </Show>
     </div>

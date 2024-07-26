@@ -113,6 +113,14 @@ export function Header(props: IHeaderProps) {
               <AttentionMarker />
             </Show>
           </A>
+          <A
+            onClick={handleUnexpand}
+            activeClass="underline"
+            class={linkClass}
+            href={ROOT.$.faq.path}
+          >
+            FAQ
+          </A>
           <Show when={isAuthorized()}>
             <A
               onClick={handleUnexpand}
@@ -132,7 +140,7 @@ export function Header(props: IHeaderProps) {
             <Btn
               text="Sign In"
               icon={EIconKind.MetaMask}
-              class="bg-chartreuse rounded-full h-[50px]"
+              class="bg-chartreuse rounded-full h-[50px] relative mt-5 sm:mt-0"
               onClick={authorize}
             />
           </Match>

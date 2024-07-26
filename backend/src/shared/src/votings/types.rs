@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use candid::{encode_args, utils::ArgumentEncoder, CandidType, Principal};
 use garde::Validate;
-use ic_cdk::{api::call::call_raw, print};
+use ic_cdk::api::call::call_raw;
 
 use serde::Deserialize;
 
@@ -150,8 +150,6 @@ impl Voting {
                 }
 
                 let can_cast = option_votes.revert_prev_vote(&node.id, depth);
-
-                print(format!("{}: {:?}", depth, node));
 
                 if !can_cast {
                     return false;
@@ -332,6 +330,9 @@ impl VotingKind {
                 }
             }
             VotingKind::EvaluateTask { task_id, solutions } => {
+                // Those are different. These votings can't fail because of not reaching the consensus.
+                // They can only fail if the rejection level reaches the inverted consensus.
+
                 let normalized_results = base.calc_ranged_results_normalized();
 
                 let evaluation_per_solution = normalized_results
