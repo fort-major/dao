@@ -102,10 +102,6 @@ impl ProfileProof {
 
         Ok(())
     }
-
-    fn get_cert(&self) -> Result<Certificate, String> {
-        Certificate::from_cbor(&self.cert_raw).map_err(|e| e.to_string())
-    }
 }
 
 #[derive(CandidType, Deserialize, Validate, Clone, Debug)]

@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use candid::{CandidType, Principal};
+use candid::{CandidType, Nat, Principal};
 use garde::Validate;
 use serde::Deserialize;
 
@@ -62,6 +62,18 @@ impl Guard<TasksState> for CreateTaskRequest {
             .is_team_member
         {
             return Err(format!("Only team members can create tasks"));
+        }
+
+        if self.hours_base > E8s(Nat::from(16_0000_0000u64)) {
+            return Err(format!("Max possible reward is 16 hours"));
+        }
+
+        if self.storypoints_base > E8s(Nat::from(10_0000_0000u64)) {
+            return Err(format!("Max possible reward is 10 base storypoints"));
+        }
+
+        if self.storypoints_ext_budget > E8s(Nat::from(50_0000_0000u64)) {
+            return Err(format!("Max possible reward is 50 additional storypoints"));
         }
 
         self.title = escape_script_tag(&self.title);
@@ -131,6 +143,24 @@ impl Guard<TasksState> for EditTaskRequest {
             (false, true, true) => {}
             _ => return Err(format!("Access denied")),
         };
+
+        if let Some(hours_base) = &self.new_hours_base_opt {
+            if hours_base > &E8s(Nat::from(16_0000_0000u64)) {
+                return Err(format!("Max possible reward is 16 hours"));
+            }
+        }
+
+        if let Some(storypoints_base) = &self.new_storypoints_base_opt {
+            if storypoints_base > &E8s(Nat::from(10_0000_0000u64)) {
+                return Err(format!("Max possible reward is 10 base storypoints"));
+            }
+        }
+
+        if let Some(storypoints_ext) = &self.new_storypoints_ext_budget_opt {
+            if storypoints_ext > &E8s(Nat::from(50_0000_0000u64)) {
+                return Err(format!("Max possible reward is 50 additional storypoints"));
+            }
+        }
 
         if let Some(new_title) = &mut self.new_title_opt {
             *new_title = escape_script_tag(&new_title);
