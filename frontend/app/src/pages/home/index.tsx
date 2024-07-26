@@ -29,11 +29,15 @@ const Btn = (props: {
   iconSize?: number;
   class?: string;
   innerClass?: string;
+  shadow?: boolean;
 }) => {
   const c = () => (
     <div
-      class="flex items-center gap-2 rounded-full py-4 px-6"
-      style={{ background: props.color }}
+      class="flex items-center gap-2 rounded-full py-4 px-6 h-[50px]"
+      style={{
+        background: props.color,
+        "box-shadow": props.shadow ? "2px 2px 15px rgba(0, 0, 0, .25)" : "",
+      }}
       classList={{ [props.innerClass!]: !!props.innerClass }}
     >
       <Show when={props.text}>
@@ -80,21 +84,23 @@ const ProjectCard = (props: {
   <a
     href={props.linkTo}
     target={props.linkTo && props.linkTo !== "/" ? "_blank" : ""}
-    class="flex flex-col flex-grow w-full self-stretch gap-3 relative"
+    class="flex flex-col flex-grow w-full self-stretch gap-4 sm:gap-8 relative"
     classList={{ [props.class!]: !!props.class }}
   >
     <img src={props.img} class="w-full" />
-    <div class="flex flex-col gap-2 w-full">
-      <h5 class="font-semibold text-2xl w-full leading-6 tracking-tight">
-        {props.name}
-      </h5>
-      <p class="font-normal text-md w-full leading-4 tracking-tight">
-        {props.desc}
+    <div class="flex flex-col gap-3 sm:gap-5">
+      <div class="flex flex-col gap-2 w-full">
+        <h5 class="font-semibold text-2xl w-full leading-6 tracking-tight">
+          {props.name}
+        </h5>
+        <p class="font-normal text-md w-full leading-4 tracking-tight">
+          {props.desc}
+        </p>
+      </div>
+      <p class="font-normal w-full text-md leading-4 tracking-tight text-gray-150">
+        {props.year}
       </p>
     </div>
-    <p class="font-normal w-full text-md leading-4 tracking-tight text-gray-150">
-      {props.year}
-    </p>
   </a>
 );
 
@@ -105,6 +111,7 @@ const HowItWorksCard = (props: {
   desc: string;
   bg: string;
   last?: boolean;
+  iconClass?: string;
 }) => (
   <div
     class="flex flex-col rounded-3xl gap-10 p-10"
@@ -114,7 +121,12 @@ const HowItWorksCard = (props: {
     <div class="flex justify-between items-center gap-10 font-semibold text-[80px] leading-[80px] tracking-tight">
       <p class="text-gray-130">.{props.id}</p>
       <Show when={!props.last}>
-        <Icon kind={EIconKind.ArrowRight} size={80} color={COLORS.gray[130]} />
+        <Icon
+          class={props.iconClass}
+          kind={EIconKind.ArrowRight}
+          size={80}
+          color={COLORS.gray[130]}
+        />
       </Show>
     </div>
     <div class="flex flex-grow flex-col justify-end gap-4">
@@ -263,6 +275,7 @@ export function HomePage() {
           color={COLORS.darkBlue}
           iconSize={16}
           class="fixed bottom-20 left-1/2 translate-x-[-50%] z-50"
+          shadow
         />
       </Show>
       <svg
@@ -271,7 +284,7 @@ export function HomePage() {
         viewBox="0 0 1920 961"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        class="hidden lg:block absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+        class="hidden md:block absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
       >
         <path
           d="M1257.93 0C1257.93 164.543 1124.54 297.931 960 297.931C795.457 297.931 662.069 164.543 662.069 0M1423.45 0C1423.45 255.955 1215.96 463.448 960 463.448C704.045 463.448 496.552 255.955 496.552 0M1588.97 0C1588.97 347.368 1307.37 628.966 960 628.966C612.632 628.966 331.034 347.368 331.034 0M1754.48 0C1754.48 438.781 1398.78 794.483 960 794.483C521.219 794.483 165.517 438.781 165.517 0M1920 0C1920 530.193 1490.19 960 960 960C429.807 960 0 530.193 0 0"
@@ -281,7 +294,7 @@ export function HomePage() {
       </svg>
       <div class="relative flex flex-col gap-12 px-5 lg:px-20 lg:flex-row lg:gap-5 items-center justify-center h-[calc(100svh-48px)] lg:h-[calc(100dvh-100px)]">
         <div class="flex flex-col self-stretch lg:self-auto items-center justify-center gap-20 lg:gap-10">
-          <h2 class="font-primary font-semibold text-4xl leading-9 lg:text-[80px] lg:leading-[80px] tracking-tight text-center">
+          <h2 class="font-primary font-semibold text-4xl leading-9 lg:text-[80px] lg:leading-[80px] tracking-tight text-center max-w-6xl">
             A Fair, Open, Robust and Transparent digital organization with an
             uplifting vibe
           </h2>
@@ -305,7 +318,7 @@ export function HomePage() {
         </div>
 
         <PoweredByIc
-          class="block sm:hidden absolute bottom-8"
+          class="block lg:hidden absolute bottom-8"
           color={COLORS.gray[108]}
         />
       </div>
@@ -314,7 +327,7 @@ export function HomePage() {
         <h3 class="font-primary font-semibold text-2xl">Our Projects</h3>
         {/** safari */}
         <div class="grid">
-          <div class="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-4 justify-items-center gap-x-5 gap-y-10">
+          <div class="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-4 justify-items-center gap-5 sm:gap-10">
             <ProjectCard
               linkTo="https://icp.msq.tech"
               img="/msq-project.png"
@@ -348,19 +361,20 @@ export function HomePage() {
 
       <div class="flex flex-col gap-10 sm:my-36 px-5 lg:px-20">
         <h3 class="font-primary font-semibold text-2xl">How It Works</h3>
-        <div class="grid grid-cols-1 gap-y-5 sm:grid-cols-3 2xl:grid-cols-[1fr_1fr_1fr_3fr]">
+        <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4">
           <HowItWorksCard
             id="01"
-            class="sm:col-span-2 xl:col-span-1"
             title={<span>Solve Tasks</span>}
             desc="Find a task that you can handle, complete it, press 'Solve' and attach your solution"
             bg={COLORS.gray[105]}
+            iconClass="rotate-90 sm:rotate-0"
           />
           <HowItWorksCard
             id="02"
             title={<span>Earn Rewards and Reputation</span>}
             desc="Each valid solution is rewarded with Storypoints and Hours"
             bg={COLORS.gray[110]}
+            iconClass="rotate-90 sm:rotate-0"
           />
           <HowItWorksCard
             id="03"
@@ -379,10 +393,10 @@ export function HomePage() {
             }
             desc="FMJ is our ICRC-1 token automatically minted by the DAO when you swap Rewards into it"
             bg={COLORS.gray[120]}
+            iconClass="rotate-90 sm:rotate-0"
           />
           <HowItWorksCard
             id="04"
-            class="sm:col-span-2 xl:col-span-3 2xl:col-span-1"
             title={
               <span>
                 Use Reputation to govern the DAO, evaluate task solutions and{" "}

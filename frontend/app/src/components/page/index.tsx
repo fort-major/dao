@@ -17,7 +17,7 @@ export function Page(props: IPageProps) {
       <div
         class="flex flex-col w-full relative gap-20"
         classList={{
-          ["max-w-5xl"]: !!props.slim,
+          ["max-w-5xl items-center"]: !!props.slim,
           [props.class!]: !!props.class,
         }}
       >

@@ -107,7 +107,7 @@ export function TasksPage() {
   };
 
   return (
-    <Page ref={ref!} class="self-stretch pt-10">
+    <Page ref={ref!} slim class="pt-10 pb-20">
       <div class="flex flex-col gap-20">
         <Show when={canCreateTasks()}>
           <A class="flex flex-col" href={ROOT.$.tasks.$.create.path}>

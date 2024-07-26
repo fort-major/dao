@@ -24,7 +24,7 @@ export function HumansPage() {
   });
 
   return (
-    <Page class="pt-10">
+    <Page class="pt-10 pb-20">
       <div class="flex flex-col gap-10">
         <Title text="Team Members" />
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 gap-4">
