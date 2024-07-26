@@ -1,3 +1,4 @@
+import { AttentionMarker } from "@components/attention-marker";
 import { Btn } from "@components/btn";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
 import { ExchangeRate } from "@components/exchange-rate";
@@ -12,13 +13,15 @@ import { debugStringify } from "@fort-major/msq-shared";
 import { useAuth } from "@store/auth";
 import { useBank } from "@store/bank";
 import { useHumans } from "@store/humans";
+import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
-import { pairToStr } from "@utils/encoding";
+import { decodeVotingId, pairToStr } from "@utils/encoding";
 import { err, ErrorCode, logInfo } from "@utils/error";
 import { E8s } from "@utils/math";
 import { getProfProof } from "@utils/security";
 import { Result } from "@utils/types";
 import {
+  createEffect,
   createResource,
   createSignal,
   from,
@@ -40,6 +43,7 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
     bankIcpBalance,
     fetchBankIcpBalance,
   } = useBank();
+  const { actionableVotings } = useVotings();
 
   const [profProof] = createResource(agent, getProfProof);
   const [from, setFrom] = createSignal(EE8sKind.Hour);
@@ -50,6 +54,19 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
   const [transferRecipient, setTransferRecipient] = createSignal<
     Result<string, string>
   >(Result.Ok(""));
+  const [swapMarker, setSwapMarker] = createSignal(false);
+
+  createEffect(() => {
+    let swapM = false;
+
+    for (let id of Object.keys(actionableVotings).map(decodeVotingId)) {
+      if ("BankSetExchangeRate" in id) {
+        swapM = true;
+      }
+    }
+
+    setSwapMarker(swapM);
+  });
 
   const balance = () => {
     const b = myBalance();
@@ -171,9 +188,12 @@ export function TransferSwapForm(props: ITransferSwapFormProps) {
 
   return (
     <div
-      class="flex flex-col gap-5"
+      class="flex flex-col gap-5 relative"
       classList={{ [props.class!]: !!props.class }}
     >
+      <Show when={swapMarker()}>
+        <AttentionMarker />
+      </Show>
       <Title class="p-2" text={mode() === "swap" ? "Swap From" : "Transfer"} />
       <FromInput
         balance={balance()}

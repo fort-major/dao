@@ -20,7 +20,7 @@ export const COLORS = {
   green: "#53FF50",
   blue: "#15E3FF",
   darkBlue: "#5057FF",
-  darkBlueLight: "rgba(80, 87, 255, 0.03)",
+  darkBlueLight: "rgba(80, 87, 255, 0.7)",
   pink: "#FF41FF",
   orange: "#FF7425",
   yellow: "#FFCA43",

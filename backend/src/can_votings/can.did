@@ -16,6 +16,7 @@ type DecisionTopicSet = variant {
   And : record { DecisionTopicSet; DecisionTopicSet };
   Not : DecisionTopicSet;
 };
+type GetActionableVotingsResponse = record { entries : vec VotingId };
 type GetVotingEventsResponse = record { events : vec VotingEvent };
 type GetVotingsRequest = record { ids : vec VotingId };
 type GetVotingsResponse = record { entries : vec opt VotingExt };
@@ -106,6 +107,9 @@ type VotingKind = variant {
 type VotingStage = variant { Executing; InProgress };
 service : {
   votings__cast_vote : (CastVoteRequest) -> (CastVoteResponse);
+  votings__get_actionable_votings : (record {}) -> (
+      GetActionableVotingsResponse,
+    ) query;
   votings__get_events : (record {}) -> (GetVotingEventsResponse) query;
   votings__get_votings : (GetVotingsRequest) -> (GetVotingsResponse) query;
   votings__start_voting : (StartVotingRequest) -> (StartVotingResponse);

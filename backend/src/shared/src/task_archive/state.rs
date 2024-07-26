@@ -50,7 +50,7 @@ impl TaskArchiveState {
 
     pub fn get_archived_tasks(&self, req: GetArchivedTaskIdsRequest) -> GetArchivedTaskIdsResponse {
         let (entries, left): (Vec<_>, u32) = if req.pagination.reversed {
-            let mut iter = self.tasks.iter().rev().skip(req.pagination.skip as usize);
+            let mut iter = self.tasks.iter().skip(req.pagination.skip as usize);
 
             let entries = iter
                 .by_ref()
@@ -63,7 +63,7 @@ impl TaskArchiveState {
 
             (entries, left)
         } else {
-            let mut iter = self.tasks.iter().skip(req.pagination.skip as usize);
+            let mut iter = self.tasks.iter().rev().skip(req.pagination.skip as usize);
 
             let entries = iter
                 .by_ref()

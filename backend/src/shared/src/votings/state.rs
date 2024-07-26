@@ -8,7 +8,8 @@ use crate::{liquid_democracy::types::DecisionTopicId, TimestampNs};
 
 use super::{
     api::{
-        CastVoteRequest, CastVoteResponse, GetVotingEventsRequest, GetVotingEventsResponse,
+        CastVoteRequest, CastVoteResponse, GetActionableVotingsRequest,
+        GetActionableVotingsResponse, GetVotingEventsRequest, GetVotingEventsResponse,
         GetVotingsRequest, GetVotingsResponse, StartVotingRequest, StartVotingResponse,
     },
     types::{CallToExecute, Voting, VotingEvent, VotingEventV1, VotingId, VotingTimer},
@@ -150,6 +151,41 @@ impl VotingsState {
         GetVotingEventsResponse {
             events: self.events.iter().cloned().collect(),
         }
+    }
+
+    pub fn get_actionable_votings(
+        &self,
+        _req: GetActionableVotingsRequest,
+        caller: Principal,
+    ) -> GetActionableVotingsResponse {
+        if Principal::anonymous() == caller {
+            return GetActionableVotingsResponse {
+                entries: Vec::new(),
+            };
+        }
+
+        let entries = self
+            .votings
+            .iter()
+            .filter_map(|(id, it)| {
+                if !it.can_cast_vote() {
+                    return None;
+                }
+
+                if it
+                    .base
+                    .votes_per_option
+                    .iter()
+                    .any(|v| !v.votes.contains_key(&caller))
+                {
+                    return Some(*id);
+                }
+
+                None
+            })
+            .collect();
+
+        GetActionableVotingsResponse { entries }
     }
 
     pub fn save_timer(&mut self, id: VotingId, timer: VotingTimer) {

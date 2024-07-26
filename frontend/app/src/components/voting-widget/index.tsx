@@ -1,4 +1,5 @@
 import { VotingStage } from "@/declarations/votings/votings.did";
+import { AttentionMarker } from "@components/attention-marker";
 import { Title } from "@components/title";
 import { VotingInput } from "@components/voting-input";
 import { VotingProgressBar } from "@components/voting-progress-bar";
@@ -43,7 +44,8 @@ function stageToStatus(
 
 export function VotingWidget(props: IVotingWidgetProps) {
   const { isReadyToFetch, isAuthorized, agent } = useAuth();
-  const { castVote, votings, fetchVotings } = useVotings();
+  const { castVote, votings, fetchVotings, fetchActionableVotings } =
+    useVotings();
 
   const [repProof] = createResource(agent, getRepProof);
   const [newVote, setNewVote] = createSignal<E8s | undefined | null>();
@@ -53,6 +55,8 @@ export function VotingWidget(props: IVotingWidgetProps) {
   const voting = () => votings[props.id];
   const myVote = () => voting()?.votesPerOption[props.optionIdx][1];
   const totalVoted = () => voting()?.votesPerOption[props.optionIdx][0];
+
+  const canVoteFirstTime = () => !myVote() && repProof();
 
   const votingKindText = () => {
     const v = voting();
@@ -138,6 +142,8 @@ export function VotingWidget(props: IVotingWidgetProps) {
       props.onRefreshEntity?.();
     }
 
+    fetchActionableVotings();
+
     setStatus(stageToStatus(v.stage, "casted"));
 
     setTimeout(() => {
@@ -160,11 +166,14 @@ export function VotingWidget(props: IVotingWidgetProps) {
 
   return (
     <div
-      class="flex flex-col"
+      class="flex flex-col relative"
       classList={{ [props.class!]: !!props.class }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
+      <Show when={canVoteFirstTime()}>
+        <AttentionMarker />
+      </Show>
       <Show when={votingKindText()}>
         <Title text={votingKindText()!} />
       </Show>

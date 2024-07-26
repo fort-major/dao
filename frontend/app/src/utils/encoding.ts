@@ -4,6 +4,7 @@ import { ErrorCode, err } from "./error";
 import { Principal } from "@dfinity/principal";
 import { IPair, TPairStr } from "../store/bank";
 import { SwapInto } from "../declarations/bank/bank.did";
+import { TVotingIdStr } from "@store/votings";
 
 export { Principal } from "@dfinity/principal";
 

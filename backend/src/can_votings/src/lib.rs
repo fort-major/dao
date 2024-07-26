@@ -14,7 +14,8 @@ use shared::{
     },
     votings::{
         api::{
-            CastVoteRequest, CastVoteResponse, GetVotingEventsRequest, GetVotingEventsResponse,
+            CastVoteRequest, CastVoteResponse, GetActionableVotingsRequest,
+            GetActionableVotingsResponse, GetVotingEventsRequest, GetVotingEventsResponse,
             GetVotingsRequest, GetVotingsResponse, StartVotingRequest, StartVotingResponse,
         },
         state::VotingsState,
@@ -105,6 +106,19 @@ fn votings__get_events(mut req: GetVotingEventsRequest) -> GetVotingEventsRespon
             .expect("Unable to get voting events");
 
         s.get_events(req)
+    })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn votings__get_actionable_votings(
+    mut req: GetActionableVotingsRequest,
+) -> GetActionableVotingsResponse {
+    with_state(|s| {
+        req.validate_and_escape(s, caller(), time())
+            .expect("Unable to get actionable votings");
+
+        s.get_actionable_votings(req, caller())
     })
 }
 

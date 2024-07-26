@@ -108,7 +108,7 @@ export function TasksPage() {
 
   return (
     <Page ref={ref!} slim class="pt-10 pb-20">
-      <div class="flex flex-col gap-20">
+      <div class="flex flex-col gap-20 self-stretch">
         <Show when={canCreateTasks()}>
           <A class="flex flex-col" href={ROOT.$.tasks.$.create.path}>
             <Btn

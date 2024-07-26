@@ -257,12 +257,8 @@ export function MdInput(props: IMdInputProps) {
     if (e.code == "Tab") {
       e.preventDefault();
 
-      replaceSelection((selected) => {
-        if (selected.length === 0) {
-          return ["  ", undefined, undefined];
-        }
-
-        return [selected, null, null];
+      replaceSelection(() => {
+        return ["  ", undefined, undefined];
       });
 
       return;

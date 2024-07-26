@@ -142,7 +142,7 @@ export function FollowForm() {
   };
 
   return (
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col self-stretch gap-4">
       <Show when={myFollowers() && myFollowers()!.length > 0}>
         <div class="flex flex-col gap-2">
           <Title text="My Followers" />

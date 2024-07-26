@@ -1,4 +1,4 @@
-import { createContext, createEffect, useContext } from "solid-js";
+import { createContext, createEffect, on, useContext } from "solid-js";
 import { Store, createStore, produce } from "solid-js/store";
 import { IChildren, TPrincipalStr, TTaskId, TTimestamp } from "../utils/types";
 import { ErrorCode, err } from "../utils/error";
@@ -82,6 +82,7 @@ type FollowersOfStore = Partial<
 type FolloweesOfStore = Partial<
   Partial<Record<TPrincipalStr, Record<TPrincipalStr, DecisionTopicSet>>>
 >;
+type ActionableVotingsStore = Partial<Record<TVotingIdStr, boolean>>;
 
 export interface IVotingsStoreContext {
   votings: Store<VotingsStore>;
@@ -111,6 +112,8 @@ export interface IVotingsStoreContext {
   fetchFolloweesOf: (ids: Principal[]) => Promise<void>;
   follow: (id: Principal, topicset: DecisionTopicSet) => Promise<void>;
   unfollow: (id: Principal) => Promise<void>;
+  actionableVotings: Store<ActionableVotingsStore>;
+  fetchActionableVotings: () => Promise<void>;
 }
 
 const VotingsContext = createContext<IVotingsStoreContext>();
@@ -133,6 +136,7 @@ export function VotingsStore(props: IChildren) {
     agent,
     assertAuthorized,
     identity,
+    isAuthorized,
   } = useAuth();
 
   const [votings, setVotings] = createStore<VotingsStore>();
@@ -140,12 +144,40 @@ export function VotingsStore(props: IChildren) {
     createStore<DecisionTopicsStore>();
   const [followersOf, setFollowersOf] = createStore<FollowersOfStore>({});
   const [followeesOf, setFolloweesOf] = createStore<FolloweesOfStore>({});
+  const [actionableVotings, setActionableVotings] =
+    createStore<ActionableVotingsStore>({});
 
-  createEffect(() => {
-    if (isReadyToFetch()) {
-      fetchDecisionTopics();
-    }
-  });
+  createEffect(
+    on(isReadyToFetch, (ready) => {
+      if (ready) {
+        fetchDecisionTopics();
+      }
+    })
+  );
+
+  createEffect(
+    on(isAuthorized, (ready) => {
+      if (ready) {
+        fetchActionableVotings();
+      }
+    })
+  );
+
+  const fetchActionableVotings: IVotingsStoreContext["fetchActionableVotings"] =
+    async () => {
+      assertAuthorized();
+
+      const votingsActor = newVotingsActor(agent()!);
+
+      setActionableVotings({});
+      const { entries } = await votingsActor.votings__get_actionable_votings(
+        {}
+      );
+
+      for (let entry of entries) {
+        setActionableVotings(encodeVotingId(entry), true);
+      }
+    };
 
   const fetchVotings: IVotingsStoreContext["fetchVotings"] = async (
     ids: VotingId[]
@@ -485,6 +517,8 @@ export function VotingsStore(props: IChildren) {
         fetchFolloweesOf,
         follow,
         unfollow,
+        actionableVotings,
+        fetchActionableVotings,
       }}
     >
       {props.children}

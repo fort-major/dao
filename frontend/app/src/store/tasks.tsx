@@ -372,14 +372,19 @@ export function TasksStore(props: IChildren) {
         });
 
       let result = true;
+
       if (pagination.left === 0) {
         if (pagination.next.length === 1) {
           setTaskArchiveActor(
             newTaskArchiveActor(anonymousAgent()!, pagination.next[0])
           );
+          setArchivedTaskSkip(0);
         } else {
           result = false;
+          setArchivedTaskSkip((v) => v + entries.length);
         }
+      } else {
+        setArchivedTaskSkip((v) => v + entries.length);
       }
 
       setArchivedTaskIds(
@@ -391,7 +396,6 @@ export function TasksStore(props: IChildren) {
           }
         })
       );
-      setArchivedTaskSkip((v) => v + entries.length);
 
       return result;
     };
@@ -587,7 +591,7 @@ export function TasksStore(props: IChildren) {
   const tasksGetTasksById = debouncedBatchFetch(
     async function* (req: { ids: TTaskId[] }) {
       const tasksActor = newTasksActor(anonymousAgent()!);
-      
+
       return await tasksActor.tasks__get_tasks_by_id(req);
     },
     ({ entries: tasks }, { ids }) => {

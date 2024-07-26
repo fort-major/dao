@@ -108,15 +108,13 @@ export function ProfileFull(props: IProfileProps) {
     return votings[id];
   };
 
-  createEffect(
-    on(isReadyToFetch, (ready) => {
-      const id = votingId();
+  createEffect(() => {
+    const id = votingId();
 
-      if (ready && !voting() && id) {
-        fetchVotings([decodeVotingId(id)]);
-      }
-    })
-  );
+    if (isReadyToFetch() && id) {
+      fetchVotings([decodeVotingId(id)]);
+    }
+  });
 
   createEffect(
     on(isReadyToFetch, (ready) => {
@@ -237,7 +235,10 @@ export function ProfileFull(props: IProfileProps) {
   const metricClass = "flex flex-col gap-1 min-w-36";
 
   return (
-    <div class="flex flex-col gap-5 p-2" classList={{ "shadow-md": !props.me }}>
+    <div
+      class="flex flex-col gap-5 p-2"
+      classList={{ "shadow-md": !props.me, [props.class!]: !!props.class }}
+    >
       <div class="flex flex-col self-center items-center gap-2">
         <Avatar
           size={props.avatarSize ?? "lg"}

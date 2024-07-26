@@ -3,6 +3,7 @@
     "strict": true,
     "baseUrl": "./",
     "downlevelIteration": true,
+    "lib": ["ESNext", "DOM"],
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "node",

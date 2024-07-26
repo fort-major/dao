@@ -147,3 +147,23 @@ pub struct GetVotingEventsResponse {
     #[garde(skip)]
     pub events: Vec<VotingEvent>,
 }
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetActionableVotingsRequest {}
+
+impl Guard<VotingsState> for GetActionableVotingsRequest {
+    fn validate_and_escape(
+        &mut self,
+        _state: &VotingsState,
+        _caller: candid::Principal,
+        _now: crate::TimestampNs,
+    ) -> Result<(), String> {
+        self.validate(&()).map_err(|e| e.to_string())
+    }
+}
+
+#[derive(CandidType, Deserialize, Validate)]
+pub struct GetActionableVotingsResponse {
+    #[garde(skip)]
+    pub entries: Vec<VotingId>,
+}

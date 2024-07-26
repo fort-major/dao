@@ -1,5 +1,6 @@
 import { VotingId } from "@/declarations/votings/votings.did";
 import { ROOT } from "@/routes";
+import { AttentionMarker } from "@components/attention-marker";
 import { BooleanInput } from "@components/boolean-input";
 import { Btn } from "@components/btn";
 import { Countdown, daysLeft, nowNs } from "@components/countdown";
@@ -20,7 +21,11 @@ import { useHumans } from "@store/humans";
 import { IArchivedTaskV1, ITask, TTaskStatus, useTasks } from "@store/tasks";
 import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
-import { encodeVotingId, timestampToStr } from "@utils/encoding";
+import {
+  decodeVotingId,
+  encodeVotingId,
+  timestampToStr,
+} from "@utils/encoding";
 import { logInfo } from "@utils/error";
 import { E8s } from "@utils/math";
 import { getProfProof } from "@utils/security";
@@ -45,9 +50,34 @@ export function TaskMini(props: ITaskProps) {
   const { tasks, archivedTasks, fetchTasksById } = useTasks();
   const { meIsTeamMember } = useHumans();
   const { identity } = useAuth();
+  const { actionableVotings } = useVotings();
+
+  const [taskMarker, setTaskMaker] = createSignal(false);
 
   onMount(() => {
     if (!task()) fetchTasksById([props.id]);
+  });
+
+  createEffect(() => {
+    if (stage() === "Archived") return;
+
+    let taskM = false;
+
+    for (let id of Object.keys(actionableVotings).map(decodeVotingId)) {
+      if ("EvaluateTask" in id && props.id === id.EvaluateTask) {
+        taskM = true;
+      }
+
+      if ("StartSolveTask" in id && props.id === id.StartSolveTask) {
+        taskM = true;
+      }
+
+      if ("DeleteTask" in id && props.id === id.DeleteTask) {
+        taskM = true;
+      }
+    }
+
+    setTaskMaker(taskM);
   });
 
   const task = (): (Partial<ITask> & IArchivedTaskV1) | undefined =>
@@ -103,6 +133,10 @@ export function TaskMini(props: ITaskProps) {
 
     if ("Solve" in t.stage) {
       return "Solve";
+    }
+
+    if ("PreSolve" in t.stage) {
+      return "PreSolve";
     }
 
     if ("Evaluate" in t.stage) {
@@ -188,11 +222,14 @@ export function TaskMini(props: ITaskProps) {
 
   return (
     <div
-      class="flex flex-col gap-5 shadow-md p-5"
+      class="flex flex-col self-stretch gap-5 shadow-md p-5 relative"
       classList={{
         "opacity-50": !interestingToMe(),
       }}
     >
+      <Show when={taskMarker()}>
+        <AttentionMarker />
+      </Show>
       <div class="flex flex-col gap-2">
         <div class="flex flex-grow gap-1 items-center">
           <div class="flex flex-grow gap-1 items-baseline">
@@ -478,7 +515,13 @@ export function Task(props: ITaskProps) {
               onRefreshEntity={handleRefresh}
             />
           </Match>
-          <Match when={readyToEvaluate() && meIsTeamMember()}>
+          <Match
+            when={
+              readyToEvaluate() &&
+              meIsTeamMember() &&
+              task()!.solutions.length > 0
+            }
+          >
             <Btn
               text="Start Evaluation Phase"
               onClick={handleFinishSolveClick}
@@ -633,7 +676,7 @@ export function Task(props: ITaskProps) {
 
   return (
     <>
-      <div class="flex flex-col gap-5">
+      <div class="flex flex-col self-stretch gap-5">
         <div class="flex flex-col gap-2">
           <div class="flex flex-grow gap-1 items-center">
             <div class="flex flex-grow gap-1 items-baseline">

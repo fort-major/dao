@@ -1,4 +1,5 @@
 import { ROOT } from "@/routes";
+import { AttentionMarker } from "@components/attention-marker";
 import { Avatar } from "@components/avatar";
 import { Btn } from "@components/btn";
 import { E8sWidget, EE8sKind } from "@components/e8s-widget";
@@ -9,10 +10,12 @@ import { ProfileMicro } from "@components/profile/profile";
 import { A } from "@solidjs/router";
 import { useAuth } from "@store/auth";
 import { useHumans } from "@store/humans";
+import { useVotings } from "@store/votings";
 import { COLORS } from "@utils/colors";
 import { avatarSrcFromPrincipal } from "@utils/common";
+import { decodeVotingId } from "@utils/encoding";
 import { E8s } from "@utils/math";
-import { createEffect, createSignal, Match, Show, Switch } from "solid-js";
+import { createEffect, createSignal, Match, on, Show, Switch } from "solid-js";
 
 export interface IHeaderProps {
   class?: string;
@@ -21,8 +24,38 @@ export interface IHeaderProps {
 export function Header(props: IHeaderProps) {
   const { isAuthorized, authorize, identity, myBalance } = useAuth();
   const { reputation } = useHumans();
+  const { actionableVotings } = useVotings();
 
   const [expanded, setExpanded] = createSignal(false);
+  const [tasksMarker, setTasksMarker] = createSignal(false);
+  const [humansMarker, setHumansMarker] = createSignal(false);
+  const [meMarker, setMeMarker] = createSignal(false);
+
+  createEffect(() => {
+    let tasksM = false;
+    let humansM = false;
+    let meM = false;
+
+    for (let id of Object.keys(actionableVotings).map(decodeVotingId)) {
+      if ("HumansEmploy" in id || "HumansUnemploy" in id) {
+        humansM = true;
+      }
+      if (
+        "EvaluateTask" in id ||
+        "StartSolveTask" in id ||
+        "DeleteTask" in id
+      ) {
+        tasksM = true;
+      }
+      if ("BankSetExchangeRate" in id) {
+        meM = true;
+      }
+    }
+
+    setTasksMarker(tasksM);
+    setHumansMarker(humansM);
+    setMeMarker(meM);
+  });
 
   const myRep = () => {
     const me = identity()?.getPrincipal();
@@ -31,7 +64,7 @@ export function Header(props: IHeaderProps) {
 
   const handleUnexpand = () => setExpanded(false);
 
-  const linkClass = "font-primary font-normal text-white text-xl";
+  const linkClass = "font-primary font-normal text-white text-xl relative";
 
   return (
     <header
@@ -65,6 +98,9 @@ export function Header(props: IHeaderProps) {
             href={ROOT.$.tasks.path}
           >
             Tasks
+            <Show when={tasksMarker()}>
+              <AttentionMarker />
+            </Show>
           </A>
           <A
             onClick={handleUnexpand}
@@ -73,6 +109,9 @@ export function Header(props: IHeaderProps) {
             href={ROOT.$.humans.path}
           >
             Humans
+            <Show when={humansMarker()}>
+              <AttentionMarker />
+            </Show>
           </A>
           <Show when={isAuthorized()}>
             <A
@@ -82,6 +121,9 @@ export function Header(props: IHeaderProps) {
               href={ROOT.$.me.path}
             >
               Me
+              <Show when={meMarker()}>
+                <AttentionMarker />
+              </Show>
             </A>
           </Show>
         </nav>
