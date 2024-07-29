@@ -111,6 +111,7 @@ const defaultDescription = `# Overview
 <Required>
 <Explain why did you defined this exact set of rewards.> 
 <Remember tasks that do not add value to any project directly (like meetings, bugfixes, etc.) can't be rewarded with storypoints.>
+<To estimate storypoints use the following formula: (usefulness + complexity) / 2, where usefulness and complexity are in range 1-10>
 `;
 
 export function CreateTaskForm(props: ICreateTaskFormProps) {

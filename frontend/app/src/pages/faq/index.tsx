@@ -6,9 +6,9 @@ const cH = `This FAQ is designed to be helpful for contributors. You can easily 
 
 If you have any further questions, please don't hesitate to reach out to us on [Telegram](https://t.me/fortmajoricp). We would be glad to help you and might even add your topic to this FAQ.
 
-Most of Fort Major tasks are related to MSQ now. MSQ is MetaMask Snap based wallet, payment method and authorization provider for the Internet Computer. 
+Most of Fort Major tasks are related to MSQ now. MSQ is a MetaMask Snap based wallet, a payment method and an authorization provider for the Internet Computer. 
 
-To always keep updated follow us in [X](https://x.com/msqwallet), [Discord](https://discord.com/channels/1084943885177995396/1087820055938613360) and [DFINITY Forum](https://forum.dfinity.org/t/msq-hits-the-metamask-snap-store/30499/24)`;
+To always keep updated follow us on [X](https://x.com/msqwallet) and [DFINITY Forum](https://forum.dfinity.org/t/msq-hits-the-metamask-snap-store/30499/24)`;
 
 const a1 = `Fort Major is a Decentralized Autonomous Organization (DAO) that allows contributors from all over the world to participate in the development, management and improvement of Fort Major projects for some benefits such as Rewards and Reputation.
 
@@ -107,6 +107,16 @@ const a10 = `Solutions are typically submitted as links, such as Github commits 
 
 Reputation holders then vote to confirm that the contributor receives their Storypoints and determine the amount of Additional Storypoints (if any) awarded for the task.`;
 
+const a11 = `MSQ is still in Beta and problems like this can happen. We're constantly working on improvements and we are aware of the problem.
+
+What you can do now to resolve the issue right now:
+
+* **Update your browser to the latest version.** Outdated browser is the most common problem and there is a 90% chance this will help you.
+* **Try reinstalling MetaMask.** Sometimes old stale data prevents MetaMask from working properly.
+* **Try a different browser.** MSQ is available everywhere where MetaMask is. If you're using Chrome, try Firefox and vice-versa.
+
+But if nothing helps, reach us out via [Telegram](https://t.me/fortmajoricp/16). We'll do our best to help you as soon as we can.`;
+
 export function FAQPage() {
   return (
     <Page slim class="pb-20 pt-20 px-5 sm:px-20 gap-20">
@@ -125,6 +135,10 @@ export function FAQPage() {
           text={a3}
         />
         <Spoiler header="How can I register here?" text={a4} />
+        <Spoiler
+          header="I can't log in! The MetaMask button is unresponsive! What do I do?"
+          text={a11}
+        />
       </div>
       <div class="flex flex-col self-stretch gap-10">
         <h2 class="font-primary font-semibold text-black text-4xl self-stretch">
