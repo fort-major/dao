@@ -47,7 +47,7 @@ export function TasksPage() {
 
   createEffect(
     on(tab, () => {
-      if (isReadyToFetch()) {
+      if (isReadyToFetch() && ids().length === 0) {
         handleFetch();
       }
     })
@@ -99,7 +99,7 @@ export function TasksPage() {
       await fetchArchivedTaskIds();
       more = await fetchArchivedTaskIds();
     } else {
-      await fetchTaskIds(tab());
+      more = await fetchTaskIds(tab());
     }
 
     setCanFetchMore(more);

@@ -29,18 +29,19 @@ const Btn = (props: {
   iconSize?: number;
   class?: string;
   innerClass?: string;
-  shadow?: boolean;
+  shadow?: string;
 }) => {
   const c = () => (
     <div
       class="flex items-center gap-2 rounded-full py-4 px-6 h-[50px]"
       style={{
         background: props.color,
-        "box-shadow": props.shadow ? "2px 2px 15px rgba(0, 0, 0, .25)" : "",
+        "box-shadow": props.shadow ? props.shadow : "",
       }}
       classList={{
         [props.innerClass!]: !!props.innerClass,
         "w-[50px]": !props.text,
+        "justify-center": !props.text,
       }}
     >
       <Show when={props.text}>
@@ -117,7 +118,7 @@ const HowItWorksCard = (props: {
   iconClass?: string;
 }) => (
   <div
-    class="flex flex-col rounded-3xl gap-10 p-10"
+    class="flex flex-col rounded-3xl gap-10 px-6 sm:px-10 py-10"
     style={{ background: props.bg }}
     classList={{ [props.class!]: !!props.class }}
   >
@@ -178,7 +179,7 @@ const AboutCard = (props: {
   whiteText?: boolean;
 }) => (
   <div
-    class="flex flex-col gap-4 p-10 rounded-[24px]"
+    class="flex flex-col gap-4 px-6 sm:px-10 py-10 rounded-[24px]"
     classList={{ [props.class!]: !!props.class }}
   >
     <h4 class="font-semibold text-[32px] leading-[32px] tracking-tight">
@@ -278,7 +279,7 @@ export function HomePage() {
           color={COLORS.darkBlue}
           iconSize={16}
           class="fixed bottom-20 left-1/2 translate-x-[-50%] z-50"
-          shadow
+          shadow="2px 2px 15px rgba(0, 0, 0, .25)"
         />
       </Show>
       <svg
@@ -308,6 +309,7 @@ export function HomePage() {
               linkTo="https://fort-major.org/tasks"
               color={COLORS.darkBlue}
               iconSize={16}
+              shadow="2px 2px 15px rgba(0, 0, 0, .25)"
             />
             <Btn
               icon={EIconKind.Telegram}
@@ -316,6 +318,7 @@ export function HomePage() {
               color="#2AABEE"
               iconSize={30}
               innerClass="px-[8px] py-[8px]"
+              shadow="2px 2px 15px rgba(0, 0, 0, .25)"
             />
           </div>
         </div>
@@ -485,10 +488,38 @@ export function HomePage() {
                 linkTarget="_blank"
                 linkTo="https://t.me/fortmajoricp"
                 class="self-start"
+                shadow="2px 2px 15px #5102F8"
               />
             }
           />
         </AboutCols>
+      </div>
+
+      <div class="flex flex-col px-5 lg:px-20 py-20 lg:py-36">
+        <div class="flex flex-col sm:items-center sm:flex-row gap-10 sm:justify-between px-6 sm:px-10 py-10 rounded-3xl bg-gray-110">
+          <h4 class="flex flex-col sm:block font-semibold tracking-tight text-2xl leading-6 sm:text-[40px] sm:leading-10">
+            <span class="text-nowrap text-center sm:text-left">
+              No time to contribute?
+            </span>{" "}
+            <span class="text-nowrap text-center sm:text-left">
+              Just Invest in FMJ.
+            </span>
+          </h4>
+          <div class="flex flex-col sm:flex-row gap-5">
+            <a
+              class="flex items-center justify-center gap-3 py-2 px-6 rounded-full font-semibold text-md leading-4 h-[50px] cursor-pointer text-nowrap flex-nowrap"
+              style={{
+                background:
+                  "linear-gradient(270deg, rgb(123, 106, 255) 0%, rgb(74, 97, 204) 100%)",
+                "box-shadow": "2px 2px 15px rgba(0, 0, 0, .25)",
+              }}
+              href=""
+              target="_blank"
+            >
+              Buy on ICPSwap <img src="/icons/icpswap.png" />
+            </a>
+          </div>
+        </div>
       </div>
 
       <div class="flex flex-col gap-10 px-5 sm:my-28 lg:px-20">
@@ -534,7 +565,7 @@ export function HomePage() {
                   .toPercent()
                   .toPrecision(2, true) + "%"
               }
-              title="FMJ Monthly Inflation"
+              title="FMJ Monthly Inflation (12m EMA)"
             />
           </Show>
         </div>
