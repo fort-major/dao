@@ -38,7 +38,10 @@ const Btn = (props: {
         background: props.color,
         "box-shadow": props.shadow ? "2px 2px 15px rgba(0, 0, 0, .25)" : "",
       }}
-      classList={{ [props.innerClass!]: !!props.innerClass }}
+      classList={{
+        [props.innerClass!]: !!props.innerClass,
+        "w-[50px]": !props.text,
+      }}
     >
       <Show when={props.text}>
         <span class="font-primary font-semibold text-nowrap text-sm sm:text-md text-white leading-4">

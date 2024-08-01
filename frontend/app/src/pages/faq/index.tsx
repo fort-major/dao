@@ -117,6 +117,8 @@ What you can do now to resolve the issue right now:
 
 But if nothing helps, reach us out via [Telegram](https://t.me/fortmajoricp/16). We'll do our best to help you as soon as we can.`;
 
+const a12 = `Reputation decays over time if you are inactive. Each month the system will deduct some amount of Reputation, if you don't earn new reputation during this time. The amount deducted is \`sqrt(x)\` - so the less Reputation you have the bigger percentage of it will be deducted.`;
+
 export function FAQPage() {
   return (
     <Page slim class="pb-20 pt-20 px-5 sm:px-20 gap-20">
@@ -159,6 +161,7 @@ export function FAQPage() {
           text={a9}
         />
         <Spoiler header="How are solutions submitted and rated?" text={a10} />
+        <Spoiler header="Is Reputation permanent?" text={a12} />
       </div>
     </Page>
   );
