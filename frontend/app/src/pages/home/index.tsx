@@ -513,7 +513,7 @@ export function HomePage() {
                   "linear-gradient(270deg, rgb(123, 106, 255) 0%, rgb(74, 97, 204) 100%)",
                 "box-shadow": "2px 2px 15px rgba(0, 0, 0, .25)",
               }}
-              href=""
+              href="https://app.icpswap.com/swap?input=ryjl3-tyaaa-aaaaa-aaaba-cai&output=q624g-niaaa-aaaag-alfyq-cai"
               target="_blank"
             >
               Buy on ICPSwap <img src="/icons/icpswap.png" />
