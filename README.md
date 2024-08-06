@@ -2,6 +2,8 @@
 
 Fair, open, robust and transparent digital organization with an uplifting vibe.
 
+*[Join Our Telegram](https://t.me/fortmajoricp)*
+
 ## Docs
 
 Our DAO is fully expressed via two entities:
