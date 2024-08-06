@@ -182,19 +182,19 @@ function SatisfactionVotingInput(props: IVotingInputProps) {
 }
 
 function levelToStars(level: E8s): number {
-  if (level.gt(E8s.f0_8())) {
+  if (level.gt(E8s.f0_75())) {
     return 5;
   }
 
-  if (level.gt(E8s.f0_6())) {
+  if (level.gt(E8s.f0_5())) {
     return 4;
   }
 
-  if (level.gt(E8s.f0_4())) {
+  if (level.gt(E8s.f0_25())) {
     return 3;
   }
 
-  if (level.gt(E8s.f0_2())) {
+  if (level.gt(E8s.f0_05())) {
     return 2;
   }
 
@@ -269,7 +269,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(1)}
           color={starColor()}
           hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange(Result.Ok(E8s.f0_2()))}
+          onClick={() => props.onChange(Result.Ok(E8s.f0_05()))}
           onMouseEnter={() => setHoveredStar(1)}
           onMouseLeave={setHoveredStar}
           class={d() ? "" : "cursor-pointer"}
@@ -278,7 +278,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(2)}
           color={starColor()}
           hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange(Result.Ok(E8s.f0_4()))}
+          onClick={() => props.onChange(Result.Ok(E8s.f0_25()))}
           onMouseEnter={() => setHoveredStar(2)}
           onMouseLeave={setHoveredStar}
           class={d() ? "" : "cursor-pointer"}
@@ -287,7 +287,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(3)}
           color={starColor()}
           hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange(Result.Ok(E8s.f0_6()))}
+          onClick={() => props.onChange(Result.Ok(E8s.f0_5()))}
           onMouseEnter={() => setHoveredStar(3)}
           onMouseLeave={setHoveredStar}
           class={d() ? "" : "cursor-pointer"}
@@ -296,7 +296,7 @@ function EvaluationVotingInput(props: IVotingInputProps) {
           kind={starIcon(4)}
           color={starColor()}
           hoverColor={d() ? COLORS.gray[150] : COLORS.yellow}
-          onClick={() => props.onChange(Result.Ok(E8s.f0_8()))}
+          onClick={() => props.onChange(Result.Ok(E8s.f0_75()))}
           onMouseEnter={() => setHoveredStar(4)}
           onMouseLeave={setHoveredStar}
           class={d() ? "" : "cursor-pointer"}

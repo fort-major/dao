@@ -40,6 +40,10 @@ export class E8s {
     return new E8s(1_0000_0000n);
   }
 
+  public static f0_05(): E8s {
+    return new E8s(500_0000n);
+  }
+
   public static f0_1(): E8s {
     return new E8s(1000_0000n);
   }
