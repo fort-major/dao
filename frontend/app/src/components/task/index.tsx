@@ -150,8 +150,8 @@ export function TaskMini(props: ITaskProps) {
     const t = task();
 
     const pClass =
-      "font-primary font-normal text-md text-gray-150 flex gap-2 items-center justify-end";
-    const spanClass = "font-bold text-black text-xl";
+      "flex flex-wrap font-primary font-normal text-md text-gray-150 flex gap-2 items-baseline justify-end text-nowrap";
+    const spanClass = "font-bold text-black text-xl leading-3";
     const n = nowNs();
 
     return (
@@ -169,6 +169,9 @@ export function TaskMini(props: ITaskProps) {
         </Match>
         <Match when={t && t.stage && "Solve" in t.stage}>
           <p class={pClass}>
+            <span class="font-primary text-gray-140">
+              ({solutionsAdded()}/{solutionsMax()})
+            </span>
             <span class={spanClass}>accepts</span> solutions for{" "}
             <Countdown
               timestampNs={n}
@@ -220,6 +223,24 @@ export function TaskMini(props: ITaskProps) {
     return "Public";
   };
 
+  const solutionsAdded = () => {
+    const t = task();
+
+    if (!t) return 0;
+
+    return t.solutions.length;
+  };
+
+  const solutionsMax = () => {
+    const t = task();
+
+    if (!t) return 0;
+
+    return (
+      t.solver_constraints.find((it) => "MaxSolutions" in it)?.MaxSolutions ?? 0
+    );
+  };
+
   return (
     <div
       class="flex flex-col self-stretch gap-5 shadow-md p-5 relative"
@@ -252,7 +273,7 @@ export function TaskMini(props: ITaskProps) {
         </div>
       </div>
       <Show when={stage() !== "Archived"}>
-        <div class="flex flex-col lg:flex-row gap-1 justify-between items-end lg:items-center">
+        <div class="flex leading-4 flex-col lg:flex-row gap-1 justify-between items-end lg:items-baseline">
           {stageLabel()}
           <div class="flex gap-1 lg:items-center">
             <E8sWidget
