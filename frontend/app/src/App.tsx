@@ -17,7 +17,7 @@ const AppRoot = (props: IChildren) => (
   <>
     <ErrorBoundary
       fallback={(e) => {
-        logErr(ErrorCode.UNKNOWN, `FATAL: ${debugStringify(e)}`);
+        console.error(ErrorCode.UNKNOWN, `FATAL: ${debugStringify(e)}`);
 
         return undefined;
       }}

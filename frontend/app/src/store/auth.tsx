@@ -195,6 +195,7 @@ export function AuthStore(props: IChildren) {
       return authorize();
     }
 
+    logInfo("Using Google Chrome? Make sure you've allowed pop-ups to appear!");
     err(ErrorCode.AUTH, debugStringify(res));
   };
 
