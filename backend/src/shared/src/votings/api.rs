@@ -31,23 +31,30 @@ impl Guard<VotingsState> for StartVotingRequest {
         now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.profile_proof.assert_valid_for(caller, now)?;
-        self.reputation_proof.assert_valid_for(caller, now)?;
-
-        if !self
-            .profile_proof
-            .body
-            .as_ref()
-            .expect("UNREACHEABLE")
-            .is_team_member
-        {
-            return Err(format!("Only team members can start votings"));
-        }
 
         let id = self.kind.get_id();
 
         if let Some(_voting) = state.votings.get(&id) {
             return Err(format!("The voting is already in progress"));
+        }
+
+        self.profile_proof.assert_valid_for(caller, now)?;
+        self.reputation_proof.assert_valid_for(caller, now)?;
+
+        let is_team_member = self
+            .profile_proof
+            .body
+            .as_ref()
+            .expect("UNREACHEABLE")
+            .is_team_member;
+
+        if !is_team_member {
+            if !self
+                .reputation_proof
+                .rep_reliant_action_can_be_done(caller, now)
+            {
+                return Err(format!("Access denied"));
+            }
         }
 
         Ok(())

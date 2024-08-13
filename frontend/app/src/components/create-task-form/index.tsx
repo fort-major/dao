@@ -362,7 +362,7 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         solution_fields: result,
         assignees: a.length > 0 ? a : undefined,
         decision_topics: topics(),
-      });
+      }).finally(enable);
 
       clear();
 
@@ -382,14 +382,12 @@ export function CreateTaskForm(props: ICreateTaskFormProps) {
         new_solution_fields: result,
         new_assignees: a.length > 0 ? a : null,
         new_decision_topics: topics(),
-      });
+      }).finally(enable);
 
       fetchTasksById([props.id]);
 
       logInfo(`The task #${props.id.toString()} has been edited`);
     }
-
-    enable();
   };
 
   const handleDeleteClick = async () => {

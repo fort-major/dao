@@ -8,6 +8,7 @@ use ic_cdk::{
 };
 use shared::{
     liquid_democracy::{state::GENERAL_TOPIC_ID, types::DecisionTopicId},
+    proof::{last_reputation_reliant_action_at, start_cleanup_interval_for_rep_reliant_actions},
     tasks::{
         api::{FinishEditTaskRequest, FinishSolveRequest, GetTasksByIdRequest},
         client::TasksCanisterClient,
@@ -41,6 +42,8 @@ fn post_upgrade_hook() {
     for timer in timers {
         start_voting_timer(timer, now);
     }
+
+    start_cleanup_interval_for_rep_reliant_actions();
 }
 
 #[update]
@@ -120,6 +123,12 @@ fn votings__get_actionable_votings(
 
         s.get_actionable_votings(req, caller())
     })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn _votings__get_my_create_voting_timestamp() -> u64 {
+    last_reputation_reliant_action_at(&caller())
 }
 
 fn start_voting_timer(timer: VotingTimer, now: TimestampNs) {

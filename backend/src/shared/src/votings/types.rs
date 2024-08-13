@@ -22,7 +22,8 @@ use crate::{
     DurationNs, TimestampNs, ENV_VARS,
 };
 
-pub const ONE_HOUR_NS: u64 = 1_000_000_000 * 60 * 60;
+pub const ONE_MINUTE_NS: u64 = 1_000_000_000 * 60;
+pub const ONE_HOUR_NS: u64 = ONE_MINUTE_NS * 60;
 pub const ONE_DAY_NS: u64 = ONE_HOUR_NS * 24;
 pub const ONE_WEEK_NS: u64 = ONE_DAY_NS * 7;
 pub const ONE_MONTH_NS: u64 = ONE_WEEK_NS * 30;

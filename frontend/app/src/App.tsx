@@ -23,8 +23,8 @@ const AppRoot = (props: IChildren) => (
       }}
     >
       <AuthStore>
-        <VotingsStore>
-          <HumanStore>
+        <HumanStore>
+          <VotingsStore>
             <TasksStore>
               <BankStore>
                 <Header />
@@ -33,8 +33,8 @@ const AppRoot = (props: IChildren) => (
                 </main>
               </BankStore>
             </TasksStore>
-          </HumanStore>
-        </VotingsStore>
+          </VotingsStore>
+        </HumanStore>
       </AuthStore>
     </ErrorBoundary>
     <Toaster />

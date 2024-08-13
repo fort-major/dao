@@ -1,10 +1,18 @@
-import { createContext, createEffect, on, useContext } from "solid-js";
+import {
+  Accessor,
+  createContext,
+  createEffect,
+  createResource,
+  createSignal,
+  on,
+  useContext,
+} from "solid-js";
 import { Store, createStore, produce } from "solid-js/store";
 import { IChildren, TPrincipalStr, TTaskId, TTimestamp } from "../utils/types";
 import { ErrorCode, err } from "../utils/error";
 import { Principal } from "@dfinity/principal";
 import { useAuth } from "./auth";
-import { E8s } from "../utils/math";
+import { E8s, repToCooldownNs } from "../utils/math";
 import {
   SwapFrom,
   SwapInto,
@@ -33,6 +41,7 @@ import {
   getRepProof,
   getRepProofCert,
 } from "@utils/security";
+import { nowNs } from "@components/countdown";
 
 export type TVotingIdStr = string;
 
@@ -114,6 +123,8 @@ export interface IVotingsStoreContext {
   unfollow: (id: Principal) => Promise<void>;
   actionableVotings: Store<ActionableVotingsStore>;
   fetchActionableVotings: () => Promise<void>;
+
+  lastVotingCreationTimestamp: Accessor<bigint>;
 }
 
 const VotingsContext = createContext<IVotingsStoreContext>();
@@ -146,6 +157,8 @@ export function VotingsStore(props: IChildren) {
   const [followeesOf, setFolloweesOf] = createStore<FolloweesOfStore>({});
   const [actionableVotings, setActionableVotings] =
     createStore<ActionableVotingsStore>({});
+  const [lastVotingCreationTimestamp, setLastVotingCreationTimestamp] =
+    createSignal(0n);
 
   createEffect(
     on(isReadyToFetch, (ready) => {
@@ -159,9 +172,20 @@ export function VotingsStore(props: IChildren) {
     on(isAuthorized, (ready) => {
       if (ready) {
         fetchActionableVotings();
+        fetchLastVotingCreationTimestamp();
       }
     })
   );
+
+  const fetchLastVotingCreationTimestamp = async () => {
+    assertAuthorized();
+
+    const votingsActor = newVotingsActor(agent()!);
+    const timestamp =
+      await votingsActor._votings__get_my_create_voting_timestamp();
+
+    setLastVotingCreationTimestamp(timestamp);
+  };
 
   const fetchActionableVotings: IVotingsStoreContext["fetchActionableVotings"] =
     async () => {
@@ -275,6 +299,30 @@ export function VotingsStore(props: IChildren) {
       });
     };
 
+  const [repProof] = createResource(agent, getRepProof);
+
+  const canStartVoting = (): boolean | bigint => {
+    if (!isAuthorized()) return false;
+
+    const rProof = repProof();
+
+    if (!rProof) return false;
+
+    const myRep = rProof.reputation_delegation_tree.reputation;
+    const cooldown = repToCooldownNs(E8s.new(myRep));
+
+    if (cooldown === undefined) return false;
+
+    const timeElapsedSinceLastVotingCreated =
+      nowNs() - lastVotingCreationTimestamp();
+
+    if (timeElapsedSinceLastVotingCreated >= cooldown) {
+      return true;
+    } else {
+      return cooldown - timeElapsedSinceLastVotingCreated;
+    }
+  };
+
   const startVoting = async (kind: VotingKind) => {
     const votingsActor = newVotingsActor(agent()!);
     const { id } = await votingsActor.votings__start_voting({
@@ -289,22 +337,33 @@ export function VotingsStore(props: IChildren) {
       },
     });
 
+    setLastVotingCreationTimestamp(nowNs());
+
     return id;
   };
 
   const assertVotingCanBeCreated = async (votingId: TVotingIdStr) => {
-    assertAuthorized();
+    const canCreate = canStartVoting();
+    if (canCreate !== true) {
+      if (canCreate === false) {
+        err(
+          ErrorCode.SECURITY_VIOLATION,
+          "You have to earn at least 20 reputation to create votings"
+        );
+      } else {
+        err(
+          ErrorCode.SECURITY_VIOLATION,
+          `Wait for ${canCreate / 60_000_000_000n}min ${
+            (canCreate / 1_000_000_000n) % 60n
+          }sec before trying again`
+        );
+      }
+    }
 
     const voting = votings[votingId];
 
     if (voting) {
       err(ErrorCode.UNREACHEABLE, `Voting ${votingId} already exists`);
-    }
-
-    const proof = await getProfProof(agent()!);
-
-    if (!proof.is_team_member) {
-      err(ErrorCode.UNREACHEABLE, `Only team members can create votings`);
     }
   };
 
@@ -519,6 +578,7 @@ export function VotingsStore(props: IChildren) {
         unfollow,
         actionableVotings,
         fetchActionableVotings,
+        lastVotingCreationTimestamp,
       }}
     >
       {props.children}

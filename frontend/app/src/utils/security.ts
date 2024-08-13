@@ -24,8 +24,6 @@ import {
   newLiquidDemocracyActor,
   newReputationActor,
 } from "./backend";
-import { E8s } from "./math";
-import { nowNs } from "@components/countdown";
 
 export function eventHandler<E extends Event>(
   fn: (e: E) => void | Promise<void>
@@ -40,7 +38,7 @@ export function eventHandler<E extends Event>(
     }
 
     Promise.resolve(fn(e)).catch((e) =>
-      err(ErrorCode.UNKNOWN, debugStringify(e))
+      console.error(ErrorCode.UNKNOWN, debugStringify(e))
     );
   };
 }

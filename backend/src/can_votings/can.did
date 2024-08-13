@@ -106,6 +106,7 @@ type VotingKind = variant {
 };
 type VotingStage = variant { Executing; InProgress };
 service : {
+  _votings__get_my_create_voting_timestamp : () -> (nat64) query;
   votings__cast_vote : (CastVoteRequest) -> (CastVoteResponse);
   votings__get_actionable_votings : (record {}) -> (
       GetActionableVotingsResponse,

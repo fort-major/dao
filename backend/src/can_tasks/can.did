@@ -25,12 +25,19 @@ type CreateTaskRequest = record {
   storypoints_base : nat;
   days_to_solve : nat64;
   hours_base : nat;
+  reputation_proof : ReputationProof;
   description : text;
   decision_topics : vec nat32;
   storypoints_ext_budget : nat;
   assignees : opt vec principal;
 };
 type CreateTaskResponse = record { id : nat64 };
+type DecisionTopicSet = variant {
+  It : nat32;
+  Or : record { DecisionTopicSet; DecisionTopicSet };
+  And : record { DecisionTopicSet; DecisionTopicSet };
+  Not : DecisionTopicSet;
+};
 type DeleteRequest = record { id : nat64 };
 type EditTaskRequest = record {
   id : nat64;
@@ -81,6 +88,20 @@ type PageRequest = record { skip : nat32; take : nat32; reversed : bool };
 type PageResponse = record { left : nat32; next : opt principal };
 type ProfileProof = record { cert_raw : blob; body : opt ProfileProofBody };
 type ProfileProofBody = record { id : principal; is_team_member : bool };
+type ReputationDelegationTreeNode = record {
+  id : principal;
+  reputation : nat;
+  topicset : DecisionTopicSet;
+  followers : vec ReputationDelegationTreeNode;
+};
+type ReputationProof = record {
+  cert_raw : blob;
+  body : opt ReputationProofBody;
+};
+type ReputationProofBody = record {
+  reputation_delegation_tree : ReputationDelegationTreeNode;
+  reputation_total_supply : nat;
+};
 type Solution = record {
   evaluation : opt nat;
   attached_at : nat64;
@@ -139,6 +160,7 @@ type URLKind = variant {
   Twitter;
 };
 service : (InitRequest) -> {
+  _tasks__get_my_create_task_timestamp : () -> (nat64) query;
   get_archive_error : () -> (opt record { nat64; text }) query;
   task_archive__get_archived_tasks : (GetArchivedTaskIdsRequest) -> (
       GetArchivedTaskIdsResponse,

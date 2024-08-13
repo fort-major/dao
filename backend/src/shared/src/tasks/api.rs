@@ -9,7 +9,7 @@ use crate::{
     escape_script_tag,
     liquid_democracy::types::DecisionTopicId,
     pagination::{PageRequest, PageResponse},
-    proof::ProfileProof,
+    proof::{ProfileProof, ReputationProof},
     Guard, ENV_VARS,
 };
 
@@ -40,6 +40,8 @@ pub struct CreateTaskRequest {
     pub decision_topics: Vec<DecisionTopicId>,
     #[garde(dive)]
     pub profile_proof: ProfileProof,
+    #[garde(dive)]
+    pub reputation_proof: ReputationProof,
     #[garde(skip)]
     pub assignees: Option<BTreeSet<Principal>>,
 }
@@ -52,17 +54,6 @@ impl Guard<TasksState> for CreateTaskRequest {
         now: crate::TimestampNs,
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
-        self.profile_proof.assert_valid_for(caller, now)?;
-
-        if !self
-            .profile_proof
-            .body
-            .as_ref()
-            .expect("UNREACHEABLE")
-            .is_team_member
-        {
-            return Err(format!("Only team members can create tasks"));
-        }
 
         if self.hours_base > E8s(Nat::from(16_0000_0000u64)) {
             return Err(format!("Max possible reward is 16 hours"));
@@ -74,6 +65,28 @@ impl Guard<TasksState> for CreateTaskRequest {
 
         if self.storypoints_ext_budget > E8s(Nat::from(50_0000_0000u64)) {
             return Err(format!("Max possible reward is 50 additional storypoints"));
+        }
+
+        self.profile_proof.assert_valid_for(caller, now)?;
+
+        let is_team_member = self
+            .profile_proof
+            .body
+            .as_ref()
+            .expect("UNREACHEABLE")
+            .is_team_member;
+
+        if !is_team_member {
+            // checking this proof here to save a little bit of cycles
+            // if you're going to use the proof downstream, make sure to move this line higher, so it is 100% evaluated
+            self.reputation_proof.assert_valid_for(caller, now)?;
+
+            if !self
+                .reputation_proof
+                .rep_reliant_action_can_be_done(caller, now)
+            {
+                return Err(format!("Access denied"));
+            }
         }
 
         self.title = escape_script_tag(&self.title);

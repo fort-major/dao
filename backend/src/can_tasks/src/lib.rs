@@ -10,6 +10,7 @@ use ic_cdk::{
 use serde::Deserialize;
 use shared::{
     humans::{api::MintRewardsRequest, client::HumansCanisterClient},
+    proof::{last_reputation_reliant_action_at, start_cleanup_interval_for_rep_reliant_actions},
     reputation::{api::MintRepRequest, client::ReputationCanisterClient},
     task_archive::api::{
         GetArchivedTaskIdsRequest, GetArchivedTaskIdsResponse, GetArchivedTasksByIdRequest,
@@ -54,6 +55,7 @@ fn post_upgrade_hook() {
     with_state_mut(|s| *s = tasks_state);
 
     start_archiving_timer();
+    start_cleanup_interval_for_rep_reliant_actions();
 }
 
 #[update]
@@ -267,6 +269,12 @@ fn tasks__get_tasks_stats(mut req: GetTasksStatsRequest) -> GetTasksStatsRespons
 
         s.get_task_stats(req)
     })
+}
+
+#[query]
+#[allow(non_snake_case)]
+fn _tasks__get_my_create_task_timestamp() -> u64 {
+    last_reputation_reliant_action_at(&caller())
 }
 
 fn start_archiving_timer() {

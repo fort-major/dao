@@ -7,33 +7,22 @@ import {
   onMount,
   useContext,
 } from "solid-js";
-import { IChildren, ONE_MIN_NS } from "../utils/types";
+import { IChildren } from "../utils/types";
 import { ErrorCode, err, logInfo } from "../utils/error";
 import { Identity, Agent } from "@dfinity/agent";
 import { MsqClient, MsqIdentity } from "@fort-major/msq-client";
-import {
-  Principal,
-  bytesToHex,
-  debugStringify,
-  hexToBytes,
-} from "../utils/encoding";
+import { Principal, debugStringify } from "../utils/encoding";
 import {
   makeAgent,
   makeAnonymousAgent,
   newFmjActor,
   newHumansActor,
   newIcpActor,
-  newLiquidDemocracyActor,
   newReputationActor,
   optUnwrap,
 } from "../utils/backend";
 import { E8s } from "../utils/math";
-import {
-  GetProfilesResponse,
-  ProfileProofBody,
-} from "@/declarations/humans/humans.did";
-import { delay, fromCBOR, toCBOR } from "@fort-major/msq-shared";
-import { ReputationProofBody } from "@/declarations/reputation/reputation.did";
+import { GetProfilesResponse } from "@/declarations/humans/humans.did";
 import { generatePoW, PROOF_TTL_MS } from "@utils/security";
 
 export interface IMyBalance {

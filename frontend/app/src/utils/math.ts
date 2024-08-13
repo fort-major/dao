@@ -1,5 +1,6 @@
 import { strToTokens, tokensToStr } from "./encoding";
 import { ErrorCode, err } from "./error";
+import { ONE_DAY_NS, ONE_HOUR_NS, ONE_MIN_NS } from "./types";
 
 export class E8s {
   constructor(public val: bigint) {
@@ -155,4 +156,13 @@ export class E8s {
   public toPercent() {
     return E8s.new(this.val * 100n);
   }
+}
+
+export function repToCooldownNs(rep: E8s): bigint | undefined {
+  if (rep.ge(E8s.fromBigIntBase(500n))) return 0n;
+  if (rep.ge(E8s.fromBigIntBase(100n))) return ONE_MIN_NS * 10n;
+  if (rep.ge(E8s.fromBigIntBase(50n))) return ONE_HOUR_NS;
+  if (rep.ge(E8s.fromBigIntBase(20n))) return ONE_DAY_NS;
+
+  return undefined;
 }

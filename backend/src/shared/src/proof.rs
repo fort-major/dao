@@ -1,8 +1,9 @@
-use std::{cell::RefCell, fmt::Debug, num::NonZeroUsize};
+use std::{cell::RefCell, collections::BTreeMap, fmt::Debug, num::NonZeroUsize, time::Duration};
 
-use candid::{decode_args, CandidType, Principal};
+use candid::{decode_args, CandidType, Nat, Principal};
 use garde::Validate;
 use ic_cbor::CertificateToCbor;
+use ic_cdk_timers::set_timer_interval;
 use ic_certificate_verification::VerifyCertificate;
 use ic_certification::{hash_tree::HashTree, Certificate, LookupResult};
 use lru::LruCache;
@@ -10,6 +11,7 @@ use serde::{de::DeserializeOwned, Deserialize};
 use sha2::Digest;
 
 use crate::{
+    e8s::E8s,
     humans::{
         api::GetProfileProofsResponse,
         types::{ProfileProofBody, PROFILE_PROOFS_MARKER},
@@ -22,7 +24,7 @@ use crate::{
         api::GetRepProofResponse,
         types::{ReputationProofBody, REPUTATION_PROOF_MARKER},
     },
-    votings::types::ONE_HOUR_NS,
+    votings::types::{ONE_DAY_NS, ONE_HOUR_NS, ONE_MINUTE_NS},
     DurationNs, TimestampNs, ENV_VARS,
 };
 
@@ -70,6 +72,77 @@ impl ReputationProof {
 
         Ok(())
     }
+
+    pub fn rep_reliant_action_can_be_done(&self, caller: Principal, now: TimestampNs) -> bool {
+        let callers_own_reputation = &self
+            .body
+            .as_ref()
+            .unwrap()
+            .reputation_delegation_tree
+            .reputation;
+
+        let task_cooldown_opt = rep_to_cooldown_ns(callers_own_reputation);
+
+        if let Some(task_cooldown_ns) = task_cooldown_opt {
+            let last_task_created_at = last_reputation_reliant_action_at(&caller);
+            let time_elapsed_since_last_task_created_ns = now - last_task_created_at;
+
+            if time_elapsed_since_last_task_created_ns >= task_cooldown_ns {
+                mark_reputation_reliant_action(caller, now);
+
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
+/*
+    Task creation and voting creation are actions which require you to either be a team member or to posses
+    a certain amount of reputation. In the second case, there is a cooldown on your action, depending on how
+    much reputation do you have.
+
+    These functions allow any canister to implement this functionality. See task creation or voting creation for an example.
+*/
+
+pub fn rep_to_cooldown_ns(rep: &E8s) -> Option<u64> {
+    if &rep.0 >= &Nat::from(500_0000_0000u64) {
+        return Some(0);
+    }
+
+    if &rep.0 >= &Nat::from(100_0000_0000u64) {
+        return Some(ONE_MINUTE_NS * 10);
+    }
+
+    if &rep.0 >= &Nat::from(50_0000_0000u64) {
+        return Some(ONE_HOUR_NS);
+    }
+
+    if &rep.0 >= &Nat::from(20_0000_0000u64) {
+        return Some(ONE_DAY_NS);
+    }
+
+    None
+}
+
+thread_local! {
+    // FIXME: actions will interfere, if more than one distinct action per canister
+    static REPUTATION_RELIANT_ACTION_TIMESTAMP: RefCell<BTreeMap<Principal, u64>> = RefCell::default();
+}
+
+pub fn mark_reputation_reliant_action(of: Principal, now: u64) {
+    REPUTATION_RELIANT_ACTION_TIMESTAMP.with_borrow_mut(|c| c.insert(of, now));
+}
+
+pub fn last_reputation_reliant_action_at(of: &Principal) -> u64 {
+    REPUTATION_RELIANT_ACTION_TIMESTAMP.with_borrow_mut(|c| c.get(of).cloned().unwrap_or_default())
+}
+
+pub fn start_cleanup_interval_for_rep_reliant_actions() {
+    set_timer_interval(Duration::from_nanos(ONE_DAY_NS), || {
+        REPUTATION_RELIANT_ACTION_TIMESTAMP.with_borrow_mut(|c| c.clear());
+    });
 }
 
 #[derive(CandidType, Deserialize, Validate)]

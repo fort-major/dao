@@ -3,15 +3,16 @@ import {
   batch,
   createContext,
   createEffect,
+  createResource,
   createSignal,
   useContext,
 } from "solid-js";
 import { Store, createStore, produce } from "solid-js/store";
 import { IChildren } from "../utils/types";
-import { ErrorCode, err, logErr } from "../utils/error";
+import { ErrorCode, err } from "../utils/error";
 import { Principal } from "@dfinity/principal";
 import { useAuth } from "./auth";
-import { E8s } from "../utils/math";
+import { E8s, repToCooldownNs } from "../utils/math";
 import {
   SolutionField,
   SolverConstraint,
@@ -25,7 +26,13 @@ import {
 } from "../utils/backend";
 import { debugStringify } from "../utils/encoding";
 import { debouncedBatchFetch } from "@utils/common";
-import { getProfProof, getProfProofCert } from "@utils/security";
+import {
+  getProfProof,
+  getProfProofCert,
+  getRepProof,
+  getRepProofCert,
+} from "@utils/security";
+import { nowNs } from "@components/countdown";
 
 export interface ISolution {
   evaluation?: E8s;
@@ -135,6 +142,8 @@ export interface ITasksStoreContext {
     wantRep?: boolean
   ) => Promise<void>;
   taskStats: Accessor<ITaskStats>;
+
+  lastTaskCreationTimestamp: Accessor<bigint>;
 }
 
 export interface ITaskStats {
@@ -167,6 +176,7 @@ export function TasksStore(props: IChildren) {
     assertReadyToFetch,
     isReadyToFetch,
     assertAuthorized,
+    isAuthorized,
     agent,
     identity,
   } = useAuth();
@@ -195,12 +205,32 @@ export function TasksStore(props: IChildren) {
     solvedTasks: 0,
   });
 
+  const [lastTaskCreationTimestamp, setLastTaskCreationTimestamp] =
+    createSignal(0n);
+
+  const [repProof] = createResource(agent, getRepProof);
+
   createEffect(() => {
     if (isReadyToFetch()) {
       setTaskArchiveActor(newTaskArchiveActor(anonymousAgent()!));
       fetchTaskStats();
     }
   });
+
+  createEffect(() => {
+    if (isAuthorized()) {
+      fetchLastTaskCreationTimestamp();
+    }
+  });
+
+  const fetchLastTaskCreationTimestamp = async () => {
+    assertAuthorized();
+
+    const tasksActor = newTasksActor(agent()!);
+    const timestamp = await tasksActor._tasks__get_my_create_task_timestamp();
+
+    setLastTaskCreationTimestamp(timestamp);
+  };
 
   const fetchTaskStats = async () => {
     assertReadyToFetch();
@@ -400,13 +430,44 @@ export function TasksStore(props: IChildren) {
       return result;
     };
 
+  const canCreateTask = (): boolean | bigint => {
+    if (!isAuthorized()) return false;
+
+    const rProof = repProof();
+
+    if (!rProof) return false;
+
+    const myRep = rProof.reputation_delegation_tree.reputation;
+    const cooldown = repToCooldownNs(E8s.new(myRep));
+
+    if (cooldown === undefined) return false;
+
+    const timeElapsedSinceLastTaskCreated =
+      nowNs() - lastTaskCreationTimestamp();
+
+    if (timeElapsedSinceLastTaskCreated >= cooldown) {
+      return true;
+    } else {
+      return cooldown - timeElapsedSinceLastTaskCreated;
+    }
+  };
+
   const createTask: ITasksStoreContext["createTask"] = async (args) => {
-    assertAuthorized();
-
-    const proof = await getProfProof(agent()!);
-
-    if (!proof.is_team_member) {
-      err(ErrorCode.AUTH, "Only team members can create new tasks");
+    const canCreate = canCreateTask();
+    if (canCreate !== true) {
+      if (canCreate === false) {
+        err(
+          ErrorCode.SECURITY_VIOLATION,
+          "You have to earn at least 20 reputation to create tasks"
+        );
+      } else {
+        err(
+          ErrorCode.SECURITY_VIOLATION,
+          `Wait for ${canCreate / 60_000_000_000n}min ${
+            (canCreate / 1_000_000_000n) % 60n
+          }sec before trying again`
+        );
+      }
     }
 
     const tasksActor = newTasksActor(agent()!);
@@ -423,10 +484,15 @@ export function TasksStore(props: IChildren) {
         body: [],
         cert_raw: await getProfProofCert(agent()!),
       },
+      reputation_proof: {
+        body: [],
+        cert_raw: await getRepProofCert(agent()!),
+      },
       decision_topics: args.decision_topics,
       assignees: opt(args.assignees),
     });
 
+    setLastTaskCreationTimestamp(nowNs());
     fetchTasksById([id]);
 
     return id;
@@ -762,6 +828,8 @@ export function TasksStore(props: IChildren) {
         attachToTask,
         solveTask,
         taskStats,
+
+        lastTaskCreationTimestamp,
       }}
     >
       {props.children}

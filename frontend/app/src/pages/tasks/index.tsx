@@ -109,15 +109,14 @@ export function TasksPage() {
   return (
     <Page ref={ref!} slim class="pt-10 pb-20">
       <div class="flex flex-col gap-20 self-stretch">
-        <Show when={canCreateTasks()}>
-          <A class="flex flex-col" href={ROOT.$.tasks.$.create.path}>
-            <Btn
-              text="Create New Task"
-              icon={EIconKind.DocEdit}
-              iconColor={COLORS.green}
-            />
-          </A>
-        </Show>
+        <A class="flex flex-col" href={ROOT.$.tasks.$.create.path}>
+          <Btn
+            text="Create New Task"
+            icon={EIconKind.DocEdit}
+            iconColor={COLORS.green}
+          />
+        </A>
+
         <TasksPageTabs onTabChange={setTab} />
         <div class="flex flex-col gap-10">
           <For
