@@ -79,14 +79,8 @@ export function AuthStore(props: IChildren) {
   onMount(async () => {
     makeAnonymousAgent().then((a) => setAnonymousAgent(a));
 
-    if (retrieveHasMetaMask()) {
-      const res = await MsqClient.create();
-
-      if ("Ok" in res) {
-        setMsqClient(res.Ok);
-
-        return authorize();
-      }
+    if (MsqClient.isSafeToResume()) {
+      authorize();
     }
   });
 
@@ -115,77 +109,64 @@ export function AuthStore(props: IChildren) {
   };
 
   const authorize: IAuthStoreContext["authorize"] = async () => {
-    const msq = msqClient();
+    const result = await MsqClient.createAndLogin();
 
-    if (msq) {
-      let id: MsqIdentity | null;
-
-      if (await msq.isAuthorized()) {
-        id = await MsqIdentity.create(msq);
-      } else {
-        id = await msq.requestLogin();
-      }
-
-      if (!id) {
-        return false;
-      }
-
-      let a = await makeAgent(id as unknown as Identity);
-
-      const humansActor = newHumansActor(a);
-      const reputationActor = newReputationActor(a);
-
-      // set initiator-only one-time init function
-      (window as any).init_once = () => {
-        return Promise.all([
-          humansActor.humans__init_once(),
-          reputationActor.reputation__init_once(),
-        ]);
-      };
-
-      const { entries: profiles } = await humansActor.humans__get_profiles({
-        ids: [id.getPrincipal()],
-      });
-
-      if (!profiles[0][0]) {
-        logInfo(`First time here? Registering, please stand by...`);
-
-        const name = await id.getPseudonym();
-        const [pow, nonce] = await generatePoW(
-          id.getPrincipal(),
-          Principal.fromText(import.meta.env.VITE_HUMANS_CANISTER_ID)
-        );
-
-        await humansActor.humans__register({
-          name: [name],
-          pow,
-          nonce,
-        });
-
-        logInfo("Registered!");
-      }
-
-      batch(() => {
-        setIdentity(id as unknown as Identity);
-        setAgent(a);
-      });
-
-      logInfo("Login successful");
-
-      return true;
+    if ("Err" in result) {
+      err(ErrorCode.AUTH, result.Err);
     }
 
-    const res = await MsqClient.create();
+    const { msq, identity } = result.Ok;
 
-    if ("Ok" in res) {
-      storeHasMetaMask();
-      setMsqClient(res.Ok);
+    storeHasMetaMask();
+    setMsqClient(msq);
 
-      return authorize();
+    await initIdentity(identity);
+
+    return true;
+  };
+
+  const initIdentity = async (identity: Identity & MsqIdentity) => {
+    let a = await makeAgent(identity);
+
+    const humansActor = newHumansActor(a);
+    const reputationActor = newReputationActor(a);
+
+    // set initiator-only one-time init function
+    (window as any).init_once = () => {
+      return Promise.all([
+        humansActor.humans__init_once(),
+        reputationActor.reputation__init_once(),
+      ]);
+    };
+
+    const { entries: profiles } = await humansActor.humans__get_profiles({
+      ids: [identity.getPrincipal()],
+    });
+
+    if (!profiles[0][0]) {
+      logInfo(`First time here? Registering, please stand by...`);
+
+      const name = await identity.getPseudonym();
+      const [pow, nonce] = await generatePoW(
+        identity.getPrincipal(),
+        Principal.fromText(import.meta.env.VITE_HUMANS_CANISTER_ID)
+      );
+
+      await humansActor.humans__register({
+        name: [name],
+        pow,
+        nonce,
+      });
+
+      logInfo("Registered!");
     }
 
-    logInfo("Using Google Chrome? Make sure you've allowed pop-ups to appear!");
-    err(ErrorCode.AUTH, debugStringify(res));
+    batch(() => {
+      setIdentity(identity);
+      setAgent(a);
+    });
+
+    logInfo("Login successful");
   };
 
   const editMyProfile: IAuthStoreContext["editMyProfile"] = async (name) => {
