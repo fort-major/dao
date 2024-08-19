@@ -835,6 +835,17 @@ export function Task(props: ITaskProps) {
                 </div>
               </div>
             </Show>
+            <div class="p-2 bg-darkBlue text-white text-center">
+              ✨ Join{" "}
+              <a
+                href="https://t.me/fortmajoricp"
+                target="_blank"
+                class="underline"
+              >
+                our Telegram group
+              </a>{" "}
+              where all the magic happens ✨
+            </div>
             <div class="flex flex-grow flex-col gap-1">
               {stageLabel()}
               {button()}
