@@ -7,14 +7,18 @@ export interface IMetricWidgetProps {
   secondary?: string;
   onEdit?: (value: string) => void;
   white?: boolean;
+  small?: boolean;
 }
 
 export function MetricWidget(props: IMetricWidgetProps) {
   return (
     <div class="flex items-baseline gap-[2px] font-primary">
       <p
-        class="text-sm text-black font-medium"
-        classList={{ "text-white": !!props.white }}
+        class="text-sm text-black font-light"
+        classList={{
+          "text-white": !!props.white,
+          "text-xs font-light": !!props.small,
+        }}
       >
         {props.primary}
       </p>

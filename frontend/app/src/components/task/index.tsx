@@ -275,10 +275,11 @@ export function TaskMini(props: ITaskProps) {
       <Show when={stage() !== "Archived"}>
         <div class="flex leading-4 flex-col lg:flex-row gap-1 justify-between items-end lg:items-baseline">
           {stageLabel()}
-          <div class="flex gap-1 lg:items-center">
+          <div class="flex gap-5 lg:items-center">
             <E8sWidget
               kind={EE8sKind.Hour}
               minValue={task()?.hours_base ? task()!.hours_base! : E8s.zero()}
+              showFMJExchangeRate
             />
             <E8sWidget
               kind={EE8sKind.Storypoint}
@@ -288,6 +289,7 @@ export function TaskMini(props: ITaskProps) {
                   : E8s.zero()
               }
               maxValue={task()?.storypoints_ext_budget}
+              showFMJExchangeRate
             />
           </div>
         </div>
@@ -790,6 +792,7 @@ export function Task(props: ITaskProps) {
                   minValue={
                     task()?.hours_base ? task()!.hours_base! : E8s.zero()
                   }
+                  showFMJExchangeRate
                 />
                 <E8sWidget
                   kind={EE8sKind.Storypoint}
@@ -799,6 +802,7 @@ export function Task(props: ITaskProps) {
                       : E8s.zero()
                   }
                   maxValue={task()?.storypoints_ext_budget}
+                  showFMJExchangeRate
                 />
               </div>
             </Show>
