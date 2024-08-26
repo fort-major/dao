@@ -1,0 +1,109 @@
+type ArchivedWorkReport = variant { V0001 : ArchivedWorkReportV0001 };
+type ArchivedWorkReportV0001 = record {
+  id : nat64;
+  total_score : nat;
+  result : text;
+  title : text;
+  updated_at : nat64;
+  goal : text;
+  want_rep : bool;
+  description : text;
+  created_at : nat64;
+  decision_topic : nat32;
+  reporter : principal;
+};
+type CreateWorkReportRequest = record {
+  pow : blob;
+  result : text;
+  title : text;
+  reputation_proof : ReputationProof;
+  goal : text;
+  want_rep : bool;
+  description : text;
+  decision_topic : nat32;
+  nonce : nat;
+};
+type CreateWorkReportResponse = record { id : nat64 };
+type DecisionTopicSet = variant {
+  It : nat32;
+  Or : record { DecisionTopicSet; DecisionTopicSet };
+  And : record { DecisionTopicSet; DecisionTopicSet };
+  Not : DecisionTopicSet;
+};
+type EvaluateWorkReportRequest = record {
+  id : nat64;
+  is_spam : bool;
+  reputation_proof : ReputationProof;
+  score : nat;
+};
+type EvaluateWorkReportResponse = record { result : opt bool };
+type GetWorkReportIdsRequest = record {
+  pagination : PageRequest;
+  filter : WorkReportFilter;
+};
+type GetWorkReportIdsResponse = record {
+  pagination : PageResponse;
+  entries : vec nat64;
+};
+type GetWorkReportsByIdRequest = record { ids : vec nat64 };
+type GetWorkReportsByIdResponse = record { entries : vec opt WorkReportKind };
+type PageRequest = record { skip : nat32; take : nat32; reversed : bool };
+type PageResponse = record { left : nat32; next : opt principal };
+type ReportEval = record {
+  rep : nat;
+  is_spam : bool;
+  score : nat;
+  depth : nat32;
+};
+type ReputationDelegationTreeNode = record {
+  id : principal;
+  reputation : nat;
+  topicset : DecisionTopicSet;
+  followers : vec ReputationDelegationTreeNode;
+};
+type ReputationProof = record {
+  cert_raw : blob;
+  body : opt ReputationProofBody;
+};
+type ReputationProofBody = record {
+  reputation_delegation_tree : ReputationDelegationTreeNode;
+  reputation_total_supply : nat;
+};
+type WorkReportFilter = record {
+  decision_topic_id : opt nat32;
+  archived : bool;
+};
+type WorkReportKind = variant {
+  Archive : ArchivedWorkReport;
+  Common : WorkReportPub;
+};
+type WorkReportPub = record {
+  id : nat64;
+  total_rep_supply : nat;
+  result : text;
+  total_rep_evaluated : nat;
+  title : text;
+  updated_at : nat64;
+  callers_evaluation : opt ReportEval;
+  goal : text;
+  want_rep : bool;
+  description : text;
+  created_at : nat64;
+  decision_topic : nat32;
+  total_rep_said_is_spam : nat;
+  reporter : principal;
+};
+service : {
+  work_reports__create : (CreateWorkReportRequest) -> (
+      CreateWorkReportResponse,
+    );
+  work_reports__evaluate : (EvaluateWorkReportRequest) -> (
+      EvaluateWorkReportResponse,
+    );
+  work_reports__get_by_id : (GetWorkReportsByIdRequest) -> (
+      GetWorkReportsByIdResponse,
+    ) query;
+  work_reports__get_ids : (GetWorkReportIdsRequest) -> (
+      GetWorkReportIdsResponse,
+    ) query;
+}

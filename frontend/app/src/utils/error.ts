@@ -28,3 +28,16 @@ export function logInfo(msg: string) {
   console.info(msg);
   toast(msg, { position: "bottom-center" });
 }
+
+const WAIT_MSGS = [
+  "Please, wait!",
+  "We're almost there!",
+  "Stand by!",
+  "I'm not stuck :)",
+  "Keep waiting!",
+  "A bit more...",
+];
+
+export function randomWaitingMessage() {
+  return WAIT_MSGS[Math.floor(Math.random() * WAIT_MSGS.length)];
+}

@@ -5,10 +5,19 @@ import { COLORS } from "@utils/colors";
 import { eventHandler } from "@utils/security";
 import { IClass } from "@utils/types";
 
-export function Backlink(props: IClass) {
+export interface IBacklinkProps extends IClass {
+  to?: string;
+}
+
+export function Backlink(props: IBacklinkProps) {
   const navigate = useNavigate();
 
   const handleBack = eventHandler(() => {
+    if (props.to) {
+      navigate(props.to);
+      return;
+    }
+
     try {
       navigate(-1);
     } catch (_) {

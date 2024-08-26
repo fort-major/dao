@@ -82,6 +82,10 @@ impl E8s {
 
         Self(Nat(whole.0.sqrt()) * Nat::from(1_0000_0000u64))
     }
+
+    pub fn to_precision_2(self) -> E8s {
+        Self(self.0 / Nat::from(100_0000u64) * Nat::from(100_0000u64))
+    }
 }
 
 impl Display for E8s {

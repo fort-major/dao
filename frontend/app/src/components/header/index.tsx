@@ -95,6 +95,14 @@ export function Header(props: IHeaderProps) {
             onClick={handleUnexpand}
             activeClass="underline"
             class={linkClass}
+            href={ROOT.$.contributions.path}
+          >
+            Contribute
+          </A>
+          <A
+            onClick={handleUnexpand}
+            activeClass="underline"
+            class={linkClass}
             href={ROOT.$.tasks.path}
           >
             Tasks

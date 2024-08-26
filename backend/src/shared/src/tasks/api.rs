@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use candid::{CandidType, Nat, Principal};
 use garde::Validate;
 use serde::Deserialize;
+use sha2::Digest;
 
 use crate::{
     e8s::E8s,

@@ -45,15 +45,6 @@ export function VotingProgressBar(props: IVotingProgressBarProps) {
           "background-color": totalVotedColor(),
         }}
       ></div>
-      <Show when={myRepPercent()}>
-        <div
-          class="bg-gray-190 h-1 absolute animate-pulse"
-          style={{
-            width: `${myRepPercent()}%`,
-            left: props.alreadyVoted ? 0 : `${totalVotedPercent()}%`,
-          }}
-        ></div>
-      </Show>
 
       <div
         class="h-1 w-1 absolute"

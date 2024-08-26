@@ -8,7 +8,7 @@ import {
   useContext,
 } from "solid-js";
 import { IChildren } from "../utils/types";
-import { ErrorCode, err, logInfo } from "../utils/error";
+import { ErrorCode, err, logInfo, randomWaitingMessage } from "../utils/error";
 import { Identity, Agent } from "@dfinity/agent";
 import { MsqClient, MsqIdentity } from "@fort-major/msq-client";
 import { Principal, debugStringify } from "../utils/encoding";
@@ -23,7 +23,7 @@ import {
 } from "../utils/backend";
 import { E8s } from "../utils/math";
 import { GetProfilesResponse } from "@/declarations/humans/humans.did";
-import { generatePoW, PROOF_TTL_MS } from "@utils/security";
+import { generateRegistrationPoW, PROOF_TTL_MS } from "@utils/security";
 
 export interface IMyBalance {
   Hour: E8s;
@@ -147,9 +147,10 @@ export function AuthStore(props: IChildren) {
       logInfo(`First time here? Registering, please stand by...`);
 
       const name = await identity.getPseudonym();
-      const [pow, nonce] = await generatePoW(
+      const [pow, nonce] = await generateRegistrationPoW(
         identity.getPrincipal(),
-        Principal.fromText(import.meta.env.VITE_HUMANS_CANISTER_ID)
+        Principal.fromText(import.meta.env.VITE_HUMANS_CANISTER_ID),
+        () => logInfo(randomWaitingMessage())
       );
 
       await humansActor.humans__register({

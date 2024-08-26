@@ -275,7 +275,7 @@ export function HomePage() {
         <Btn
           text="Start Contributing"
           icon={EIconKind.Plus}
-          linkTo="https://fort-major.org/tasks"
+          linkTo="https://fort-major.org/contributions"
           color={COLORS.darkBlue}
           iconSize={16}
           class="fixed bottom-20 left-1/2 translate-x-[-50%] z-50"
@@ -306,7 +306,7 @@ export function HomePage() {
             <Btn
               text="Start Contributing"
               icon={EIconKind.Plus}
-              linkTo="https://fort-major.org/tasks"
+              linkTo="https://fort-major.org/contributions"
               color={COLORS.darkBlue}
               iconSize={16}
               shadow="2px 2px 15px rgba(0, 0, 0, .25)"
@@ -338,14 +338,14 @@ export function HomePage() {
               linkTo="https://icp.msq.tech"
               img="/msq-project.png"
               name="MSQ"
-              desc="Safe ICP Wallet"
+              desc="Phishing-proof MetaMask-based ICP Wallet"
               year="2023"
             />
             <ProjectCard
               linkTo="/"
               img="/fmj-project.png"
               name="Fort Major"
-              desc="Best DAO in the World"
+              desc="The First Ever Exponential DAO"
               year="2024"
             />
             <ProjectCard

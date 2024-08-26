@@ -7,6 +7,7 @@ interface ImportMeta {
     VITE_VOTINGS_CANISTER_ID: string;
     VITE_REPUTATION_CANISTER_ID: string;
     VITE_LIQUID_DEMOCRACY_CANISTER_ID: string;
+    VITE_WORK_REPORTS_CANISTER_ID: string;
     VITE_FMJ_CANISTER_ID: string;
     VITE_ICP_CANISTER_ID: string;
     VITE_ROOT_KEY: string;

@@ -54,7 +54,7 @@ impl TasksState {
         caller: Principal,
         now: TimestampNs,
     ) -> CreateTaskResponse {
-        let id = self.generate_id();
+        let id = self.generate_task_id();
         let task = Task::new(
             id,
             req.title,
@@ -241,7 +241,7 @@ impl TasksState {
         }
     }
 
-    pub fn prepare_archive_batch(
+    pub fn prepare_task_archive_batch(
         &mut self,
     ) -> Option<(TaskArchiveCanisterClient, AppendBatchRequest)> {
         if self.archive.is_empty() {
@@ -255,7 +255,7 @@ impl TasksState {
             ids_to_remove.push(*id);
             i += 1;
 
-            if i == 100 {
+            if i == 50 {
                 break;
             }
         }
@@ -272,7 +272,7 @@ impl TasksState {
         Some((client, req))
     }
 
-    pub fn reset_archive_batch(
+    pub fn reset_task_archive_batch(
         &mut self,
         batch: Vec<ArchivedTask>,
         reason: String,
@@ -358,7 +358,7 @@ impl TasksState {
         }
     }
 
-    fn generate_id(&mut self) -> TaskId {
+    fn generate_task_id(&mut self) -> TaskId {
         let id = self.task_id_generator;
         self.task_id_generator += 1;
 

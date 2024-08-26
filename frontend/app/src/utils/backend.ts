@@ -38,7 +38,13 @@ import {
   _SERVICE as LiquidDemocracyActor,
   idlFactory as LiquidDemocracyIdlFactory,
 } from "../declarations/liquid_democracy/liquid_democracy.did";
+import {
+  _SERVICE as WorkReportsActor,
+  idlFactory as WorkReportsIdlFactory,
+} from "../declarations/work_reports/work_reports.did";
 import { Principal } from "@dfinity/principal";
+import { ErrorCode, logErr } from "./error";
+import { debugStringify } from "./encoding";
 
 export function newBankActor(agent: Agent): BankActor {
   return Actor.createActor(BankIdlFactory, {
@@ -108,6 +114,13 @@ export function newLiquidDemocracyActor(agent: Agent): LiquidDemocracyActor {
   });
 }
 
+export function newWorkReportsActor(agent: Agent): WorkReportsActor {
+  return Actor.createActor(WorkReportsIdlFactory, {
+    canisterId: import.meta.env.VITE_WORK_REPORTS_CANISTER_ID,
+    agent,
+  });
+}
+
 export async function makeAgent(
   identity?: Identity | undefined
 ): Promise<Agent> {
@@ -130,7 +143,7 @@ export async function makeAnonymousAgent(): Promise<Agent> {
 }
 
 export function optUnwrap<T>(it: [] | [T] | T[]): T | undefined {
-  return it[0] ? it[0] : undefined;
+  return it.length > 0 ? it[0] : undefined;
 }
 
 export function opt<T>(it: T | undefined): [] | [T] {

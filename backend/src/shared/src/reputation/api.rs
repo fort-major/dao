@@ -24,7 +24,7 @@ impl Guard<ReputationState> for MintRepRequest {
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if caller != ENV_VARS.tasks_canister_id {
+        if caller != ENV_VARS.tasks_canister_id && caller != ENV_VARS.work_reports_canister_id {
             return Err(format!("Access denied"));
         }
 

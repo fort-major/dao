@@ -8,6 +8,7 @@ members = [
     "backend/src/can_task_archive",
     "backend/src/can_reputation",
     "backend/src/can_liquid_democracy",
+    "backend/src/can_work_reports",
 ]
 resolver = "2"
 

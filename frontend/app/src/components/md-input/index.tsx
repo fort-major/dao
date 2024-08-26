@@ -19,6 +19,7 @@ export interface IMdInputProps {
   placeholder?: string;
   disabled?: boolean;
   validations?: TMdInputValidation[];
+  noMountTrigger?: boolean;
 }
 
 export function MdInput(props: IMdInputProps) {
@@ -33,8 +34,10 @@ export function MdInput(props: IMdInputProps) {
   let textAreaRef: HTMLTextAreaElement | undefined;
 
   onMount(() => {
-    const error = isValid(props.value, props.validations);
-    props.onChange(error ? Result.Err(props.value) : Result.Ok(props.value));
+    if (!props.noMountTrigger) {
+      const error = isValid(props.value, props.validations);
+      props.onChange(error ? Result.Err(props.value) : Result.Ok(props.value));
+    }
   });
 
   const pushHistory = (v: Result<string, string>) => {

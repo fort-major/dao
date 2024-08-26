@@ -11,10 +11,10 @@ use super::{
     types::{Profile, ProfileProofBody},
 };
 
-const POW_COMPLEXITY: &[u8] = &[0u8, 0u8, 128u8];
-const POW_DELIMITER: &[u8] = b"\\FMJ-POW-DELIMITER\\";
-const POW_START: &[u8] = b"\\FMJ-POW-START\\";
-const POW_END: &[u8] = b"\\FMJ-POW-END\\";
+pub const POW_COMPLEXITY: &[u8] = &[0u8, 0u8, 128u8];
+pub const POW_DELIMITER: &[u8] = b"\\FMJ-POW-DELIMITER\\";
+pub const POW_START: &[u8] = b"\\FMJ-POW-START\\";
+pub const POW_END: &[u8] = b"\\FMJ-POW-END\\";
 
 #[derive(CandidType, Deserialize, Validate)]
 pub struct RegisterRequest {
@@ -124,7 +124,7 @@ impl Guard<HumansState> for MintRewardsRequest {
     ) -> Result<(), String> {
         self.validate(&()).map_err(|e| e.to_string())?;
 
-        if caller != ENV_VARS.tasks_canister_id {
+        if caller != ENV_VARS.tasks_canister_id && caller != ENV_VARS.work_reports_canister_id {
             return Err(format!("Access denied"));
         }
 

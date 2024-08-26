@@ -28,6 +28,11 @@
       "package": "liquid_democracy",
       "type": "rust"
     },
+    "work_reports": {
+      "candid": "backend/src/can_work_reports/can.did",
+      "package": "work_reports",
+      "type": "rust"
+    },
     "nns-cycles-minting": {
       "build": "",
       "candid": "nns_candid/nns-cycles-minting.did",

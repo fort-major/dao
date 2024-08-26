@@ -279,7 +279,7 @@ fn _tasks__get_my_create_task_timestamp() -> u64 {
 
 fn start_archiving_timer() {
     ic_cdk_timers::set_timer_interval(Duration::from_nanos(ONE_DAY_NS), || {
-        if let Some((client, req)) = with_state_mut(|s| s.prepare_archive_batch()) {
+        if let Some((client, req)) = with_state_mut(|s| s.prepare_task_archive_batch()) {
             spawn(async move {
                 let resp = client
                     .task_archive__append_batch(&req)
@@ -287,7 +287,7 @@ fn start_archiving_timer() {
                     .map_err(|(c, m)| format!("[{:?}]: {}", c, m));
 
                 if let Err(reason) = resp {
-                    with_state_mut(|s| s.reset_archive_batch(req.tasks, reason, time()));
+                    with_state_mut(|s| s.reset_task_archive_batch(req.tasks, reason, time()));
                 }
             });
         }

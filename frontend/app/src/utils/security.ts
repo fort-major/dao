@@ -7,11 +7,12 @@ import {
   bigIntToBytes,
   bytesToHex,
   debugStringify,
+  numberToBytes,
   strToBytes,
   timestampToStr,
 } from "./encoding";
 import { ErrorCode, err } from "./error";
-import { ONE_MIN_NS } from "./types";
+import { ONE_MIN_NS, ONE_SEC_NS } from "./types";
 import {
   fromCBOR,
   hexToBytes,
@@ -24,6 +25,8 @@ import {
   newLiquidDemocracyActor,
   newReputationActor,
 } from "./backend";
+import { ICreateWorkReportArgs } from "@store/work-reports";
+import { nowNs } from "@components/countdown";
 
 export function eventHandler<E extends Event>(
   fn: (e: E) => void | Promise<void>
@@ -210,21 +213,61 @@ export async function hashRegisterPow(
 
   return crypto.subtle.digest("SHA-256", buf).then((it) => new Uint8Array(it));
 }
+
+export async function hashWorkReportPow(
+  myIdBuf: Uint8Array,
+  workReportCanisterIdBuf: Uint8Array,
+  args: ICreateWorkReportArgs,
+  nonce: bigint
+): Promise<Uint8Array> {
+  const wantRepBuf = args.wantRep ? [1] : [0];
+
+  const buf = new Uint8Array([
+    ...POW_START,
+    ...workReportCanisterIdBuf,
+    ...POW_DELIMITER,
+    ...myIdBuf,
+    ...POW_DELIMITER,
+
+    ...numberToBytes(args.decisionTopic, 4),
+    ...POW_DELIMITER,
+    ...strToBytes(args.title),
+    ...POW_DELIMITER,
+    ...strToBytes(args.goal),
+    ...POW_DELIMITER,
+    ...strToBytes(args.description),
+    ...POW_DELIMITER,
+    ...strToBytes(args.result),
+    ...POW_DELIMITER,
+    ...wantRepBuf,
+    ...POW_DELIMITER,
+
+    ...bigIntToBytes(nonce),
+    ...POW_END,
+  ]);
+
+  return await crypto.subtle
+    .digest("SHA-256", buf)
+    .then((it) => new Uint8Array(it));
+}
+
 function bufsLE(a: Uint8Array, b: Uint8Array) {
   if (a.length != b.length) return false;
   for (let i = 0; i < a.length; i++) if (a[i] > b[i]) return false;
   return true;
 }
 
-export async function generatePoW(
+export async function generateRegistrationPoW(
   myId: Principal,
-  humansCanisterId: Principal
+  humansCanisterId: Principal,
+  onceEvery5Seconds?: () => void
 ): Promise<[Uint8Array, bigint]> {
   let nonce = BigInt(Math.floor(Math.random() * 1000000));
   const myIdBuf = myId.toUint8Array();
   const humansCanisterIdBuf = humansCanisterId.toUint8Array();
 
   let pow = new Uint8Array();
+  let before = nowNs();
 
   while (true) {
     nonce++;
@@ -233,6 +276,52 @@ export async function generatePoW(
 
     if (bufsLE(pow.slice(0, POW_COMPLEXITY.length), POW_COMPLEXITY)) {
       break;
+    }
+
+    const now = nowNs();
+
+    if (now - before >= ONE_SEC_NS * 5n) {
+      onceEvery5Seconds?.();
+      before = now;
+    }
+  }
+
+  return [pow, nonce];
+}
+
+export async function generateWorkReportPoW(
+  myId: Principal,
+  workReportCanisterId: Principal,
+  args: ICreateWorkReportArgs,
+  onceEvery5Seconds?: () => void
+): Promise<[Uint8Array, bigint]> {
+  let nonce = BigInt(Math.floor(Math.random() * 1000000));
+  const myIdBuf = myId.toUint8Array();
+  const workReportCanisterIdBuf = workReportCanisterId.toUint8Array();
+
+  let pow = new Uint8Array();
+
+  let before = nowNs();
+
+  while (true) {
+    nonce++;
+
+    pow = await hashWorkReportPow(
+      myIdBuf,
+      workReportCanisterIdBuf,
+      args,
+      nonce
+    );
+
+    if (bufsLE(pow.slice(0, POW_COMPLEXITY.length), POW_COMPLEXITY)) {
+      break;
+    }
+
+    const now = nowNs();
+
+    if (now - before >= ONE_SEC_NS * 5n) {
+      onceEvery5Seconds?.();
+      before = now;
     }
   }
 

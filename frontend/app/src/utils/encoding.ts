@@ -83,6 +83,34 @@ export const bigIntToBytes = (n: bigint): Uint8Array => {
 };
 
 /**
+ * ## Encodes integer as bytes (le)
+ *
+ * @param n
+ * @returns
+ */
+export const numberToBytes = (n: number, sizeBytes?: number): Uint8Array => {
+  let result = [];
+
+  while (n > 0) {
+    result.push(Number(n % 256));
+    n = Math.floor(n / 256);
+  }
+
+  if (sizeBytes === undefined || sizeBytes === result.length) {
+    return new Uint8Array(result);
+  }
+
+  if (sizeBytes < result.length) {
+    err(ErrorCode.UNREACHEABLE, "Invalid padding size");
+  }
+
+  return new Uint8Array([
+    ...result,
+    ...Array(sizeBytes - result.length).fill(0),
+  ]);
+};
+
+/**
  * ## Decodes a bigint from bytes (le)
  *
  * @param bytes

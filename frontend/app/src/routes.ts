@@ -7,6 +7,9 @@ import { CreateUpdateTaskPage } from "@pages/create-new-task";
 import { TaskPage } from "@pages/task";
 import { HumansPage } from "@pages/humans";
 import { FAQPage } from "@pages/faq";
+import { WorkReportsPage } from "@pages/work-reports";
+import { ReportWorkPage } from "@pages/report-work";
+import { ViewWorkReportPage } from "@pages/view-work-report";
 
 export interface IRoute {
   parent?: IRoute;
@@ -42,6 +45,19 @@ export const ROOT = route({
     }),
     task: route({
       component: TaskPage,
+    }),
+    contributions: route({
+      $: {
+        "/": route({
+          component: WorkReportsPage,
+        }),
+        view: route({
+          component: ViewWorkReportPage,
+        }),
+        report: route({
+          component: ReportWorkPage,
+        }),
+      },
     }),
     humans: route({
       component: HumansPage,

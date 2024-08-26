@@ -21,7 +21,8 @@ dfx canister --network=$network create liquid_democracy && \
 dfx canister --network=$network create reputation && \
 dfx canister --network=$network create task_archive && \
 dfx canister --network=$network create tasks && \
-dfx canister --network=$network create votings
+dfx canister --network=$network create votings && \
+dfx canister --network=$network create work_reports
 
 # put env vars into backend
 
@@ -33,6 +34,7 @@ echo "CAN_BANK_CANISTER_ID=\"$(dfx canister --network=$network id bank)\"" >> $f
 echo "CAN_HUMANS_CANISTER_ID=\"$(dfx canister --network=$network id humans)\"" >> $file_backend
 echo "CAN_TASKS_CANISTER_ID=\"$(dfx canister --network=$network id tasks)\"" >> $file_backend
 echo "CAN_VOTINGS_CANISTER_ID=\"$(dfx canister --network=$network id votings)\"" >> $file_backend
+echo "CAN_WORK_REPORTS_CANISTER_ID=\"$(dfx canister --network=$network id work_reports)\"" >> $file_backend
 echo "CAN_REPUTATION_CANISTER_ID=\"$(dfx canister --network=$network id reputation)\"" >> $file_backend
 echo "CAN_LIQUID_DEMOCRACY_CANISTER_ID=\"$(dfx canister --network=$network id liquid_democracy)\"" >> $file_backend
 echo "CAN_FMJ_CANISTER_ID=\"$(dfx canister --network=$network id fmj)\"" >> $file_backend
@@ -56,6 +58,7 @@ echo "VITE_BANK_CANISTER_ID=\"$(dfx canister --network=$network id bank)\"" >> $
 echo "VITE_HUMANS_CANISTER_ID=\"$(dfx canister --network=$network id humans)\"" >> $file_frontend
 echo "VITE_TASKS_CANISTER_ID=\"$(dfx canister --network=$network id tasks)\"" >> $file_frontend
 echo "VITE_VOTINGS_CANISTER_ID=\"$(dfx canister --network=$network id votings)\"" >> $file_frontend
+echo "VITE_WORK_REPORTS_CANISTER_ID=\"$(dfx canister --network=$network id work_reports)\"" >> $file_frontend
 echo "VITE_REPUTATION_CANISTER_ID=\"$(dfx canister --network=$network id reputation)\"" >> $file_frontend
 echo "VITE_LIQUID_DEMOCRACY_CANISTER_ID=\"$(dfx canister --network=$network id liquid_democracy)\"" >> $file_frontend
 echo "VITE_FMJ_CANISTER_ID=\"$(dfx canister --network=$network id fmj)\"" >> $file_frontend
