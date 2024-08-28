@@ -348,6 +348,13 @@ export const WorkReport = (props: IWorkReportProps) => {
             <MdPreview content={result()!} />
           </div>
         </div>
+        <div class="p-2 bg-darkBlue text-white text-center">
+          ✨ Join{" "}
+          <a href="https://t.me/fortmajoricp" target="_blank" class="underline">
+            our Telegram group
+          </a>{" "}
+          where all the magic happens ✨
+        </div>
         <div class="flex gap-2">
           <Show when={canEditWorkReport(props.id)}>
             <Btn text="Edit" icon={EIconKind.Edit} onClick={handleEditClick} />

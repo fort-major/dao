@@ -13,13 +13,19 @@ export interface IWorkReportEvalFormProps {
 }
 
 export const WorkReportEvalForm = (props: IWorkReportEvalFormProps) => {
-  const [comlexity, setComplexity] = createSignal(E8s.zero());
-  const [usefulness, setUsefulness] = createSignal(E8s.zero());
+  const [comlexityLevel, setComplexityLevel] = createSignal(0);
+  const [usefulnessLevel, setUsefulnessLevel] = createSignal(0);
+  const [consumedTimeLevel, setConsumedTimeLevel] = createSignal(0);
   const [impactLevel, setImpactLevel] = createSignal(0);
 
   const resultingScore = () => {
-    const complexityShare = comlexity().mul(E8s.fromBigIntBase(4n));
-    const usefulnessShare = usefulness().mul(E8s.fromBigIntBase(6n));
+    const usefulnessShare = E8s.fromBigIntBase(BigInt(usefulnessLevel() + 1));
+    const complexityShare = E8s.fromBigIntBase(
+      BigInt(comlexityLevel() + 1)
+    ).mul(E8s.f0_5());
+    const consumedTimeShare = E8s.fromBigIntBase(
+      BigInt(consumedTimeLevel() + 1)
+    ).mul(E8s.f0_5());
 
     let impactShare: E8s;
     switch (impactLevel()) {
@@ -44,7 +50,13 @@ export const WorkReportEvalForm = (props: IWorkReportEvalFormProps) => {
       }
     }
 
-    return impactShare.mul(complexityShare.add(usefulnessShare));
+    impactShare = impactShare.mul(E8s.f0_5());
+
+    const baseRewardShare = usefulnessShare
+      .add(complexityShare)
+      .add(consumedTimeShare);
+
+    return impactShare.mul(baseRewardShare);
   };
 
   return (
@@ -53,18 +65,42 @@ export const WorkReportEvalForm = (props: IWorkReportEvalFormProps) => {
       <div class="flex flex-col gap-2">
         <Title text="Complexity" />
         <p class="text-gray-140 text-xs">
-          How much effort does the contributor put into their work? How hard was
-          it in your opinion?
+          On a scale from 1 to 10, how hard would it be to complete this
+          contribution?
         </p>
-        <Slider min="Easy" max="Hard" onChange={setComplexity} />
+        <p class="text-gray-140 text-xs">
+          1 - anyone could do it; 10 - I can't do it.
+        </p>
+        <Multiswitch
+          states={["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]}
+          onChange={setComplexityLevel}
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <Title text="Consumed Time" />
+        <p class="text-gray-140 text-xs">
+          On a scale from 1 to 10, how time-consuming is this contribution?
+        </p>
+        <p class="text-gray-140 text-xs">
+          1 - around 10 minutes; 10 - a full day.
+        </p>
+        <Multiswitch
+          states={["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]}
+          onChange={setConsumedTimeLevel}
+        />
       </div>
       <div class="flex flex-col gap-2">
         <Title text="Potential Usefulness" />
         <p class="text-gray-140 text-xs">
-          How useful is this contribution long-term? Will it matter by the end
-          of the next year?
+          On a scale from 1 to 10, how useful is this contribution long-term?
         </p>
-        <Slider min="Not useful" max="Very useful" onChange={setUsefulness} />
+        <p class="text-gray-140 text-xs">
+          1 - this won't matter next week; 10 - this will matter next year.
+        </p>
+        <Multiswitch
+          states={["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]}
+          onChange={setUsefulnessLevel}
+        />
       </div>
       <div class="flex flex-col gap-2">
         <Title text="Immediate Result Impact" />
