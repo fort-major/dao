@@ -60,6 +60,7 @@ async fn work_reports__evaluate(mut req: EvaluateWorkReportRequest) -> EvaluateW
     let report = res.unwrap();
     let score = report.calc_resulting_score().to_precision_2();
     let want_rep = report.want_rep;
+    let reporter = report.reporter;
 
     STATE.with_borrow_mut(|s| {
         s.archive_report(report, score.clone(), time());
@@ -71,13 +72,13 @@ async fn work_reports__evaluate(mut req: EvaluateWorkReportRequest) -> EvaluateW
 
     let reputation_canister = ReputationCanisterClient::new(ENV_VARS.reputation_canister_id);
     let mint_rep_req = MintRepRequest {
-        entries: vec![(caller(), score.clone())],
+        entries: vec![(reporter, score.clone())],
     };
 
     let humans_canister = HumansCanisterClient::new(ENV_VARS.humans_canister_id);
     let mint_rewards_req = MintRewardsRequest {
         rewards: vec![RewardEntry {
-            solver: caller(),
+            solver: reporter,
             reward_hours: E8s::zero(),
             reward_storypoints: score.clone(),
             want_rep,
