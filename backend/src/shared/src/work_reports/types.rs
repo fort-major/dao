@@ -105,7 +105,7 @@ impl WorkReport {
         let mut total_score = E8s::zero();
 
         for eval in self.evaluation.values() {
-            total_score += &eval.rep / &self.total_rep_supply * &eval.score;
+            total_score += &eval.rep * &eval.score / &self.total_rep_evaluated;
         }
 
         total_score
