@@ -5,7 +5,8 @@ import { useAuth } from "@store/auth";
 import { ErrorCode, err } from "@utils/error";
 import { eventHandler } from "@utils/security";
 import { Result } from "@utils/types";
-import { Match, Switch, createSignal, onMount } from "solid-js";
+import { Match, Switch, createEffect, createSignal, onMount } from "solid-js";
+import { produce } from "solid-js/store";
 import TextArea from "solid-textarea-autosize";
 
 export type TMdInputValidation =
@@ -41,15 +42,22 @@ export function MdInput(props: IMdInputProps) {
   });
 
   const pushHistory = (v: Result<string, string>) => {
-    setHistory((h) => {
-      if (h.length == 256) {
-        h.shift();
-      }
+    setHistory(
+      produce((h) => {
+        if (h.length > 0) {
+          const last = h[h.length - 1];
+          if (v.eq(last)) {
+            return;
+          }
+        }
 
-      h.push(v);
+        if (h.length == 256) {
+          h.shift();
+        }
 
-      return h;
-    });
+        h.push(v);
+      })
+    );
   };
 
   const popHistory = (): Result<string, string> | undefined => {
@@ -59,10 +67,11 @@ export function MdInput(props: IMdInputProps) {
 
     const entry = h[h.length - 1];
 
-    setHistory((h) => {
-      h.pop();
-      return h;
-    });
+    setHistory(
+      produce((h) => {
+        h.pop();
+      })
+    );
 
     return entry;
   };
@@ -159,7 +168,11 @@ export function MdInput(props: IMdInputProps) {
         }
       });
     } catch (_) {
-      replaceSelection((_) => [clipboardText, undefined, undefined]);
+      replaceSelection((_, from, to) => [
+        clipboardText,
+        clipboardText.length + to,
+        clipboardText.length + to,
+      ]);
     }
   };
 

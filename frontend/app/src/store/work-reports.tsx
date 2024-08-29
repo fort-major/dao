@@ -338,27 +338,27 @@ export function WorkReportsStore(props: IChildren) {
         return;
       }
 
-      if (arg.newTitle) {
+      if (arg.newTitle !== undefined) {
         draft.title = arg.newTitle;
       }
 
-      if (arg.newDecisionTopicId) {
+      if (arg.newDecisionTopicId !== undefined) {
         draft.decisionTopicId = arg.newDecisionTopicId;
       }
 
-      if (arg.newGoal) {
+      if (arg.newGoal !== undefined) {
         draft.goal = arg.newGoal;
       }
 
-      if (arg.newDescription) {
+      if (arg.newDescription !== undefined) {
         draft.description = arg.newDescription;
       }
 
-      if (arg.newResult) {
+      if (arg.newResult !== undefined) {
         draft.result = arg.newResult;
       }
 
-      if (arg.newWantRep) {
+      if (arg.newWantRep !== undefined) {
         draft.wantRep = arg.newWantRep;
       }
 

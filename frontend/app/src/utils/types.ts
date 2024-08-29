@@ -1,6 +1,7 @@
 import { JSX } from "solid-js";
 import { err, ErrorCode } from "./error";
 import { debugStringify } from "./encoding";
+import deepEqual from "deep-equal";
 
 export interface IChildren {
   children?: JSX.Element;
@@ -62,6 +63,16 @@ export class Result<T, E = T> {
       if ("Err" in expr) {
         return expr.Err!(this.value.Err);
       }
+    }
+  }
+
+  eq(other: Result<T, E>): boolean {
+    if (this.isErr() && other.isErr()) {
+      return deepEqual(this.unwrapErr(), other.unwrapErr(), { strict: true });
+    } else if (this.isOk() && other.isOk()) {
+      return deepEqual(this.unwrapOk(), other.unwrapOk(), { strict: true });
+    } else {
+      return false;
     }
   }
 
