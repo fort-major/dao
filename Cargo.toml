@@ -12,12 +12,19 @@ members = [
 ]
 resolver = "2"
 
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+opt-level = 'z'
+panic = 'abort'
+
 [workspace.dependencies]
 ic-stable-structures = "0.6"
 candid = "0.10"
 serde = "1.0"
-ic-cdk = "0.13"
-ic-cdk-timers = "0.7"
+ic-cdk = "0.16"
+ic-cdk-timers = "0.10"
 ic-certificate-verification = "2.4"
 ic-certification = "2.5"
 ic-cbor = "2.5"

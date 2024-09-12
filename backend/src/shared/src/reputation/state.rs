@@ -75,7 +75,10 @@ impl ReputationState {
     // returns true if should reschedule another decay
     pub fn decay(&mut self, items_num: u64, now: TimestampNs) -> bool {
         let mut iter = if let Some(start) = self.decay_start_key.get() {
-            self.balances.iter_upper_bound(start)
+            let mut i = self.balances.range(start..);
+            i.next();
+
+            i
         } else {
             self.balances.iter()
         };
