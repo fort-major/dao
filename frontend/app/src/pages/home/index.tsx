@@ -275,7 +275,7 @@ export function HomePage() {
         <Btn
           text="Start Contributing"
           icon={EIconKind.Plus}
-          linkTo="https://fort-major.org/contributions"
+          linkTo="https://fort-major.org/tasks"
           color={COLORS.darkBlue}
           iconSize={16}
           class="fixed bottom-20 left-1/2 translate-x-[-50%] z-50"
@@ -306,7 +306,7 @@ export function HomePage() {
             <Btn
               text="Start Contributing"
               icon={EIconKind.Plus}
-              linkTo="https://fort-major.org/contributions"
+              linkTo="https://fort-major.org/tasks"
               color={COLORS.darkBlue}
               iconSize={16}
               shadow="2px 2px 15px rgba(0, 0, 0, .25)"

@@ -91,14 +91,14 @@ export function Header(props: IHeaderProps) {
           <A onClick={handleUnexpand} class={linkClass} href={ROOT.path}>
             Home
           </A>
-          <A
+          {/* <A
             onClick={handleUnexpand}
             activeClass="underline"
             class={linkClass}
             href={ROOT.$.contributions.path}
           >
             Contribute
-          </A>
+          </A> */}
           <A
             onClick={handleUnexpand}
             activeClass="underline"

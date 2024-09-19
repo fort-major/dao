@@ -49,13 +49,16 @@ export const ROOT = route({
     contributions: route({
       $: {
         "/": route({
-          component: WorkReportsPage,
+          //      component: WorkReportsPage,
+          component: TasksPage,
         }),
         view: route({
-          component: ViewWorkReportPage,
+          //       component: ViewWorkReportPage,
+          component: TasksPage,
         }),
         report: route({
-          component: ReportWorkPage,
+          //       component: ReportWorkPage,
+          component: TasksPage,
         }),
       },
     }),
