@@ -4,7 +4,7 @@ import { Spoiler } from "@components/spoiler";
 
 const cH = `This FAQ is designed to be helpful for contributors. You can easily navigate through it to find the information you need.
 
-If you have any further questions, please don't hesitate to reach out to us on [Telegram](https://t.me/fortmajoricp). We would be glad to help you and might even add your topic to this FAQ.
+If you have any further questions, please don't hesitate to reach out to us on [Telegram](https://t.me/homeofmsq). We would be glad to help you and might even add your topic to this FAQ.
 
 Most of Fort Major tasks are related to MSQ now. MSQ is a MetaMask Snap based wallet, a payment method and an authorization provider for the Internet Computer. 
 
@@ -34,7 +34,7 @@ There is no special allocation for the Team, and you can anonymously contribute 
 
 We provide tasks for people with different levels of knowledge and expertise. The more you do, the more Rewards and Reputation you get. Only you control it. Note that Rewards and Reputation are minted only when a task is solved. 
 
-*If you notice there is no task for you, please don’t hesitate to reach out to us on [Telegram](https://t.me/fortmajoricp). We’ll discuss it and propose a solution.*
+*If you notice there is no task for you, please don’t hesitate to reach out to us on [Telegram](https://t.me/homeofmsq). We’ll discuss it and propose a solution.*
 
 #### Ownership
 
@@ -115,7 +115,7 @@ What you can do now to resolve the issue right now:
 * **Try reinstalling MetaMask.** Sometimes old stale data prevents MetaMask from working properly.
 * **Try a different browser.** MSQ is available everywhere where MetaMask is. If you're using Chrome, try Firefox and vice-versa.
 
-But if nothing helps, reach us out via [Telegram](https://t.me/fortmajoricp/16). We'll do our best to help you as soon as we can.`;
+But if nothing helps, reach us out via [Telegram](https://t.me/homeofmsq). We'll do our best to help you as soon as we can.`;
 
 const a12 = `Reputation decays over time if you are inactive. Each month the system will deduct some amount of Reputation, if you don't earn new reputation during this time. The amount deducted is \`sqrt(x)\` - so the less Reputation you have the bigger percentage of it will be deducted.`;
 

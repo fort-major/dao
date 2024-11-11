@@ -2,7 +2,7 @@
 
 Fair, open, robust and transparent digital organization with an uplifting vibe.
 
-*[Join Our Telegram](https://t.me/fortmajoricp)*
+*[Join Our Telegram](https://t.me/homeofmsq)*
 
 ## Docs
 

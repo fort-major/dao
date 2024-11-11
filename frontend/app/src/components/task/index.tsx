@@ -842,7 +842,7 @@ export function Task(props: ITaskProps) {
             <div class="p-2 bg-darkBlue text-white text-center">
               ✨ Join{" "}
               <a
-                href="https://t.me/fortmajoricp"
+                href="https://t.me/homeofmsq"
                 target="_blank"
                 class="underline"
               >

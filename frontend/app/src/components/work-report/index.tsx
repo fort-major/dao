@@ -350,7 +350,7 @@ export const WorkReport = (props: IWorkReportProps) => {
         </div>
         <div class="p-2 bg-darkBlue text-white text-center">
           ✨ Join{" "}
-          <a href="https://t.me/fortmajoricp" target="_blank" class="underline">
+          <a href="https://t.me/homeofmsq" target="_blank" class="underline">
             our Telegram group
           </a>{" "}
           where all the magic happens ✨

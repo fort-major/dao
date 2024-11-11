@@ -313,7 +313,7 @@ export function HomePage() {
             />
             <Btn
               icon={EIconKind.Telegram}
-              linkTo="https://t.me/fortmajoricp"
+              linkTo="https://t.me/homeofmsq"
               linkTarget="_blank"
               color="#2AABEE"
               iconSize={30}
@@ -486,7 +486,7 @@ export function HomePage() {
                 icon={EIconKind.Telegram}
                 text="Contact Us"
                 linkTarget="_blank"
-                linkTo="https://t.me/fortmajoricp"
+                linkTo="https://t.me/homeofmsq"
                 class="self-start"
                 shadow="2px 2px 15px #5102F8"
               />
